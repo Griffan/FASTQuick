@@ -228,11 +228,11 @@ static bwa_cigar_t *refine_gapped_core(bwtint_t l_pac, const ubyte_t *pacseq, in
 	return cigar;
 }
 
-char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_t *seq,
+char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_t *seq, ubyte_t* qual, int* count,
 				  bwtint_t l_pac, ubyte_t *pacseq, kstring_t *str, int *_nm)
 {
 	bwtint_t x, y;
-	int z, u, c, nm = 0;
+	int z, u, c, nm = 0,tmp=0;
 	str->l = 0; // reset
 	x = pos; y = 0;
 	if (cigar) {
@@ -243,9 +243,11 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 				for (z = 0; z < l && x+z < l_pac; ++z) {
 					c = pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3;
 					if (c > 3 || seq[y+z] > 3 || c != seq[y+z]) {
+						*count+=qual[y+z];
 						ksprintf(str, "%d", u);
 						kputc("ACGTN"[c], str);
 						++nm;
+						tmp++;
 						u = 0;
 					} else ++u;
 				}
@@ -253,7 +255,11 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 /*		        } else if (cigar[k]>>14 == FROM_I || cigar[k]>>14 == 3) { */
                         } else if (__cigar_op(cigar[k]) == FROM_I || __cigar_op(cigar[k]) == FROM_S) {
 				y += l;
-				if (__cigar_op(cigar[k]) == FROM_I) nm += l;
+				if (__cigar_op(cigar[k]) == FROM_I)
+				{
+					nm += l;
+					*count-=30;
+				}
 			} else if (__cigar_op(cigar[k]) == FROM_D) {
 				ksprintf(str, "%d", u);
 				kputc('^', str);
@@ -261,21 +267,25 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 					kputc("ACGT"[pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3], str);
 				u = 0;
 				x += l; nm += l;
+				*count-=30;
 			}
 		}
 	} else { // no gaps
 		for (z = u = 0; z < (bwtint_t)len; ++z) {
 			c = pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3;
 			if (c > 3 || seq[y+z] > 3 || c != seq[y+z]) {
+				*count+=qual[y+z];
 				ksprintf(str, "%d", u);
 				kputc("ACGTN"[c], str);
 				++nm;
+				tmp++;
 				u = 0;
 			} else ++u;
 		}
 	}
 	ksprintf(str, "%d", u);
 	*_nm = nm;
+	if(tmp>0)*count=*count/tmp;
 	return strdup(str->s);
 }
 
@@ -375,7 +385,9 @@ void bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ubyte_t
 		bwa_seq_t *s = seqs + i;
 		if (s->type != BWA_TYPE_NO_MATCH) {
 			int nm;
-			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand? s->rseq : s->seq,
+			char* tmp_qual=strdup(s->qual);
+			if( s->strand)  seq_reverse(s->len, tmp_qual, 0);
+			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand? s->rseq : s->seq, (ubyte_t*)tmp_qual, &(s->count),
 								bns->l_pac, ntbns? ntpac : pacseq, str, &nm);
 			s->nm = nm;
 		}

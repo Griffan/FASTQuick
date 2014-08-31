@@ -184,7 +184,7 @@ public:
 		RollParam.read_step_size = READ_STEP_SIZE;
 		RollParam.thresh = 3;
 		clock_t t = clock();
-		;
+
 		hash_table_size = pow(4, 16)/8;
 		for (int i = 0; i != 6; ++i)
 			roll_hash_table[i] = (unsigned char *) calloc(hash_table_size,
@@ -296,13 +296,15 @@ inline void AddSeq2HashCore(const string & Seq, int iter)
 		shrinked=KmerShrinkage(datum, mask[iter]);
 		roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
 	}
+	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",datum,KmerShrinkage(datum, mask[iter]),roll_hash_table[iter][KmerShrinkage(datum, mask[iter])/8]&(1<<(shrinked%8)), mask[iter]);
+
 	uint64_t tmp=datum;
-	for(int j=i,let=0;let!=4;++let)
+	for(int j=i,let=0;let!=4;++let,j=i)
 	{
 		tmp=datum;
 		for(;j!=Seq.length()/2+32;++j)
 		{
-			tmp =((tmp << 2) | nst_nt4_table["ATCG"[(char)let]]);
+			tmp =((tmp << 2) | nst_nt4_table["ACGT"[(char)let]]);
 			shrinked=KmerShrinkage(tmp, mask[iter]);
 			roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
 		}

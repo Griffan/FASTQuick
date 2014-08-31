@@ -219,8 +219,8 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_
 	// read sequences
 	//while ((l = kseq_read(seq)) >= 0) {
 	DBG(fprintf(stderr,"Come into Fa2Pac...\n");)
-	//string RefOutput("Ref.out");
-	//ofstream Fout(RefOutput);
+	string RefOutput("Ref.out");
+	ofstream Fout(RefOutput);
 	for(unordered_map<string,uint32_t >::iterator iter=ArtiRef.RefTableIndex.begin(); iter!=ArtiRef.RefTableIndex.end(); ++iter)
 	{
 
@@ -232,7 +232,7 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_
 		string tmp_rev_cmp=ReverseComplement(CurrentSeq);
 		AddSeq2Hash(tmp_rev_cmp,  opt);
 		AddSeq2Hash(string(tmp_rev_cmp.rbegin(),tmp_rev_cmp.rend()),  opt);
-		//Fout<<">"<<CurrentSeqName<<"\n"<<CurrentSeq<<"\n";
+		Fout<<">"<<CurrentSeqName<<"\n"<<CurrentSeq<<"\n";
 
 		//DBG(fprintf(stderr,"Come into outer loop...%s\n%s\n",CurrentSeqName.c_str(),CurrentSeq.c_str());)
 		//DBG(fprintf(stderr,"We got in seqs : %d ...\n%s\n", vec_iter,CurrentSeq.c_str());)

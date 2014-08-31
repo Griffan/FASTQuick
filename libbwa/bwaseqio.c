@@ -177,6 +177,7 @@ bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int tri
 		} else p->bc[0] = 0;
 		p->tid = -1; // no assigned to a thread
 		p->qual = 0;
+		p->count=0;
 		p->full_len = p->clip_len = p->len = l;
 		n_tot += p->full_len;
 		p->seq = (ubyte_t*)calloc(p->len, 1);

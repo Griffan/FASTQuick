@@ -11,6 +11,7 @@
 #include "./libStatGen-master/vcf/VcfFileReader.h"
 #include "./libStatGen-master/vcf/VcfHeader.h"
 #include "./libStatGen-master/vcf/VcfRecord.h"
+#include <fstream>
 using namespace std;
 
 #define DEBUG 0
@@ -42,12 +43,15 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 
 		string SelectedSite=VcfPath+".SelectedSite.vcf";
 		InputFile FoutSelectedSite(SelectedSite.c_str(),"w");
-
+		string GCpath=VcfPath+".gc";
+		ofstream FGC(GCpath);
 
 		reader.open(VcfPath.c_str(),header);
+		header.write(&FoutSelectedSite);
 		char region[128];
 		unsigned int nseqs(0);
 		unsigned int nmarker(0);
+		int last_pos=0;
 		while(!reader.isEOF())
 		{
 			if(MaskPath!="Empty"&&nmarker>100000)
@@ -66,25 +70,44 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 			sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_len,Position+opt->flank_len);
 			if(MaskPath!="Empty")
 			{
+			//	cerr<<"region:"<<region<<endl;
 			string MaskSeq(fai_fetch(FastaMask, region, &dummy));
 			size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-			if(double(n)/MaskSeq.size()<0.9) continue;
-			VcfLine.write(&FoutSelectedSite,1);
+			if(double(n)/MaskSeq.size()<0.9||Position-last_pos<300) continue;
+
+				if(!VcfLine.write(&FoutSelectedSite,1))
+				{
+					cerr<<"Writing retained sites failed!\n";
+				exit(1);
+				}
 			}
 
 			string FetchedSeq(fai_fetch(seq, region, &dummy));
 
-			//vector<string> SeqVec;
+			{//Calculate GC content
+				for(int i=Position-opt->flank_len;i!=Position+opt->flank_len+1;++i)
+				{
+					sprintf(region, "%s:%d-%d",Chrom.c_str(), i-50,i+50);
+					string Window(fai_fetch(seq, region, &dummy));
+					int total=0;
+					for(int j=0;j!=Window.size();++j)
+					{
+						if(Window[j]=='G'||Window[j]=='C'||Window[j]=='g'||Window[j]=='c')
+							total++;
+					}
+					FGC<<Chrom<<"\t"<<i<<"\t"<<double(total)/101<<endl;
+				}
+			}
 
 
-			SeqVec.push_back(FetchedSeq);
+			//SeqVec.push_back(FetchedSeq);
 			//SeqVecIdx.push_back(nseqs);
 
 
 			//sprintf(region, "%s:%d@%s", Chrom.c_str(),Position,VcfLine.getAlleles(0));
 			//string Coord(region);
 			//string RefAllele(VcfLine.getAlleles(0));
-			//RefTableIndex.insert ( make_pair(Coord,nseqs));
+			//RefTableIndex.insert ( make_pair(string(region),nseqs));
 			//nseqs++;
 
 			if(DEBUG)
@@ -123,20 +146,22 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 				//cerr<<"Only ref allele at:"<<Coord<<endl;
 			}*/
 			SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string("N")+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));// position 500 was replaced by AltAllele
-			sprintf(region, "%s:%d@", Chrom.c_str(),Position);
-			string AltAllele(VcfLine.getAlleles(0));
-			sprintf(region, "%s%s",region,AltAllele.c_str());
-			for(unsigned int i=1;i!=VcfLine.getNumAlts();i++)
-			{
-			sprintf(region, "%s/%s", region,string((VcfLine.getAlleles(i))).c_str());
-			}
+			//SeqVec.push_back(FetchedSeq);
+			sprintf(region, "%s:%d@%s/%s", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+			//string AltAllele(VcfLine.getAlleles(0));
+			//sprintf(region, "%s%s",region,VcfLine.getRefStr());
+			//if (VcfLine.getNumAlts() >0)
+			//for(unsigned int i=1;i!=VcfLine.getNumAlts();i++)
+			//{
+			//sprintf(region, "%s/%s", region,VcfLine.getAltStr());
+		//	}
 			//string Coord(region);
-			RefTableIndex.insert ( make_pair(string(region),nseqs));
+			RefTableIndex.insert( make_pair(string(region),nseqs));
 			nseqs++;
 			nmarker++;
-
-
+			last_pos++;
 		}
+		FGC.close();
 		FoutSelectedSite.ifclose();
 }
 
