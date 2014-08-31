@@ -80,6 +80,7 @@ typedef struct {
 	// NM and MD tags
 	uint32_t full_len:20, nm:12;
 	char *md;
+	int  count;
 } bwa_seq_t;
 
 #define BWA_MODE_GAPE       0x01

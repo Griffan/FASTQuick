@@ -13,7 +13,7 @@ OBJECTS = $(patsubst %.c, %.o, $(wildcard *.cpp samtools-faidx/*.c libbwa/*.c ))
 HEADERS = $(wildcard *.h samtools-faidx/*.h libbwa/*.h )
 
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS)  -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE)  -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
