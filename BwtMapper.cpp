@@ -350,7 +350,7 @@ BwtMapper::BwtMapper()
 
 
 
-bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex,const char *fn_fa, const gap_opt_t * opt)
+bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex,const char *fn_fa, const string & VcfPath, const gap_opt_t * opt)
 {
 	//void bwa_aln_core(const char *prefix, const char *fn_fa, const gap_opt_t *opt)
 //	{
@@ -390,13 +390,15 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex,const char *fn_fa, const ga
 		bwa_print_sam_PG();
 		//exit(1);
 		t = clock();
+		fprintf(stderr, "Restore Variant Site Info...\n ");
+		collector.restoreVcfSites(VcfPath,opt);
 		while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt->mode , opt->trim_qual)) != 0) {
 			tot_seqs += n_seqs;
 
 			fprintf(stderr,"Reading in %d sequences into buffer...",n_seqs);
 			fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC); t = clock();
 			t = clock();
-			fprintf(stderr, "Calculate SA coordinate... ");
+			fprintf(stderr, "Calculate SA coordinate and ");
 
 
 
@@ -439,44 +441,10 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex,const char *fn_fa, const ga
 
 			}
 
-		/*	for (i = 0; i < n_seqs; ++i) {
-					bwa_seq_t *p = seqs + i;
-					fwrite(&p->n_multi, 4, 1, stdout);
-					if (p->n_multi) fwrite(p->multi, sizeof(bwt_multi1_t), p->n_multi, stdout);
-					//fwrite(&p->sa, sizeof(bwtint_t), 1, stdout);
-					//int c1=p->c1;
-					//int c2=p->c2;
-					//fwrite(&c1, sizeof(int), 1, stdout);
-					//fwrite(&c2, sizeof(int), 1, stdout);
-					/*fprintf(stdout,"%s\tn_aln:%d\t",p->name,p->n_aln);
-					if (p->n_aln)
-						{
-						int iter=0;
-						for(;iter<p->n_aln;++iter)
-						fprintf(stdout,"aln.k:%d-aln.l:%d\t",p->aln[iter].k, p->aln[iter].l);
-						fprintf(stdout,"\n");
-						}
-					else
-						fprintf(stdout,"\n");
 
-
-
-
-
-		}
-		exit(1);
-		{*/
 			fprintf(stderr, "Convert to sequence coordinate... ");
 			bwa_cal_pac_pos(BwtIndex, n_seqs, seqs, opt->max_diff, opt->fnr); // forward bwt will be destroyed here
 			fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC); t = clock();
-
-/*
-			for (i = 0; i < n_seqs; ++i) {
-					bwa_seq_t *p = seqs + i;
-					fwrite(&p->n_multi, 4, 1, stdout);
-					if (p->n_multi) fwrite(p->multi, sizeof(bwt_multi1_t), p->n_multi, stdout);
-			}
-*/
 
 			fprintf(stderr, "Refine gapped alignments... ");
 
@@ -491,19 +459,25 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex,const char *fn_fa, const ga
 
 			fprintf(stderr, "Print alignments... ");
 			for (i = 0; i < n_seqs; ++i)
+			{
+				//collector.addAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
+				if(!collector.addAlignment(BwtIndex.bns,seqs+i,opt)) continue;//failed
 				bwa_print_sam1(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2);
+				//exit(1);
+			}
 
 			fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC); t = clock();
 			bwa_free_read_seq(n_seqs, seqs);
 			fprintf(stderr, " %d sequences have been processed.\n", tot_seqs);
 			t = clock();
 		}//end while
-
+		fprintf(stderr, "Calculate distributions... ");
+		collector.processCore(VcfPath);
 		// destroy
 		//bwt_destroy(bwt[0]); bwt_destroy(bwt[1]);
 		bwa_seq_close(ks);
 }
-bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex,const char *fn_fa1,const char * fn_fa2,const  pe_opt_t *popt,const gap_opt_t* opt)
+bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex,const char *fn_fa1,const char * fn_fa2,const string & VcfPath, const  pe_opt_t *popt,const gap_opt_t* opt)
 {
 
 		int i,j, n_seqs, tot_seqs = 0;//,m_aln;
@@ -628,18 +602,18 @@ for(int iter=0;iter!=2;++iter)
 		return 1;
 }
 
-BwtMapper::BwtMapper(BwtIndexer& BwtIndex,const string & Fastq_1, const string & Fastq_2, const pe_opt_t* popt, const gap_opt_t * opt )
+BwtMapper::BwtMapper(BwtIndexer& BwtIndex,const string & Fastq_1, const string & Fastq_2, const string & VcfPath, const pe_opt_t* popt, const gap_opt_t * opt )
 {
 	if(Fastq_2 != "Empty")
 	{
 		cerr<<"Now processing Pair End mapping..."<<endl;
-		PairEndMapper(BwtIndex,Fastq_1.c_str(), Fastq_2.c_str(),  popt, opt);
+		PairEndMapper(BwtIndex,Fastq_1.c_str(), Fastq_2.c_str(),  VcfPath,popt, opt);
 
 	}
 	else
 	{
 		cerr<<"Now processing Single End mapping..."<<endl;
-		SingleEndMapper(BwtIndex,Fastq_1.c_str(),  opt);
+		SingleEndMapper(BwtIndex,Fastq_1.c_str(), VcfPath, opt);
 	}
 }
 
