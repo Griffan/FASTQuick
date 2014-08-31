@@ -233,6 +233,7 @@ int main(int argc, char ** argv)
 		}
 		if(IL13)
 		{
+			cerr<<"Using Illumina 1.3 version quality system..."<<endl;
 			opt->mode |= BWA_MODE_IL13;
 		}
 		if(loggap)
@@ -259,13 +260,13 @@ int main(int argc, char ** argv)
 			cerr << "Index file doesn't exist, building...\n";
 			RefBuilder ArtiRef(VcfPath, RefPath, MaskPath,opt);
 			Indexer.BuildIndex(ArtiRef, RefPath, opt);
-			BwtMapper Mapper(Indexer,Fastq_1, Fastq_2,  popt, opt);
+			BwtMapper Mapper(Indexer,Fastq_1, Fastq_2, VcfPath, popt, opt);
 		}
 		else //load ref index
 		{
 			cerr << "Index file exists, loading...\n";
 			Indexer.LoadIndex(RefPath);
-			BwtMapper Mapper(Indexer,Fastq_1, Fastq_2, popt, opt);
+			BwtMapper Mapper(Indexer,Fastq_1, Fastq_2, VcfPath,popt, opt);
 		}
 
 		//output alignment file
