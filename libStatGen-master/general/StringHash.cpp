@@ -18,7 +18,6 @@
 #include "StringHash.h"
 #include "InputFile.h"
 #include "Error.h"
-
 StringHash::StringHash(int startsize)
     : StringHashBase()
 {

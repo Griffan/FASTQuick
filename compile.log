@@ -1,0 +1,240 @@
+In file included from libbwa/bntseq.c:35:0:
+libbwa/bntseq.c: In function ‘int ks_getuntil(kstream_t*, int, kstring_t*, int*)’:
+libbwa/kseq.h:107:42: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    if (str->m - str->l < i - ks->begin + 1) {     \
+                                          ^
+libbwa/kseq.h:128:2: note: in expansion of macro ‘__KS_GETUNTIL’
+  __KS_GETUNTIL(__read, __bufsize)
+  ^
+libbwa/kseq.h:203:2: note: in expansion of macro ‘KSTREAM_INIT’
+  KSTREAM_INIT(type_t, __read, 4096)   \
+  ^
+libbwa/bntseq.c:36:1: note: in expansion of macro ‘KSEQ_INIT’
+ KSEQ_INIT(gzFile, gzread)
+ ^
+libbwa/bntseq.c: In function ‘bntseq_t* bns_restore_core(const char*, const char*, const char*)’:
+libbwa/bntseq.c:97:56: warning: ignoring return value of ‘int fscanf(FILE*, const char*, ...)’, declared with attribute warn_unused_result [-Wunused-result]
+   fscanf(fp, "%lld%d%u", &xx, &bns->n_seqs, &bns->seed);
+                                                        ^
+libbwa/bntseq.c:105:35: warning: ignoring return value of ‘int fscanf(FILE*, const char*, ...)’, declared with attribute warn_unused_result [-Wunused-result]
+    fscanf(fp, "%u%s", &p->gi, str);
+                                   ^
+libbwa/bntseq.c:113:52: warning: ignoring return value of ‘int fscanf(FILE*, const char*, ...)’, declared with attribute warn_unused_result [-Wunused-result]
+    fscanf(fp, "%lld%d%d", &xx, &p->len, &p->n_ambs);
+                                                    ^
+libbwa/bntseq.c:122:54: warning: ignoring return value of ‘int fscanf(FILE*, const char*, ...)’, declared with attribute warn_unused_result [-Wunused-result]
+   fscanf(fp, "%lld%d%d", &xx, &n_seqs, &bns->n_holes);
+                                                      ^
+libbwa/bntseq.c:128:45: warning: ignoring return value of ‘int fscanf(FILE*, const char*, ...)’, declared with attribute warn_unused_result [-Wunused-result]
+    fscanf(fp, "%lld%d%s", &xx, &p->len, str);
+                                             ^
+libbwa/bwape.c: In function ‘int pairing(bwa_seq_t**, pe_data_t*, const pe_opt_t*, int, const isize_info_t*)’:
+libbwa/bwape.c:134:26: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for (i = 0; i < d->arr.n; ++i) {//foreach hit
+                          ^
+In file included from libbwa/bwape.c:1:0:
+libbwa/bwape.h:37:55: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if((u) != (uint64_t) -1 &&(v) >>32 > (u)>>32 && l >= max_len \
+                                                       ^
+libbwa/bwape.c:139:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][1], x);//if x is reverse then using this function check both forward and reverse strand
+     ^
+libbwa/bwape.h:38:77: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    && ((ii->high && l <=ii -> high_bayesian) || (ii->high == 0 && l <= opt->max_isize))) \
+                                                                             ^
+libbwa/bwape.c:139:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][1], x);//if x is reverse then using this function check both forward and reverse strand
+     ^
+libbwa/bwape.h:37:55: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if((u) != (uint64_t) -1 &&(v) >>32 > (u)>>32 && l >= max_len \
+                                                       ^
+libbwa/bwape.c:140:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][0], x);
+     ^
+libbwa/bwape.h:38:77: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    && ((ii->high && l <=ii -> high_bayesian) || (ii->high == 0 && l <= opt->max_isize))) \
+                                                                             ^
+libbwa/bwape.c:140:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][0], x);
+     ^
+libbwa/bwape.c:147:26: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for (i = 0; i < d->arr.n; ++i) {
+                          ^
+In file included from libbwa/bwape.c:1:0:
+libbwa/bwape.h:37:55: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if((u) != (uint64_t) -1 &&(v) >>32 > (u)>>32 && l >= max_len \
+                                                       ^
+libbwa/bwape.c:152:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][1], x);
+     ^
+libbwa/bwape.h:38:77: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    && ((ii->high && l <=ii -> high_bayesian) || (ii->high == 0 && l <= opt->max_isize))) \
+                                                                             ^
+libbwa/bwape.c:152:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][1], x);
+     ^
+libbwa/bwape.h:37:55: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  if((u) != (uint64_t) -1 &&(v) >>32 > (u)>>32 && l >= max_len \
+                                                       ^
+libbwa/bwape.c:153:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][0], x);
+     ^
+libbwa/bwape.h:38:77: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    && ((ii->high && l <=ii -> high_bayesian) || (ii->high == 0 && l <= opt->max_isize))) \
+                                                                             ^
+libbwa/bwape.c:153:5: note: in expansion of macro ‘__pairing_aux’
+     __pairing_aux(last_pos[y][0], x);
+     ^
+libbwa/bwape.c:171:55: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    else if ((subo_score>>32) - (o_score>>32) > s_mm * 10) mapQ_p = 23; // poor sub-optimal pair
+                                                       ^
+libbwa/bwape.c: In function ‘bwa_cigar_t* bwa_sw_core(bwtint_t, const ubyte_t*, int, const ubyte_t*, int64_t*, int, int*, uint32_t*)’:
+libbwa/bwape.c:363:25: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for (k = 0, x = 0; k < len; ++k)
+                         ^
+libbwa/bwape.c:369:28: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for (k = *beg, l = 0; l < reglen && k < l_pac; ++k)
+                            ^
+libbwa/bwape.c:382:30: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for (k = 0, x = y = 0; k < *n_cigar; ++k) {
+                              ^
+libbwa/bwape.c:418:20: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for (k = 0; k < *n_cigar; ++k) {
+                    ^
+libbwa/bwape.c: In function ‘ubyte_t* bwa_paired_sw(const bntseq_t*, const ubyte_t*, int, bwa_seq_t**, const pe_opt_t*, const isize_info_t*)’:
+libbwa/bwape.c:447:48: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+   fread(pacseq, 1, bns->l_pac/4+1, bns->fp_pac);
+                                                ^
+libbwa/bwase.c: In function ‘void bwa_aln2seq_core(int, const bwt_aln1_t*, bwa_seq_t*, int, int)’:
+libbwa/bwase.c:62:47: warning: invalid conversion from ‘void*’ to ‘bwt_multi1_t*’ [-fpermissive]
+   s->multi = calloc(rest, sizeof(bwt_multi1_t));
+                                               ^
+libbwa/bwase.c:65:27: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    if (q->l - q->k + 1 <= rest) {
+                           ^
+libbwa/bwase.c:75:15: warning: variable ‘k’ set but not used [-Wunused-but-set-variable]
+     int j, i, k;
+               ^
+libbwa/bwase.c: In function ‘char* bwa_cal_md1(int, bwa_cigar_t*, int, bwtint_t, ubyte_t*, ubyte_t*, int*, bwtint_t, ubyte_t*, kstring_t*, int*)’:
+libbwa/bwase.c:274:33: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for (z = u = 0; z < (bwtint_t)len; ++z) {
+                                 ^
+libbwa/bwase.c: In function ‘void bwa_correct_trimmed(bwa_seq_t*)’:
+libbwa/bwase.c:301:54: warning: invalid conversion from ‘void*’ to ‘bwa_cigar_t* {aka short unsigned int*}’ [-fpermissive]
+     s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
+                                                      ^
+libbwa/bwase.c:305:66: warning: invalid conversion from ‘void*’ to ‘bwa_cigar_t* {aka short unsigned int*}’ [-fpermissive]
+     s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
+                                                                  ^
+libbwa/bwase.c:315:54: warning: invalid conversion from ‘void*’ to ‘bwa_cigar_t* {aka short unsigned int*}’ [-fpermissive]
+     s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
+                                                      ^
+libbwa/bwase.c:319:66: warning: invalid conversion from ‘void*’ to ‘bwa_cigar_t* {aka short unsigned int*}’ [-fpermissive]
+     s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
+                                                                  ^
+libbwa/bwase.c: In function ‘void bwa_refine_gapped(const bntseq_t*, int, bwa_seq_t*, ubyte_t*, bntseq_t*)’:
+libbwa/bwase.c:388:33: warning: invalid conversion from ‘ubyte_t* {aka unsigned char*}’ to ‘const char*’ [-fpermissive]
+    char* tmp_qual=strdup(s->qual);
+                                 ^
+libbwa/bwase.c:389:51: warning: invalid conversion from ‘char*’ to ‘ubyte_t* {aka unsigned char*}’ [-fpermissive]
+    if( s->strand)  seq_reverse(s->len, tmp_qual, 0);
+                                                   ^
+In file included from libbwa/bwase.h:6:0,
+                 from libbwa/bwase.c:8:
+libbwa/bwtaln.h:139:7: warning:   initializing argument 2 of ‘void seq_reverse(int, ubyte_t*, int)’ [-fpermissive]
+  void seq_reverse(int len, ubyte_t *seq, int is_comp);
+       ^
+libbwa/bwase.c: In function ‘void bwa_print_sam1(const bntseq_t*, bwa_seq_t*, const bwa_seq_t*, int, int)’:
+libbwa/bwase.c:476:17: warning: variable ‘m_is_N’ set but not used [-Wunused-but-set-variable]
+    int m_seqid, m_is_N;
+                 ^
+libbwa/bwase.c:509:53: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘long unsigned int’ [-Wformat=]
+    if (mate) printf("\tSM:i:%d\tAM:i:%d", p->seQ, am);
+                                                     ^
+libbwa/bwase.c:511:30: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘long unsigned int’ [-Wformat=]
+     printf("\tX0:i:%d", p->c1);
+                              ^
+libbwa/bwase.c:512:53: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘long unsigned int’ [-Wformat=]
+     if (p->c1 <= max_top2) printf("\tX1:i:%d", p->c2);
+                                                     ^
+libbwa/bwase.c: In function ‘int bwa_set_rg(const char*)’:
+libbwa/bwase.c:607:33: warning: invalid conversion from ‘void*’ to ‘char*’ [-fpermissive]
+  bwa_rg_id = calloc(q - p + 1, 1);
+                                 ^
+libbwa/bwase.c: In function ‘void bwa_refine_gapped(const bntseq_t*, int, bwa_seq_t*, ubyte_t*, bntseq_t*)’:
+libbwa/bwase.c:337:53: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+   fread(ntpac, 1, ntbns->l_pac/4 + 1, ntbns->fp_pac);
+                                                     ^
+libbwa/bwase.c:343:48: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+   fread(pacseq, 1, bns->l_pac/4+1, bns->fp_pac);
+                                                ^
+libbwa/bwase.c: In function ‘void bwa_sai2sam_se_core(const char*, const char*, const char*, int)’:
+libbwa/bwase.c:632:42: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+  fread(&opt, sizeof(gap_opt_t), 1, fp_sa);
+                                          ^
+libbwa/bwase.c:648:30: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+    fread(&n_aln, 4, 1, fp_sa);
+                              ^
+libbwa/bwase.c:653:48: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’, declared with attribute warn_unused_result [-Wunused-result]
+    fread(aln, sizeof(bwt_aln1_t), n_aln, fp_sa);
+                                                ^
+In file included from libbwa/bwaseqio.c:7:0:
+libbwa/bwaseqio.c: In function ‘int ks_getuntil(kstream_t*, int, kstring_t*, int*)’:
+libbwa/kseq.h:107:42: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    if (str->m - str->l < i - ks->begin + 1) {     \
+                                          ^
+libbwa/kseq.h:128:2: note: in expansion of macro ‘__KS_GETUNTIL’
+  __KS_GETUNTIL(__read, __bufsize)
+  ^
+libbwa/kseq.h:203:2: note: in expansion of macro ‘KSTREAM_INIT’
+  KSTREAM_INIT(type_t, __read, 4096)   \
+  ^
+libbwa/bwaseqio.c:8:1: note: in expansion of macro ‘KSEQ_INIT’
+ KSEQ_INIT(gzFile, gzread)
+ ^
+libbwa/bwaseqio.c: In function ‘bwa_seq_t* bwa_read_seq(bwa_seqio_t*, int, int*, int, int)’:
+libbwa/bwaseqio.c:161:30: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
+                              ^
+libbwa/bwaseqio.c:162:21: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+                     ^
+libbwa/bwaseqio.c:168:24: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+    for (; i < seq->seq.l; ++i)
+                        ^
+libbwa/bwaseqio.c:172:34: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     for (i = l_bc; i < seq->qual.l; ++i)
+                                  ^
+In file included from libStatGen-master/include/SamReferenceInfo.h:22:0,
+                 from libStatGen-master/include/SamFileHeader.h:24,
+                 from libbwa/../BwtMapper.h:14,
+                 from libbwa/bwtaln.c:14:
+libStatGen-master/include/StringHash.h: In member function ‘unsigned int StringHashBase::getKey(const String&) const’:
+libStatGen-master/include/StringHash.h:55:20: error: reference to ‘hash’ is ambiguous
+             return(hash(string.uchar(), string.Length(), 0));
+                    ^
+In file included from libStatGen-master/include/StringHash.h:23:0,
+                 from libStatGen-master/include/SamReferenceInfo.h:22,
+                 from libStatGen-master/include/SamFileHeader.h:24,
+                 from libbwa/../BwtMapper.h:14,
+                 from libbwa/bwtaln.c:14:
+libStatGen-master/include/Hash.h:21:14: note: candidates are: unsigned int hash(const unsigned char*, unsigned int, unsigned int)
+ unsigned int hash(const unsigned char * key, unsigned int length, unsigned int initval);
+              ^
+In file included from /usr/include/c++/4.8/bits/basic_string.h:3033:0,
+                 from /usr/include/c++/4.8/string:52,
+                 from /usr/include/c++/4.8/stdexcept:39,
+                 from /usr/include/c++/4.8/array:38,
+                 from /usr/include/c++/4.8/tuple:39,
+                 from /usr/include/c++/4.8/unordered_map:41,
+                 from libbwa/../BwtIndexer.h:15,
+                 from libbwa/../BwtMapper.h:10,
+                 from libbwa/bwtaln.c:14:
+/usr/include/c++/4.8/bits/functional_hash.h:58:12: note:                 template<class _Tp> struct std::hash
+     struct hash;
+            ^
+libbwa/bwtaln.c: At global scope:
+libbwa/bwtaln.c:19:24: warning: ‘g_seq_lock’ defined but not used [-Wunused-variable]
+ static pthread_mutex_t g_seq_lock = PTHREAD_MUTEX_INITIALIZER;
+                        ^
+make: *** [libbwa/bwtaln.o] Error 1
