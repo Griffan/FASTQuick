@@ -11,36 +11,50 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-
+using namespace std;
 StatCollector::StatCollector()
 {
 	// TODO Auto-generated constructor stub
 	cerr << "Using default initializer..." << endl;
 	PositionTable.clear();
 	VcfRecVec.clear();
+	duplicateTable.clear();
+	VariantProxyTable.clear();
+	GC.clear();
 	index = 0;
-	DepthDist = vector<uint64_t>(256, 0);
-	GCDist = vector<uint64_t>(256, 0);
-	EmpRepDist = vector<uint64_t>(256, 0);
-	misEmpRepDist = vector<uint64_t>(256, 0);
-	EmpCycleDist = vector<uint64_t>(256, 0);
-	misEmpCycleDist = vector<uint64_t>(256, 0);
+	total_base = 0;
+	total_region_size = 0;
+	DepthDist = vector<int>(256, 0);
+	GCDist = vector<int>(256, 0);
+	EmpRepDist = vector<int>(256, 0);
+	misEmpRepDist = vector<int>(256, 0);
+	EmpCycleDist = vector<int>(256, 0);
+	misEmpCycleDist = vector<int>(256, 0);
+	InsertSizeDist = vector<int>(2048, 0);
+	MaxInsertSizeDist = vector<int>(2048, 0);
 }
 StatCollector::StatCollector(const string & OutFile)
 {
 	PositionTable.clear();
 	VcfRecVec.clear();
+	duplicateTable.clear();
+	VariantProxyTable.clear();
+	GC.clear();
 	index = 0;
-	DepthDist = vector<uint64_t>(256, 0);
-	GCDist = vector<uint64_t>(256, 0);
-	EmpRepDist = vector<uint64_t>(256, 0);
-	misEmpRepDist = vector<uint64_t>(256, 0);
-	EmpCycleDist = vector<uint64_t>(256, 0);
-	misEmpCycleDist = vector<uint64_t>(256, 0);
+	total_base = 0;
+	total_region_size = 0;
+	DepthDist = vector<int>(256, 0);
+	GCDist = vector<int>(256, 0);
+	EmpRepDist = vector<int>(256, 0);
+	misEmpRepDist = vector<int>(256, 0);
+	EmpCycleDist = vector<int>(256, 0);
+	misEmpCycleDist = vector<int>(256, 0);
+	InsertSizeDist = vector<int>(2048, 0);
+	MaxInsertSizeDist = vector<int>(2048, 0);
 }
-//int StatCollector::addAlignment(const string & PosName, const string & seq, const string & qual, const int & n_cigar, const bwa_cigar_t * cigar, const unsigned int & pos, const gap_opt_t* opt)
+
 int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
-		const gap_opt_t* opt)
+		const gap_opt_t* opt) // TODO: cycle of reverse read need to be fixed
 {
 	int seqid(0), j(0);
 
@@ -51,7 +65,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	}
 	else
 	{
-		j = pos_end(p) - p->pos;
+		j = pos_end(p) - p->pos; //length of read
 	}
 	bns_coor_pac2real(bns, p->pos, j, &seqid);
 	if (p->type != BWA_TYPE_NO_MATCH
@@ -90,7 +104,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		else if (MD[i] == '^')
 		{
 			i++;
-			while (!isdigit(MD[i]))
+			while (!isdigit(MD[i])) // we don't need to take care of Deletion
 			{
 				i++;
 				total_len++;
@@ -105,9 +119,10 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 			last = i + 1;
 		}
 
+	//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
+
 	string PosName = string(bns->anns[seqid].name);
-	int n_cigar = p->n_cigar;
-	bwa_cigar_t* cigar = p->cigar;
+
 	int pos = (int) (p->pos - bns->anns[seqid].offset + 1);
 
 	size_t colonPos = PosName.find(":");
@@ -116,58 +131,107 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	unsigned int refCoord = atoi(
 			PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
 	size_t slashPos = PosName.find("/");
-	string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
-	unsigned int realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+	//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
+	unsigned int realCoord(0);
+	if (PosName[PosName.size() - 1] == 'L')
+	{
+		realCoord = refCoord - opt->flank_len * 2 + pos - 1; //real coordinate of current reads on reference
+	}
+	else
+	{
+		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+	}
 
-	unsigned int tmpCycle = 0;
+	unsigned int tmpCycle = 0, tmpCycleVcfTable(0);
+	char sign[2] =
+	{ 1, -1 };
+	if (p->strand != 0)
+	{
+		tmpCycle = p->len - 1;
+	}
 
 	unsigned int tmp_index = 0;
+	//cerr << p->name << "\t" << PosName<<"\t"<<pos<<"\t"<<Chrom<< "\t" << realCoord << "\t" << MD <<"\t";
 	//cigar string
-	for (int k = 0; k < n_cigar; ++k)
+	if (p->cigar)
 	{
-
-		int cl = __cigar_len(cigar[k]);
-		int cop = "MIDS"[__cigar_op(cigar[k])];
-		switch (cop)
+		int n_cigar = p->n_cigar;
+		bwa_cigar_t* cigar = p->cigar;
+		for (int k = 0; k < n_cigar; ++k)
 		{
-		case 'M':
-			//printf("M");
-			//printf("[%d-%d]", pos, pos + cl - 1);
-			if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-				for (int i = realCoord; i != realCoord + cl - 1 + 1;
-						++i, tmpCycle++)
+
+			int cl = __cigar_len(cigar[k]);
+			int cop = "MIDS"[__cigar_op(cigar[k])];
+			switch (cop)
+			{
+			case 'M':
+				//cerr<<"M";
+				//cerr<< realCoord<<"-"<< realCoord + cl - 1;
+				/*************************variant site****************************************/
+
+				if (VcfTable.find(Chrom) != VcfTable.end())
 				{
-					std::pair<unordered_map<int, bool>::iterator, bool> ret =
-							VariantProxyTable[Chrom].insert(make_pair(i, 1));
-					if (!ret.second) //if insert failed, this coord exists
-					{
-						tmp_index = PositionTable[Chrom][i];
-						SeqVec[tmp_index] += seq[tmpCycle];
-						QualVec[tmp_index] += qual[tmpCycle];
-						CycleVec[tmp_index].push_back(tmpCycle);
-						MaqVec[tmp_index].push_back(p->mapQ);
-						StrandVec[tmp_index].push_back(p->strand);
-						EmpRepDist[qual[tmpCycle]]++;
-						if (RefSeq[tmpCycle] != seq[tmpCycle])
+					tmpCycleVcfTable = tmpCycle;
+					for (int i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycleVcfTable += 1 * sign[p->strand])
+						if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
 						{
-							misEmpRepDist[qual[tmpCycle]]++;
-							misEmpCycleDist[tmpCycle]++;
+							tmp_index = VcfTable[Chrom][i];
+							SeqVec[tmp_index] += seq[tmpCycleVcfTable];
+							QualVec[tmp_index] += qual[tmpCycleVcfTable];
+							CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+							MaqVec[tmp_index].push_back(p->mapQ);
+							StrandVec[tmp_index].push_back(p->strand);
 						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
-					}
-					else //coord not exists
+				}
+
+				/*****************************************************************************/
+				if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+					for (int i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[p->strand])
 					{
-						SeqVec.push_back(string(""));
-						QualVec.push_back(string(""));
-						CycleVec.push_back(vector<unsigned int>(0));
-						MaqVec.push_back(vector<unsigned char>(0));
-						StrandVec.push_back(vector<bool>(0));
-						SeqVec[index] += seq[tmpCycle];
-						QualVec[index] += qual[tmpCycle];
-						CycleVec[index].push_back(tmpCycle);
-						MaqVec[index].push_back(p->mapQ);
-						StrandVec[index].push_back(p->strand);
+						//std::pair<unordered_map<int, bool>::iterator, bool> ret =
+						//		PositionTable[Chrom].insert(make_pair(i, 1));
+						if (PositionTable[Chrom].find(i)
+								!= PositionTable[Chrom].end())//!ret.second) //if insert failed, this coord exists
+						{
+							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+							tmp_index = PositionTable[Chrom][i];
+							DepthVec[tmp_index]++;
+							EmpRepDist[qual[tmpCycle]]++;
+							if (RefSeq[tmpCycle] != seq[tmpCycle])
+							{
+								misEmpRepDist[qual[tmpCycle]]++;
+								misEmpCycleDist[tmpCycle]++;
+							}
+							/************EmpCycle**************************************************************/
+							EmpCycleDist[tmpCycle]++;
+						}
+						else //coord not exists
+						{
+							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+							DepthVec.push_back(0);
+							DepthVec[index]++;
+							PositionTable[Chrom][i] = index;
+							index++;
+							EmpRepDist[qual[tmpCycle]]++;
+							if (RefSeq[tmpCycle] != seq[tmpCycle])
+							{
+								misEmpRepDist[qual[tmpCycle]]++;
+								misEmpCycleDist[tmpCycle]++;
+							}
+							/************EmpCycle**************************************************************/
+							EmpCycleDist[tmpCycle]++;
+						}
+					}
+				else // chrom not exists
+				{
+					for (int i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[p->strand])
+					{
+						//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+						DepthVec.push_back(0);
+						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
 						index++;
 						EmpRepDist[qual[tmpCycle]]++;
@@ -180,28 +244,103 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 						EmpCycleDist[tmpCycle]++;
 					}
 				}
-			else // chrom not exists
-			{
-				for (int i = realCoord; i != realCoord + cl - 1 + 1;
-						++i, tmpCycle++)
-				{
-					VariantProxyTable[Chrom][i] = 1;
-					SeqVec.push_back(string(""));
-					QualVec.push_back(string(""));
-					CycleVec.push_back(vector<unsigned int>(0));
-					MaqVec.push_back(vector<unsigned char>(0));
-					StrandVec.push_back(vector<bool>(0));
+				realCoord += cl;
+				break;
 
-					//tmp_index = PositionTable[Chrom][i];
-					//cerr << p->name<<"\trealCoord:"<<i<<"\ttmp index :" << tmp_index <<"\ttmp cycle:"<<tmpCycle << endl;
-					SeqVec[index] += seq[tmpCycle];
-					QualVec[index] += qual[tmpCycle];
-					CycleVec[index].push_back(tmpCycle);
-					MaqVec[index].push_back(p->mapQ);
-					StrandVec[index].push_back(p->strand);
+//	 case BAM_CHARD_CLIP:
+//	      printf("H");
+//	      /* printf("[%d]", pos);  // No coverage
+//	      /* pos is not advanced by this operation
+//	      break;
+
+			case 'S':
+//	      printf("S");
+//	      /* printf("[%d]", pos);  // No coverage
+//	      /* pos is not advanced by this operation
+				tmpCycle += cl * sign[p->strand];
+				break;
+
+			case 'D':
+//	      printf("D");
+				/* printf("[%d-%d]", pos, pos + cl - 1);  // Spans positions, No Coverage*/
+
+				realCoord += cl;
+
+				break;
+
+//	 case BAM_CPAD:
+//	      printf("P");
+				/* printf("[%d-%d]", pos, pos + cl - 1); // Spans positions, No Coverage*/
+//	      pos+=cl;
+//	      break;
+			case 'I':
+//	      printf("I");
+				/* printf("[%d]", pos); // Special case - adds <cl> bp "throughput", but not genomic position "coverage"*/
+				/* How you handle this is application dependent*/
+				/* pos is not advanced by this operation*/
+
+				tmpCycle += cl * sign[p->strand];
+				break;
+
+//	 case BAM_CREF_SKIP:
+//	      printf("S");
+				//   printf("[%d-%d]", pos, pos + cl - 1); /* Spans positions, No Coverage*/
+//	      pos+=cl;
+//	      break;
+
+			default:
+				fprintf(stderr, "Unhandled cigar_op %d:%d\n", cop, cl);
+				printf("?");
+			}
+		}			//end for
+	}
+	else
+	{
+		/*************************variant site****************************************/
+
+		if (VcfTable.find(Chrom) != VcfTable.end())
+		{
+			tmpCycleVcfTable = tmpCycle;
+			for (int i = realCoord; i != realCoord +p->len - 1 + 1;
+					++i, tmpCycleVcfTable += 1 * sign[p->strand])
+				if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+				{
+					tmp_index = VcfTable[Chrom][i];
+					SeqVec[tmp_index] += seq[tmpCycleVcfTable];
+					QualVec[tmp_index] += qual[tmpCycleVcfTable];
+					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+					MaqVec[tmp_index].push_back(p->mapQ);
+					StrandVec[tmp_index].push_back(p->strand);
+				}
+		}
+		/************************************************************************************/
+		if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+			for (int i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycle += 1 * sign[p->strand])
+			{
+				//std::pair<unordered_map<int, bool>::iterator, bool> ret =
+				//		PositionTable[Chrom].insert(make_pair(i, 1));
+				if (PositionTable[Chrom].find(i) != PositionTable[Chrom].end())	//!ret.second) //if insert failed, this coord exists
+				{
+					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+					tmp_index = PositionTable[Chrom][i];
+					DepthVec[tmp_index]++;
+					EmpRepDist[qual[tmpCycle]]++;
+					if (RefSeq[tmpCycle] != seq[tmpCycle])
+					{
+						misEmpRepDist[qual[tmpCycle]]++;
+						misEmpCycleDist[tmpCycle]++;
+					}
+					/************EmpCycle**************************************************************/
+					EmpCycleDist[tmpCycle]++;
+				}
+				else //coord not exists
+				{
+					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+					DepthVec.push_back(0);
+					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
 					index++;
-
 					EmpRepDist[qual[tmpCycle]]++;
 					if (RefSeq[tmpCycle] != seq[tmpCycle])
 					{
@@ -212,340 +351,581 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					EmpCycleDist[tmpCycle]++;
 				}
 			}
-
-		realCoord += cl;
-		break;
-
-//	 case BAM_CHARD_CLIP:
-//	      printf("H");
-//	      /* printf("[%d]", pos);  // No coverage
-//	      /* pos is not advanced by this operation
-//	      break;
-
-		case 'S':
-//	      printf("S");
-//	      /* printf("[%d]", pos);  // No coverage
-//	      /* pos is not advanced by this operation
-		tmpCycle += cl;
-		break;
-
-		case 'D':
-//	      printf("D");
-		/* printf("[%d-%d]", pos, pos + cl - 1);  // Spans positions, No Coverage*/
-
-		realCoord += cl;
-
-		break;
-
-//	 case BAM_CPAD:
-//	      printf("P");
-		/* printf("[%d-%d]", pos, pos + cl - 1); // Spans positions, No Coverage*/
-//	      pos+=cl;
-//	      break;
-		case 'I':
-//	      printf("I");
-		/* printf("[%d]", pos); // Special case - adds <cl> bp "throughput", but not genomic position "coverage"*/
-		/* How you handle this is application dependent*/
-		/* pos is not advanced by this operation*/
-
-		tmpCycle += cl;
-		break;
-
-//	 case BAM_CREF_SKIP:
-//	      printf("S");
-		//   printf("[%d-%d]", pos, pos + cl - 1); /* Spans positions, No Coverage*/
-//	      pos+=cl;
-//	      break;
-
-		default:
-		fprintf(stderr, "Unhandled cigar_op %d:%d\n", cop, cl);
-		printf("?");
+		else // chrom not exists
+		{
+			for (int i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycle += 1 * sign[p->strand])
+			{
+				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+				DepthVec.push_back(0);
+				DepthVec[index]++;
+				PositionTable[Chrom][i] = index;
+				index++;
+				EmpRepDist[qual[tmpCycle]]++;
+				if (RefSeq[tmpCycle] != seq[tmpCycle])
+				{
+					misEmpRepDist[qual[tmpCycle]]++;
+					misEmpCycleDist[tmpCycle]++;
+				}
+				/************EmpCycle**************************************************************/
+				EmpCycleDist[tmpCycle]++;
+			}
+		}
 	}
+
+	return true;
 }
-return true;
+int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
+		const bwa_seq_t *q, const gap_opt_t* opt, int type, ofstream & fout)
+{
+	int MaxInsert(-1), MaxInsert2(-1);
+	;
+	int j(0), seqid_p(-1), seqid_q(-1);
+	//cerr<<"Duplicate function entered"<<endl;
+	if (type == 1) //q is aligned only
+	{
+		j = pos_end(q) - q->pos; //length of read
+		bns_coor_pac2real(bns, q->pos, j, &seqid_q);
+		MaxInsert = q->pos + j - bns->anns[seqid_q].offset;
+		//cerr<<"Duplicate function exit single q"<<endl;
+		fout << q->name << "\t" << MaxInsert << "\t" << 0 << "\t" << "*" << "\t"
+				<< "*" << "\t" << bns->anns[seqid_q].name << "\t"
+				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+		return 0;
+	}
+	else if (type == 3) //p is aligned only
+	{
+		j = pos_end(p) - p->pos; //length of read
+		bns_coor_pac2real(bns, p->pos, j, &seqid_p);
+		MaxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+		//cerr<<"Duplicate function exit single p"<<endl;
+		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
+				<< bns->anns[seqid_p].name << "\t"
+				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t" << "*" << "\t"
+				<< "*" << endl;
+		return 0;
+	}
+	else if (type == 2) // both aligned
+	{
+		if (p->pos < q->pos)
+		{
+			j = pos_end(q) - q->pos; //length of read
+			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
+			MaxInsert = q->pos + j - bns->anns[seqid_q].offset;
+			j = pos_end(p) - p->pos; //length of read
+			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
+			MaxInsert2 = bns->anns[seqid_p].offset + bns->anns[seqid_p].len
+					- p->pos;
+		}
+		else
+		{
+			j = pos_end(q) - q->pos; //length of read
+			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
+			MaxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len
+					- q->pos;
+			j = pos_end(p) - p->pos; //length of read
+			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
+			MaxInsert2 = p->pos + j - bns->anns[seqid_p].offset;
+		}
+	}
+	else
+	{
+		cerr << "alignment status fatal error!" << endl;
+		exit(1);
+	}
+
+	if (MaxInsert2 > MaxInsert)
+		MaxInsert = MaxInsert2;
+	MaxInsertSizeDist[MaxInsert]++;
+	if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1)
+	{
+		//int ActualInsert(-1);
+		//	ActualInsert=0;
+		InsertSizeDist[0]++;
+		//cerr<<"Duplicate function exit from diff chrom"<<endl;
+		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
+				<< bns->anns[seqid_p].name << "\t"
+				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+				<< bns->anns[seqid_q].name << "\t"
+				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+		return 0;
+	}
+	if (p->mapQ >= 20 && q->mapQ >= 20)
+	{
+		int ActualInsert(-1), start(0), end(0);
+
+		if (p->pos < q->pos)
+		{
+			start = p->pos;
+			end = q->pos + q->len;
+			ActualInsert = end - start;
+		}
+		else
+		{
+			start = q->pos;
+			end = p->pos + p->len;
+			ActualInsert = end - start;
+		}
+		if (ActualInsert < 100000)
+		{
+			InsertSizeDist[ActualInsert]++;
+			fout << p->name << "\t" << MaxInsert << "\t" << ActualInsert << "\t"
+					<< bns->anns[seqid_p].name << "\t"
+					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+					<< bns->anns[seqid_q].name << "\t"
+					<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+			char start_end[256];
+			sprintf(start_end, "%d:%d", start, end);
+			pair<unordered_map<string, bool>::iterator, bool> iter =
+					duplicateTable.insert(make_pair(string(start_end), true));
+			if (!iter.second) //insert failed, duplicated
+			{
+				//	cerr<<"Duplicate function exit from duplicate"<<endl;
+				return 1;
+			}
+		}
+		else
+		{
+			//cerr<<"exit from Inf"<<endl;
+			fout << p->name << "\t" << MaxInsert << "\t" << "Inf" << "\t"
+					<< bns->anns[seqid_p].name << "\t"
+					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+					<< bns->anns[seqid_q].name << "\t"
+					<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+		}
+	}
+	else
+	{
+		//cerr<<"exit from LowQualf"<<endl;
+		fout << p->name << "\t" << MaxInsert << "\t" << "LowQual" << "\t"
+				<< bns->anns[seqid_p].name << "\t"
+				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+				<< bns->anns[seqid_q].name << "\t"
+				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+		return 2; //low quality
+	}
+	/*
+	 // asume the default configuration of two reads are FR
+	 if(type ==1)//q is ,p is not
+	 {
+
+
+	 if(q->strand)//reverse strand
+	 {
+
+	 }
+	 else
+	 {
+
+	 }
+	 }
+	 else if(type ==3)//p is, q is not
+	 {
+
+	 if(p->strand)//reverse strand
+	 {
+
+	 }
+	 else
+	 {
+
+	 }
+	 }
+	 else if(type ==2)// both are
+	 {
+	 int seqid(0), j(0);
+	 j = pos_end(q) - q->pos;
+	 bns_coor_pac2real(bns, q->pos, j, &seqid);
+	 string PosName = string(bns->anns[seqid].name);
+	 int pos = (int) (q->pos - bns->anns[seqid].offset + 1);
+	 if(bns->anns[seqid].len < opt->flank_len*3)// not long ref
+	 return 0;
+
+	 }
+	 else
+	 {
+	 cerr<<"Fatal Error in Insert Size estimation!"<<endl;
+	 }*/
+	//cerr<<"Duplicate function exit from end"<<endl;
+	return 0;
+}
+
+int StatCollector::addPairAlignment(const bntseq_t *bns, bwa_seq_t *p,
+		bwa_seq_t *q, const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
+{
+
+	if (p->type == BWA_TYPE_NO_MATCH)
+	{
+		if (q->type == BWA_TYPE_NO_MATCH || isPartialAlign(q)) //both end are not mapped or only one parially mapped
+			return 0;
+		else // q is perfectly aligned, p is not
+		{
+			if (IsDuplicated(bns, p, q, opt, 1, fout) != 1 || opt->cal_dup)
+			{
+				if (addAlignment(bns, q, opt))
+					total_add++;
+			}
+			else
+				return 0;
+		}
+	}
+	else if (isPartialAlign(p)) //p is partially aligned
+	{
+		if (q->type == BWA_TYPE_NO_MATCH)
+			return 0;
+		else // p is partially aligned q is aligned too
+		{
+			if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
+			{
+				if (addAlignment(bns, p, opt) && addAlignment(bns, q, opt))
+					total_add += 2;
+			}
+			return 0;
+		}
+	}
+	else //p is perfectly aligned
+	{
+		if (q->type == BWA_TYPE_NO_MATCH) // p is perfectly aligned, q is not
+		{
+			if (IsDuplicated(bns, p, q, opt, 3, fout) != 1 || opt->cal_dup)
+			{
+				if (addAlignment(bns, p, opt))
+					total_add++;
+			}
+			else
+				return 0;
+		}
+		else // p and q are both aligned
+		{
+			if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
+			{
+				if (addAlignment(bns, p, opt) && addAlignment(bns, q, opt))
+					total_add += 2;
+			}
+			else
+				return 0;
+		}
+	}
+	//cerr << "currently added reads " << total_add << endl;
+	return 1;
 }
 int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 {
-VcfHeader header;
-VcfFileReader reader;
-string SelectedSite = VcfPath + ".SelectedSite.vcf";
-if (!reader.open(SelectedSite.c_str(), header))
-{
-	reader.open(VcfPath.c_str(), header);
-}
-while (!reader.isEOF())
-{
-	VcfRecord* VcfLine = new VcfRecord;
 
-	reader.readRecord(*VcfLine);
-	VcfRecVec.push_back(VcfLine);
-
-	string chr(VcfLine->getChromStr());
-	int pos = VcfLine->get1BasedPosition();
-	VcfTable[chr][pos] = VcfRecVec.size() - 1;
-/*
-	int start = pos - opt->flank_len;
-	int end = pos + opt->flank_len;
-
-	if (VariantProxyTable.find(chr) != VariantProxyTable.end())
-		for (int j = start; j != end + 1; ++j)
-		{
-			std::pair<unordered_map<int, bool>::iterator, bool> ret =
-					VariantProxyTable[chr].insert(make_pair(j, 1));
-			if (!ret.second)
-				continue;
-			SeqVec.push_back(string(""));
-			QualVec.push_back(string(""));
-			CycleVec.push_back(vector<unsigned int>(0));
-			MaqVec.push_back(vector<unsigned char>(0));
-			StrandVec.push_back(vector<bool>(0));
-			PositionTable[chr][j] = index;
-			index++;
-		}
-	else
+	VcfHeader header;
+	VcfFileReader reader;
+	string SelectedSite = VcfPath + ".SelectedSite.vcf";
+	if (!reader.open(SelectedSite.c_str(), header))
 	{
-		for (int j = start; j != end + 1; ++j)
+		reader.open(VcfPath.c_str(), header);
+	}
+	string GCpath = VcfPath + ".gc";
+	ifstream FGC(GCpath, ios_base::binary);
+	//int num_so_far(0);
+	while (!reader.isEOF())
+	{
+		VcfRecord* VcfLine = new VcfRecord;
+
+		reader.readRecord(*VcfLine);
+		VcfRecVec.push_back(VcfLine);
+
+		string chr(VcfLine->getChromStr());
+		int pos = VcfLine->get1BasedPosition();
+		VcfTable[chr][pos] = VcfRecVec.size() - 1;
+		_GCstruct GCstruct;
+		GCstruct.read(FGC);
+		int tmp_pos = pos - (GCstruct.len - 1) / 2;
+		for (uint32_t i = 0; i != GCstruct.len; ++i)
 		{
-			VariantProxyTable[chr][j] = 1;
-			SeqVec.push_back(string(""));
-			QualVec.push_back(string(""));
-			CycleVec.push_back(vector<unsigned int>(0));
-			MaqVec.push_back(vector<unsigned char>(0));
-			StrandVec.push_back(vector<bool>(0));
-			PositionTable[chr][j] = index;
-			index++;
+			GC[chr][tmp_pos + i] = GCstruct.GC[i];
 		}
-	}*/
+		//cerr<<chr<<"\t"<<pos<<"\t"<<num_so_far<<endl;
+		//num_so_far++;
 
+		SeqVec.push_back(string(""));
+		QualVec.push_back(string(""));
+		CycleVec.push_back(vector<unsigned int>(0));
+		MaqVec.push_back(vector<unsigned char>(0));
+		StrandVec.push_back(vector<bool>(0));
+		//VcfTable[Chrom][i]=vcf_index;
+		//vcf_index++;
+
+	}
+
+	//string line, Chrom, PosStr, GCStr;
+	//_GCstruct * GCstruct = new _GCstruct [opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
+	//FGC.read((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
+//	for(uint32_t i=0;i!=VcfRecVec.size();++i)
+//	{
+	//	GC[string(GCstruct[i].chrom)][GCstruct[i].pos] = GCstruct[i].GC;
+	//cerr<<GCstruct[i].chrom<<"\t"<<GCstruct[i].pos<<"\t"<<(int)GCstruct[i].GC<<endl;
+	//}
+	//int total=0;
+	//FGC.read((char*) &total, sizeof(int));
+	//cerr<<"the total bytes of gc is :"<<total<<endl;
+	/*
+	 while (getline(FGC, line))
+	 {
+
+	 stringstream ss(line);
+	 ss >> Chrom >> PosStr >> GCStr;
+	 //cerr<<Chrom<<"\t"<<PosStr<<"\t"<<GCStr<<endl;
+	 GC[Chrom][atoi(PosStr.c_str())] = atoi(GCStr.c_str());
+	 }*/
+	//delete GCstruct;
+	FGC.close();
+	return 0;
 }
-string GCpath=VcfPath+".gc";
-ifstream FGC(GCpath);
-string line,Chrom,PosStr,GCStr;
-while(getline(FGC,line))
+int StatCollector::getDepthDist(const string & outputPath)
 {
 
-	stringstream ss(line);
-	ss>>Chrom>>PosStr>>GCStr;
-	//cerr<<Chrom<<"\t"<<PosStr<<"\t"<<GCStr<<endl;
-	GC[Chrom][atoi(PosStr.c_str())]=(unsigned int)floor(atof(GCStr.c_str())*100+0.5);
-}
-FGC.close();
-return 0;
-}
-int StatCollector::getDepthDist(const string & outputPath,
-	const vector<uint64_t> & DepthDist)
-{
-
-ofstream fout(outputPath + ".DepthDist");
-for (int i = 0; i != DepthDist.size(); ++i)
-{
-	fout << i << "\t" << DepthDist[i] << endl;
-}
-fout.close();
-return 0;
+	ofstream fout(outputPath + ".DepthDist");
+	for (uint32_t i = 0; i != DepthDist.size(); ++i)
+	{
+		fout << i << "\t" << DepthDist[i] << endl;
+	}
+	fout.close();
+	return 0;
 }
 
-int StatCollector::getGCDist(const string & outputPath,const vector<uint64_t> & PosNum, const vector<uint64_t> & GCDist)
+int StatCollector::getGCDist(const string & outputPath,
+		const vector<int> & PosNum)
 {
 	ofstream fout(outputPath + ".GCDist");
-	for (int i = 0; i != GCDist.size(); ++i)
+	for (uint32_t i = 0; i != GCDist.size(); ++i)
 	{
-		fout << i << "\t";
-		fout<< PosNum[i]==0?0:(GCDist[i]/double(PosNum[i]) );
-		fout<< endl;
+		fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
+		if (PosNum[i] == 0)
+		{
+			fout << 0;
+		}
+		else
+		{
+			fout << double(GCDist[i]) / PosNum[i];
+		}
+		fout << endl;
 	}
 	fout.close();
 	return 0;
 }
 
 #define PHRED(x)	(-10)*log10(x)
-int StatCollector::getEmpRepDist(const string & outputPath,
-	const vector<uint64_t> & EmpRepDist, const vector<uint64_t> &misEmpRepDist)
+int StatCollector::getEmpRepDist(const string & outputPath)
 {
-ofstream fout(outputPath + ".EmpRepDist");
-for (int i = 0; i != EmpRepDist.size(); ++i)
-{
-	fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i]) << "\t"
-			<< PHRED((double )(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 2))
-			<< endl;
+	ofstream fout(outputPath + ".EmpRepDist");
+	for (uint32_t i = 0; i != EmpRepDist.size(); ++i)
+	{
+		fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
+				<< "\t"
+				<< PHRED((double )(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 2))
+				<< endl;
+	}
+	fout.close();
+	return 0;
 }
-fout.close();
-return 0;
-}
-int StatCollector::getEmpCycleDist(const string & outputPath,
-	const vector<uint64_t> & EmpCycleDist,
-	const vector<uint64_t> misEmpCycleDist)
+int StatCollector::getEmpCycleDist(const string & outputPath)
 {
-ofstream fout(outputPath + ".EmpCycleDist");
-for (int i = 0; i != EmpCycleDist.size(); ++i)
-{
-	fout << i << "\t"
-			<< PHRED((double )(misEmpCycleDist[i] + 1) / (EmpCycleDist[i] + 2))
-			<< endl;
+	ofstream fout(outputPath + ".EmpCycleDist");
+	for (uint32_t i = 0; i != EmpCycleDist.size(); ++i)
+	{
+		fout << i << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
+				<< "\t"
+				<< PHRED(
+						(double )(misEmpCycleDist[i] + 1)
+								/ (EmpCycleDist[i] + 2)) << endl;
+	}
+	fout.close();
+	return 0;
 }
-fout.close();
-return 0;
+int StatCollector::getInsertSizeDist(const string & outputPath)
+{
+	ofstream fout(outputPath + ".InsertSizeDist");
+	for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
+	{
+		fout << i << "\t" << InsertSizeDist[i] << endl;
+	}
+	fout.close();
+	return 0;
 }
 int StatCollector::processCore(const string & statPrefix)
 {
 
-unsigned int VcfIndex = 0;
-unsigned int PosIndex = 0;
-vector<uint64_t> PosNum(256,0);
-for (string_map::iterator i = PositionTable.begin(); i != PositionTable.end();
-		++i) //each chr
-{
-	for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-			++j) //each site
+//unsigned int VcfIndex = 0;
+//unsigned int PosIndex = 0;
+	vector<int> PosNum(256, 0);
+	//int total(0);
+	for (string_map::iterator i = PositionTable.begin();
+			i != PositionTable.end(); ++i) //each chr
 	{
-
-		/************DepthDist**************************************************************/
-		//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\tindex:"<<j->second<<"\t"<<VariantProxyTable[i->first][j->first]<<"\t"<<SeqVec[j->second] <<"\tend"<<endl;
-	//	if (VariantProxyTable[i->first][j->first] == 1) //if this is in a proxy region
+		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
+				++j) //each site
 		{
-			if (SeqVec[j->second].size() > 255)
-				DepthDist[255]++;
-			else
-				DepthDist[SeqVec[j->second].size()]++;
-		}
-		GCDist[GC[i->first][j->first]]+=SeqVec[j->second].size();
-		PosNum[GC[i->first][j->first]]++;
-		//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\t"<<GC[i->first][j->first]<<endl;
-	}
-}
 
-getDepthDist(statPrefix, DepthDist);
-getGCDist(statPrefix, PosNum, GCDist);
-getEmpRepDist(statPrefix, EmpRepDist, misEmpRepDist);
-getEmpCycleDist(statPrefix, EmpCycleDist, misEmpCycleDist);
-return 0;
+			/************DepthDist**************************************************************/
+			//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\tindex:"<<j->second<<"\t"<<VariantProxyTable[i->first][j->first]<<"\t"<<SeqVec[j->second] <<"\tend"<<endl;
+			//	if (VariantProxyTable[i->first][j->first] == 1) //if this is in a proxy region
+			{
+				if (DepthVec[j->second] > 255)
+					DepthDist[255]++;
+				else
+					DepthDist[DepthVec[j->second]]++;
+			}
+			GCDist[GC[i->first][j->first]] += DepthVec[j->second];
+			PosNum[GC[i->first][j->first]]++;
+			//++total;
+			//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\t"<<GC[i->first][j->first]<<"\t"<<total<<endl;
+		}
+	}
+
+	getDepthDist(statPrefix);
+	getGCDist(statPrefix, PosNum);
+	getEmpRepDist(statPrefix);
+	getEmpCycleDist(statPrefix);
+	getInsertSizeDist(statPrefix);
+	outputPileup(statPrefix);
+	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath)
 {
-ofstream fout(outputPath + ".Pileup");
-for (string_map::iterator i = PositionTable.begin(); i != PositionTable.end();
-		++i) //each chr
-{
-	for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-			++j) //each site
+	ofstream fout(outputPath + ".Pileup");
+	for (string_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
 	{
-		fout << i->first << "\t" << j->first << "\t" << SeqVec[j->second]
-				<< "\t" << QualVec[j->second] << "\t";
-		for (int k = 0; k != CycleVec[j->second].size(); ++k)
-			fout << CycleVec[j->second][k];
-		fout << endl;
+		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
+				++j) //each site
+		{
+			if(SeqVec[j->second].size()==0) continue;
+			fout << i->first << "\t" << j->first << "\t" << SeqVec[j->second]
+					<< "\t" << QualVec[j->second] << "\t";
+			for (uint32_t k = 0; k != CycleVec[j->second].size(); ++k)
+			{
+				fout << CycleVec[j->second][k];
+				if(k!=CycleVec[j->second].size()-1)
+				fout<<",";
+			}
+			fout << "\t";
+			for (uint32_t k = 0; k != MaqVec[j->second].size(); ++k)
+			{
+				fout << MaqVec[j->second][k];
+				if(k!=MaqVec[j->second].size()-1)
+				fout<<",";
+			}
+			fout << "\t";
+			for (uint32_t k = 0; k != StrandVec[j->second].size(); ++k)
+				fout << StrandVec[j->second][k];
+			fout << endl;
+		}
 	}
-}
-fout.close();
-return 0;
+	fout.close();
+	return 0;
 }
 
 int findMaxAllele(size_t * a, size_t len)
 {
-int max = 0;
-int maxIndex = 0;
-for (int i = 0; i != len; ++i)
-{
-	if (a[i] > max)
+	int max = 0;
+	int maxIndex = 0;
+	for (uint32_t i = 0; i != len; ++i)
 	{
-		max = a[i];
-		maxIndex = i;
+		if (a[i] > max)
+		{
+			max = a[i];
+			maxIndex = i;
+		}
 	}
-}
-return maxIndex;
+	return maxIndex;
 }
 int countAllele(size_t*a, const string & seq)
 {
-for (int i = 0; i != seq.size(); ++i)
-{
-	if (seq[i] == 'A')
+	for (uint32_t i = 0; i != seq.size(); ++i)
 	{
-		a[0]++;
-		continue;
+		if (seq[i] == 'A')
+		{
+			a[0]++;
+			continue;
+		}
+		if (seq[i] == 'C')
+		{
+			a[1]++;
+			continue;
+		}
+		if (seq[i] == 'G')
+		{
+			a[2]++;
+			continue;
+		}
+		if (seq[i] == 'T')
+		{
+			a[3]++;
+			continue;
+		}
 	}
-	if (seq[i] == 'C')
-	{
-		a[1]++;
-		continue;
-	}
-	if (seq[i] == 'G')
-	{
-		a[2]++;
-		continue;
-	}
-	if (seq[i] == 'T')
-	{
-		a[3]++;
-		continue;
-	}
-}
-return 0;
+	return 0;
 }
 #define REV_PHRED(x)	pow(10.0,x/(-10))
 double calLikelihood(const string & seq, const string & qual, const char& maj,
-	const char& min)
+		const char& min)
 {
-double lik(0);
-if (maj == min)
-	for (int i = 0; i != seq.size(); ++i)
-	{
-		if (seq[i] == maj)
+	double lik(0);
+	if (maj == min)
+		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
-			lik += log10(1 - REV_PHRED(qual[i]));
+			if (seq[i] == maj)
+			{
+				lik += log10(1 - REV_PHRED(qual[i]));
+			}
+			else
+			{
+				lik += log10(REV_PHRED(qual[i]) / 3);
+			}
 		}
-		else
+	else
+	{
+		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
-			lik += log10(REV_PHRED(qual[i]) / 3);
+			if (seq[i] == maj || seq[i] == min)
+			{
+				lik += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
+			}
+			else
+			{
+				lik += log10(REV_PHRED(qual[i]) / 3);
+			}
 		}
 	}
-else
-{
-	for (int i = 0; i != seq.size(); ++i)
-	{
-		if (seq[i] == maj || seq[i] == min)
-		{
-			lik += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
-		}
-		else
-		{
-			lik += log10(REV_PHRED(qual[i]) / 3);
-		}
-	}
-}
-return lik;
+	return lik;
 }
 int StatCollector::getGenoLikelihood(const string & outputPath)
 {
-ofstream fout(outputPath + ".likelihood");
-size_t numAllele[4] =
-{ 0 };
-char majAllele, minAllele;
-int maxIndex = 0;
-for (string_map::iterator i = PositionTable.begin(); i != PositionTable.end();
-		++i) //each chr
-{
-	for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-			++j) //each site
+	ofstream fout(outputPath + ".likelihood");
+	size_t numAllele[4] =
+	{ 0 };
+	char majAllele, minAllele;
+	int maxIndex = 0;
+	for (string_map::iterator i = PositionTable.begin();
+			i != PositionTable.end(); ++i) //each chr
 	{
-		countAllele(numAllele, SeqVec[j->second]);
-		maxIndex = findMaxAllele(numAllele, 4);
-		majAllele = "ACGT"[maxIndex];
-		numAllele[maxIndex] = 0;
-		maxIndex = findMaxAllele(numAllele, 4);
-		minAllele = "ACGT"[maxIndex];
-		fout << i->first << "\t" << j->first << "\t"
-				<< calLikelihood(SeqVec[j->second], QualVec[j->second],
-						majAllele, minAllele);
-		fout << endl;
+		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
+				++j) //each site
+		{
+			countAllele(numAllele, SeqVec[j->second]);
+			maxIndex = findMaxAllele(numAllele, 4);
+			majAllele = "ACGT"[maxIndex];
+			numAllele[maxIndex] = 0;
+			maxIndex = findMaxAllele(numAllele, 4);
+			minAllele = "ACGT"[maxIndex];
+			fout << i->first << "\t" << j->first << "\t"
+					<< calLikelihood(SeqVec[j->second], QualVec[j->second],
+							majAllele, minAllele);
+			fout << endl;
+		}
 	}
-}
-fout.close();
-return 0;
+	fout.close();
+	return 0;
 }
 StatCollector::~StatCollector()
 {
 // TODO Auto-generated destructor stub
-for (int i = 0; i != VcfRecVec.size(); ++i)
-	delete VcfRecVec[i];
+	for (uint32_t i = 0; i != VcfRecVec.size(); ++i)
+		delete VcfRecVec[i];
+
 }
 
