@@ -104,7 +104,12 @@ typedef struct {
 	int max_top2;
 	int trim_qual;
 	int flank_len;
-
+	unsigned int num_variant_short;//short region
+	unsigned int num_variant_long;//long region
+	bool cal_dup;//take duplicated_reads into account when cal depth
+	//bool out_bam;
+	char * RG;
+	char* bam_name;
 } gap_opt_t;
 
 #define BWA_PET_STD   1

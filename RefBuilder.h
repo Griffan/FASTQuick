@@ -9,15 +9,16 @@
 #define REFBUILDER_H_
 #include "Utility.h"
 #include "./libbwa/bwtaln.h"
-using namespace std;
+//using namespace std;
 
 class RefBuilder
 {
 public:
-	vector<string> SeqVec;
-	unordered_map<string,uint32_t > RefTableIndex;
+	std::vector<std::string> SeqVec;
+	std::unordered_map<std::string,uint32_t > RefTableIndex;
+	//unordered_map<string,bool> longRefTable;
 	RefBuilder();
-	RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap_opt_t* opt);
+	RefBuilder(std::string VcfPath,std::string RefPath, std::string MaskPath, const gap_opt_t* opt);//, std::unordered_map<std::string,bool>& longRefTable);
 	virtual ~RefBuilder();
 };
 
