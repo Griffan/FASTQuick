@@ -247,7 +247,6 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 						ksprintf(str, "%d", u);
 						kputc("ACGTN"[c], str);
 						++nm;
-						tmp++;
 						u = 0;
 					} else ++u;
 				}
@@ -278,14 +277,13 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 				ksprintf(str, "%d", u);
 				kputc("ACGTN"[c], str);
 				++nm;
-				tmp++;
 				u = 0;
 			} else ++u;
 		}
 	}
 	ksprintf(str, "%d", u);
 	*_nm = nm;
-	if(tmp>0)*count=*count/tmp;
+
 	return strdup(str->s);
 }
 

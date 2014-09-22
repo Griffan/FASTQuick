@@ -9,17 +9,15 @@
 #define BWTINDEXER_H_
 #include "./libbwa/bntseq.h"
 #include "./libbwa/bwt.h"
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unordered_map>
+#include <cstdio>
+#include <cstdlib>
+//#include <string>
+//#include <unordered_map>
 #include "RefBuilder.h"
-using namespace std;
+//using namespace std;
 #include <sys/stat.h>
 #include <assert.h>
 #include <cmath>
-#include <fstream>
 #include <time.h>
 //Bloom filter parameters
 #define VCF_SITES 10000
@@ -29,7 +27,8 @@ using namespace std;
 #define PROCESS_RATIO 0.5
 #define READ_STEP_SIZE 1
 
-struct _RollParam{
+struct _RollParam
+{
 	int kmer_size;
 	int read_step_size;
 	int thresh;
@@ -41,58 +40,74 @@ class BwtIndexer
 {
 public:
 
+	bntseq_t *bns;
+	int l_buf;
+	ubyte_t * pac_buf;
+	ubyte_t * rpac_buf;
+	unsigned char* bwt_buf;
+	unsigned char* rbwt_buf;
 
-		bntseq_t *bns;
-		int l_buf;
-		ubyte_t * pac_buf;
-		ubyte_t * rpac_buf;
-		unsigned char* bwt_buf;
-		unsigned char* rbwt_buf;
+	int32_t m_pac_buf, m_rpac_buf, m_bwt_buf, m_rbwt_buf;
 
+	bwt_t *bwt_d;
+	bwt_t *rbwt_d;
 
-		int32_t m_pac_buf,m_rpac_buf,m_bwt_buf,m_rbwt_buf;
-
-
-
-		bwt_t *bwt_d;
-		bwt_t *rbwt_d;
-
+	std::unordered_map<std::string, bool> longRefTable;
 
 	BwtIndexer();
-	BwtIndexer(string & prefix);
-	BwtIndexer(RefBuilder & ArtiRef,string & prefix);
-	bool LoadIndex(string & prefix);
-	bool BuildIndex(RefBuilder & ArtiRef,string & prefix, const gap_opt_t * opt);
+
+	BwtIndexer(std::string & prefix);
+
+	BwtIndexer(RefBuilder & ArtiRef, std::string & prefix);
+
+	bool LoadIndex(std::string & prefix);
+
+	bool BuildIndex(RefBuilder & ArtiRef, std::string & prefix,
+			const gap_opt_t * opt);
+
 	bool Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_t* op);
+
 	bool Fa2RevPac(const char * prefix);
-	bwt_t*  Pac2Bwt(unsigned char * pac);
+
+	bwt_t* Pac2Bwt(unsigned char * pac);
+
 	void bwt_bwtupdate_core(bwt_t *bwt);
+
 	void bwt_cal_sa(bwt_t *bwt, int intv);
+
+	bool IsReadHighQ(const ubyte_t *Q, int len);
+
+	bool IsKmerInHash(uint64_t kmer);
+
+	bool IsReadInHash(const ubyte_t * S, int len);
+
+	//typedef uint32_t v4si __attribute__ ((vector_size (16)));
+	bool IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len);
 
 #ifdef BLOOM_FPP
 #include "bloom_filter.hpp"
 	bloom_parameters parameters;
 	bloom_filter filter;
 	ubyte_t BloomReadBuff[KMER_SIZE+1];
-	inline void AddSeq2BloomFliter(const string & Seq)
+	inline void AddSeq2BloomFliter(const std::string & Seq)
 	{
-		//string tmp;
+		//std::string tmp;
 		for(int i=0;i!=Seq.length()-KMER_SIZE/*last one considered*/;++i)
 		{
 			//tmp=Seq.substr(i,KMER_SIZE);
 			//for(int j=0;j!=KMER_SIZE;++j)
 			//tmp[i]=nst_nt4_table[(int)tmp[i]];
 			//printf("/*******now insert: %s**************/\n",Seq.substr(i,KMER_SIZE).c_str());
-			 filter.insert(Seq.substr(i,KMER_SIZE));
+			filter.insert(Seq.substr(i,KMER_SIZE));
 
 		}
 	}
 
-	inline bool IsReadInHash( const char  * S, int len)
+	inline bool IsReadInHash( const char * S, int len)
 	{
-		//string Seq(S);
+		//std::string Seq(S);
 		int processed(0);
-		int total= len-KMER_SIZE+1;
+		//int total= len-KMER_SIZE+1;
 
 		for(int i=0;i<len-KMER_SIZE/*last one considered*/;i+=READ_STEP_SIZE,++processed)
 		{
@@ -100,17 +115,17 @@ public:
 			//assert(BloomReadBuff!=0);
 			//printf("/*********************/\n");
 			//for(int j=0;j!=KMER_SIZE;++j)
-				//printf("number %d : %d\n",i,S[i]);
+			//printf("number %d : %d\n",i,S[i]);
 			//printf("/*********************/\n");
 			//memcpy(BloomReadBuff,&S[i],KMER_SIZE*sizeof(char));
 			//BloomReadBuff[KMER_SIZE]='\0';
-			//printf("/*******now test: %s**************/\n",string(BloomReadBuff).c_str());
-			if(filter.contains(string(S).substr(i,KMER_SIZE)))
-			 {
+			//printf("/*******now test: %s**************/\n",std::string(BloomReadBuff).c_str());
+			if(filter.contains(std::string(S).substr(i,KMER_SIZE)))
+			{
 				return true;
-			 }
+			}
 			//else if (total*READ_STEP_SIZE>PROCESS_RATIO*total)
-				//return false;
+			//return false;
 		}
 //		if(double(hit)/total > HIT_RATIO)// is in hash
 //		{
@@ -118,27 +133,27 @@ public:
 //			return true;
 //		}
 //		else
-			{
-				//printf("the total is: %d\n the hit is : %d\n the ratio is :%f\n",total,hit, double(hit)/total);
-				return false;
-			}
+		{
+			//printf("the total is: %d\n the hit is : %d\n the ratio is :%f\n",total,hit, double(hit)/total);
+			return false;
+		}
 	}
 
 #else
 	_RollParam RollParam;
 	//Fast Rolling Hash parameters
-	#define OVERFLOWED_KMER_SIZE 32
-	#define LSIZE(k)     (1L << (2*(k)))    /* language size, 4096, 16384          */
-	#define LOMEGA(k)    (LSIZE(k)-1)      /* last (all-one) word, 4095, 16383,   */
-	#define MERMASK(k)   ((1 << (k))-1)    /* 6->63 and 7->127 (K-bits-all-one)   */
+#define OVERFLOWED_KMER_SIZE 32
+#define LSIZE(k)     (1L << (2*(k)))    /* language size, 4096, 16384          */
+#define LOMEGA(k)    (LSIZE(k)-1)      /* last (all-one) word, 4095, 16383,   */
+#define MERMASK(k)   ((1 << (k))-1)    /* 6->63 and 7->127 (K-bits-all-one)   */
 
-	#define min_only(X,Y) ((X) < (Y) ? (X) : (Y))
+#define min_only(X,Y) ((X) < (Y) ? (X) : (Y))
 
 #define KMER_32 1
 #ifdef KMER_8
 	unsigned int mask[6]=
 	{	240, //11110000
-		15,	 //00001111
+		15,//00001111
 		195,//11000011
 		60,//00111100
 		204,//11001100
@@ -146,184 +161,75 @@ public:
 #endif
 #ifdef KMER_16
 	unsigned int mask[6] =
-	{ 65280, //1111111100000000
-			255, //0000000011111111
-			61455, //1111000000001111
-			4080, //00001111111110000
-			12528, //1111000011110000
-			3855 }; //0000111100001111
+	{	65280, //1111111100000000
+		255,//0000000011111111
+		61455,//1111000000001111
+		4080,//00001111111110000
+		12528,//1111000011110000
+		3855}; //0000111100001111
 #endif
 #ifdef KMER_32
 	unsigned int mask[6] =
-	{
-		0xffff0000,
-		0xffff,
-		0xff0000ff,
-		0xffff00,
-		0xff00ff00,
-		0xff00ff
-	};
+	{ 0xffff0000, 0xffff, 0xff0000ff, 0xffff00, 0xff00ff00, 0xff00ff };
 #endif
 
 	unsigned char * roll_hash_table[6]; //11110000
 
-	//unsigned char * roll_hash_table2;//00001111
-
-	//unsigned char * roll_hash_table3;//11000011
-
-	//unsigned char * roll_hash_table4;//00111100
-
-	//unsigned char * roll_hash_table5;//11001100
-
-	//unsigned char * roll_hash_table6;//00110011
-
 	long long int hash_table_size;
-	inline void InitializeRollHashTable()
+
+	void InitializeRollHashTable();
+
+	void ReadRollHashTable(const std::string& prefix);
+
+	void DumpRollHashTable(const std::string& prefix);
+
+	void DestroyRollHashTable();
+
+	std::string ReverseComplement(const std::string & a);
+
+	uint32_t KmerShrinkage(uint64_t a, unsigned int mask);
+
+	void AddSeq2HashCore(const std::string & Seq, int iter);
+
+	void AddSeq2Hash(const std::string & Seq, const gap_opt_t * opt);
+
+#endif
+	virtual ~BwtIndexer();
+};
+static double QualQuickTable[41] =
+{ 1, 0.7943, 0.6310, 0.5012, 0.3981, 0.3162, 0.2512, 0.1995, 0.1585, 0.1259,
+		0.1000, 0.0794, 0.0631, 0.0501, 0.0398, 0.0316, 0.0251, 0.0200, 0.0158,
+		0.0126, 0.0100, 0.0079, 0.0063, 0.0050, 0.0040, 0.0032, 0.0025, 0.0020,
+		0.0016, 0.0013, 0.0010, 0.0008, 0.0006, 0.0005, 0.0004, 0.0003, 0.0003,
+		0.0002, 0.0002, 0.0001, 0.0001 };
+static std::unordered_map<char, char> match_table =
 	{
-		RollParam.kmer_size = KMER_SIZE;
-		RollParam.read_step_size = READ_STEP_SIZE;
-		RollParam.thresh = 3;
-		clock_t t = clock();
+	{ 'a', 'T' },
+	{ 'A', 'T' },
+	{ 'c', 'G' },
+	{ 'C', 'G' },
+	{ 'G', 'C' },
+	{ 'g', 'C' },
+	{ 't', 'A' },
+	{ 'T', 'A' } };
 
-		hash_table_size = pow(4, 16)/8;
-		for (int i = 0; i != 6; ++i)
-			roll_hash_table[i] = (unsigned char *) calloc(hash_table_size,
-					sizeof(char));
-
-		cerr << "Initializing Rolling Hash Table with size:" << hash_table_size
-				<< " bytes..." << (float) (clock() - t) / CLOCKS_PER_SEC
-				<< "sec" << endl;
-
-		assert(roll_hash_table != 0);
-	}
-	inline void ReadRollHashTable(const string& prefix)
-	{
-		string infile = prefix + ".rollhash";
-		ifstream fin(infile, std::ofstream::binary);
-		if (!fin.is_open())
-		{
-			cerr << infile << " open failed!\n";
-			exit(1);
-		}
-		for (int i = 0; i != 6; ++i)
-			fin.read(reinterpret_cast<char*>(roll_hash_table[i]),
-					hash_table_size);
-		fin.close();
-	}
-	inline void DumpRollHashTable(const string& prefix)
-	{
-		string outfile = prefix + ".rollhash";
-		ofstream fout(outfile, std::ofstream::binary);
-		if (!fout.is_open())
-		{
-			cerr << outfile << " open failed!\n";
-			exit(1);
-		}
-		for (int i = 0; i != 6; ++i)
-			fout.write(reinterpret_cast<char*>(roll_hash_table[i]),
-					hash_table_size);
-		fout.close();
-	}
-	inline void DestroyRollHashTable()
-	{
-		for (int i = 0; i != 6; ++i)
-			free(roll_hash_table[i]);
-	}
-
-inline int64_t  FromIndex2Bit(int64_t in)
-		{//to-do change real index into bit index efficiently
-				return in;
-		 }
-
-unordered_map<char,char> match_table={{'a','T'},{'A','T'},{'c','G'},{'C','G'},{'G','C'},{'g','C'},{'t','A'},{'T','A'}};
-inline string ReverseComplement(const string & a)
+inline bool BwtIndexer::IsReadHighQ(const ubyte_t *Q, int len)
 {
-
-	string b(a.rbegin(), a.rend());
-
-	for(int i=0;i!=b.size();++i)
+	double tmp(1);
+	for (int i = 0; i != 25; ++i)
 	{
-		b[i]=match_table[b[i]];
+		tmp *= (1 - QualQuickTable[Q[i]]);
 	}
-	return b;
+	if (1 - tmp < 0.1)
+		return true;
+	else
+		return false;
 }
 
-inline uint32_t KmerShrinkage(uint64_t  a, unsigned int mask)
-{
-	uint32_t tmp(0),i(1);
-	//printf("the incoming kmer:%016llx\t",a);
-	while(mask)//32 circle
-	{
-		if(mask&1)
-		{
-			tmp|=((a&3)<<(2*i-2)) ;
-			++i;
-		}
 
-		mask>>=1;
-		a>>=2;
-	}
-	//printf("the resulted i is :%d\n",i);
-	return tmp;
-}
 
-inline void AddSeq2HashCore(const string & Seq, int iter)
-{
-
-	uint64_t datum(0);
-	int i = 0;
-	uint32_t shrinked(0);
-	//string tmp=Seq.substr(0,KMER_SIZE);
-
-	for (; i != 32; ++i)
-	{
-		datum =
-				((datum << 2) | nst_nt4_table[Seq[i]]);/*
-						& LOMEGA(
-								min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)); */// N not considered
-	}
-	shrinked=KmerShrinkage(datum, mask[iter]);
-	roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
-
-	for (; i != Seq.length()/2/*last one considered*/; ++i)
-	{
-		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum =
-				((datum << 2) | nst_nt4_table[Seq[i]]);/*
-						& LOMEGA(
-								min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
-		//roll_hash_table[iter][KmerShrinkage(datum, mask[iter])]++;
-		shrinked=KmerShrinkage(datum, mask[iter]);
-		roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
-	}
-	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",datum,KmerShrinkage(datum, mask[iter]),roll_hash_table[iter][KmerShrinkage(datum, mask[iter])/8]&(1<<(shrinked%8)), mask[iter]);
-
-	uint64_t tmp=datum;
-	for(int j=i,let=0;let!=4;++let,j=i)
-	{
-		tmp=datum;
-		for(;j!=Seq.length()/2+32;++j)
-		{
-			tmp =((tmp << 2) | nst_nt4_table["ACGT"[(char)let]]);
-			shrinked=KmerShrinkage(tmp, mask[iter]);
-			roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
-		}
-	}
-	datum=tmp;
-	for (i=Seq.length()/2+32; i != Seq.length()/*last one considered*/; ++i)
-	{
-		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum =
-				((datum << 2) | nst_nt4_table[Seq[i]]);/*
-						& LOMEGA(
-								min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
-		//roll_hash_table[iter][KmerShrinkage(datum, mask[iter])]++;
-		shrinked=KmerShrinkage(datum, mask[iter]);
-		roll_hash_table[iter][shrinked/8]|=(1<<(shrinked%8));
-	}
-	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
-}
-inline void AddSeq2Hash(const string & Seq, const gap_opt_t * opt)
+inline void BwtIndexer::AddSeq2Hash(const std::string & Seq,
+		const gap_opt_t * opt)
 {
 	for (int i = 0; i != 6; ++i)
 	{
@@ -331,81 +237,5 @@ inline void AddSeq2Hash(const string & Seq, const gap_opt_t * opt)
 	}
 }
 
-
-
-//typedef uint32_t v4si __attribute__ ((vector_size (16)));
-inline bool IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)
-{
-	if(IsReadHighQ(Q, len))//pass error
-	{
-		if(IsReadInHash(S,len))
-		{
-			return false;
-		}
-		else
-			return true;
-	}
-	else
-	{
-		fprintf(stdout,"low qual\n");
-		return false;
-	}
-}
-
-double QualQuickTable[41] = {
-												1, 0.7943, 0.6310, 0.5012,
-												0.3981, 0.3162, 0.2512, 0.1995,
-												0.1585, 0.1259, 0.1000, 0.0794,
-												0.0631, 0.0501, 0.0398, 0.0316,
-												0.0251, 0.0200, 0.0158, 0.0126,
-												0.0100, 0.0079, 0.0063, 0.0050,
-												0.0040, 0.0032, 0.0025, 0.0020,
-												0.0016, 0.0013, 0.0010, 0.0008,
-												0.0006, 0.0005, 0.0004, 0.0003,
-												0.0003, 0.0002, 0.0002, 0.0001,
-												0.0001
-												};
-inline bool IsReadHighQ(const ubyte_t *Q, int len)
-{
-	double tmp(1);
-	for (int i=0;i!=25;++i)
-	{
-		tmp*=(1-QualQuickTable[Q[i]]);
-	}
-	if(1-tmp <0.1)
-	return true;
-	else return false;
-}
-inline bool IsKmerInHash(uint64_t kmer)
-{
-	int counter(0);
-	uint32_t shrinked(0);
-	for (int iter = 0; iter != 6; ++iter)
-	{
-		//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",kmer,KmerShrinkage(kmer, mask[iter]),roll_hash_table[iter][KmerShrinkage(kmer, mask[iter])], mask[iter]);
-		shrinked=KmerShrinkage(kmer, mask[iter]);
-		if(		roll_hash_table[iter][shrinked/8]&(1<<(shrinked%8))	) counter++;
-	}
-	if(counter>RollParam.thresh) return true;
-	else return false;
-}
-inline bool IsReadInHash(const ubyte_t * S,int len)
-{
-	uint64_t kmer1(0),kmer2(0),kmer3(0);
-
-		for (int i = 0; i != 32; ++i)
-		{
-			kmer1=((kmer1<<2)|S[0+i]);
-			kmer2=((kmer2<<2)|S[32+i]);
-			kmer3=((kmer3<<2)|S[64+i]);
-		}
-		if(IsKmerInHash(kmer1) || IsKmerInHash(kmer2) || IsKmerInHash(kmer3)) return true;
-		else
-			return false;
-
-}
-#endif
-	virtual ~BwtIndexer();
-};
 
 #endif /* BWTINDEXER_H_ */

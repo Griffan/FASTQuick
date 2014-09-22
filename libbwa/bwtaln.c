@@ -11,7 +11,7 @@
 #include "bwtaln.h"
 #include "bwtgap.h"
 #include "utils.h"
-#include "../BwtMapper.h"
+//#include "../BwtMapper.h"
 
 #ifdef HAVE_PTHREAD
 #define THREAD_BLOCK_SIZE 1024
@@ -37,6 +37,11 @@ gap_opt_t *gap_init_opt()
 	o->max_top2 = 30;
 	o->trim_qual = 0;
 	o->flank_len=500;
+	o->num_variant_long=0;
+	o->num_variant_short=10000;
+	o->bam_name=0;
+	o->RG=0;
+	o->cal_dup=0;
 	return o;
 }
 

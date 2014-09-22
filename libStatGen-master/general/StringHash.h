@@ -22,7 +22,6 @@
 #include "Constant.h"
 #include "Hash.h"
 
-
 class StringHashBase
 {
 public:
