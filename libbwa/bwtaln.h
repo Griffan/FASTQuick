@@ -98,12 +98,14 @@ typedef struct {
 	int mode; // bit 24-31 are the barcode length
 	int indel_end_skip, max_del_occ, max_entries;
 	double  fnr;
+	double frac;
 	int max_diff, max_gapo, max_gape;
 	int max_seed_diff, seed_len;
 	int n_threads;
 	int max_top2;
 	int trim_qual;
 	int flank_len;
+	int flank_long_len;
 	unsigned int num_variant_short;//short region
 	unsigned int num_variant_long;//long region
 	bool cal_dup;//take duplicated_reads into account when cal depth
@@ -131,6 +133,7 @@ extern "C" {
 #endif
 
 	gap_opt_t *gap_init_opt();
+	void gap_free_opt(gap_opt_t* opt);
 	void bwa_aln_core(const char *prefix, const char *fn_fa, const gap_opt_t *opt);
 
 	bwa_seqio_t *bwa_seq_open(const char *fn);

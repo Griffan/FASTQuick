@@ -15,14 +15,14 @@
 using namespace std;
 
 #define DEBUG 0
-
+extern string Prefix;
 RefBuilder::RefBuilder()
 {
 	// TODO Auto-generated constructor stub
 
 }
 
-RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap_opt_t* opt)//, unordered_map<string,bool>& longRefTable)
+RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string MaskPath, const gap_opt_t* opt)//, unordered_map<string,bool>& longRefTable)
 {
 	cerr<<"Initialization of RefBwt..."<<endl;
 		//read in ref.fa and ref.fai
@@ -41,10 +41,12 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 		VcfHeader header;
 		VcfFileReader reader;
 
-		string SelectedSite=VcfPath+".SelectedSite.vcf";
+		string SelectedSite=Prefix+".SelectedSite.vcf";
 		InputFile FoutSelectedSite(SelectedSite.c_str(),"w");
-		string GCpath=VcfPath+".gc";
+		string GCpath=Prefix+".gc";
 		ofstream FGC(GCpath,ios_base::binary);
+		string BedPath=Prefix+".bed";
+		ofstream BedFile(BedPath);
 		//FGC.write((char*)opt->num_variant_short,sizeof(int));
 		 //_GCstruct * GCstruct=new _GCstruct [opt->num_variant_long+opt->num_variant_short];
 
@@ -71,7 +73,7 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 				continue;
 
 			string Chrom(VcfLine.getChromStr());
-			if(Chrom=="X"||Chrom=="x"||Chrom=="chrX"||Chrom=="chrx"||Chrom=="Y"||Chrom=="y"||Chrom=="chrY"||Chrom=="chry")
+			if(Chrom=="X"||Chrom=="x"||Chrom=="chrX"||Chrom=="chrx"||Chrom=="Y"||Chrom=="y"||Chrom=="chrY"||Chrom=="chry"||Chrom=="MT"||Chrom=="mt")
 			continue;
 			int Position=VcfLine.get1BasedPosition();
 			if(Chrom==last_chr&&abs(Position-last_pos)<300) continue;
@@ -79,7 +81,7 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 			sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_len,Position+opt->flank_len);
 			if(MaskPath!="Empty")
 			{
-			//	cerr<<"region:"<<region<<endl;
+			//cerr<<"region:"<<region<<endl;
 			string MaskSeq(fai_fetch(FastaMask, region, &dummy));
 			size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
 			if(double(n)/MaskSeq.size()<0.9) continue;
@@ -136,6 +138,8 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 			SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string("N")+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));// position 500 was replaced by AltAllele
 			sprintf(region, "%s:%d@%s/%s", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 			RefTableIndex.insert( make_pair(string(region),nseqs));
+			sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_len, Position+opt->flank_len);
+			BedFile<<region<<endl;
 			nseqs++;
 			nmarker++;
 			last_pos=Position;
@@ -160,12 +164,12 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 					continue;
 
 				string Chrom(VcfLine.getChromStr());
-				if(Chrom=="X"||Chrom=="x"||Chrom=="chrX"||Chrom=="chrx"||Chrom=="Y"||Chrom=="y"||Chrom=="chrY"||Chrom=="chry")
+				if(Chrom=="X"||Chrom=="x"||Chrom=="chrX"||Chrom=="chrx"||Chrom=="Y"||Chrom=="y"||Chrom=="chrY"||Chrom=="chry"||Chrom=="MT"||Chrom=="mt")
 				continue;
 				int Position=VcfLine.get1BasedPosition();
 				if(Chrom==last_chr&&abs(Position-last_pos)<300) continue;
 				int dummy;
-				sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_len*2,Position+opt->flank_len*2);
+				sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_long_len,Position+opt->flank_long_len);
 				if(MaskPath!="Empty")
 				{
 				//	cerr<<"region:"<<region<<endl;
@@ -183,8 +187,8 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 				string FetchedSeq(fai_fetch(seq, region, &dummy));
 
 				{//Calculate GC content
-					_GCstruct GCstruct(opt->flank_len*4+1);
-					for(unsigned int i=Position-opt->flank_len*2,t=0;i!=Position+opt->flank_len*2+1;++i,++t)
+					_GCstruct GCstruct(opt->flank_long_len*2+1);
+					for(unsigned int i=Position-opt->flank_long_len,t=0;i!=Position+opt->flank_long_len+1;++i,++t)
 					{
 						sprintf(region, "%s:%d-%d",Chrom.c_str(), i-50,i+49);
 						string Window(fai_fetch(seq, region, &dummy));
@@ -202,12 +206,14 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 					GCstruct.write(FGC);
 				}
 
-				SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len*2)+string("N")+FetchedSeq.substr(opt->flank_len*2+1,opt->flank_len*2));// position 500 was replaced by AltAllele
+				SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string("N")+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));// position 500 was replaced by AltAllele
 				sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 				RefTableIndex.insert( make_pair(string(region),nseqs));
 				//sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 				//longRefTable.insert(make_pair(string(region),true));
 				//VariantLongTable[string(region)]=1;
+				sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_long_len, Position+opt->flank_long_len);
+				BedFile<<region<<endl;
 				nseqs++;
 				nmarker++;
 				last_pos=Position;
@@ -249,7 +255,7 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 						int Position=VcfLine.get1BasedPosition();
 						if((Chrom==last_chr&&abs(Position-last_pos)<300)||(Position>3000000 && Position<151000000)) continue;
 						int dummy;
-						sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_len*2,Position+opt->flank_len*2);
+						sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_long_len,Position+opt->flank_long_len);
 						/*if(MaskPath!="Empty")
 						{
 						//	cerr<<"region:"<<region<<endl;
@@ -267,8 +273,8 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 						string FetchedSeq(fai_fetch(seq, region, &dummy));
 
 						{//Calculate GC content
-							_GCstruct GCstruct(opt->flank_len*4+1);
-							for(unsigned int i=Position-opt->flank_len*2,t=0;i!=Position+opt->flank_len*2+1;++i,++t)
+							_GCstruct GCstruct(opt->flank_long_len*2+1);
+							for(unsigned int i=Position-opt->flank_long_len,t=0;i!=Position+opt->flank_long_len+1;++i,++t)
 							{
 								sprintf(region, "%s:%d-%d",Chrom.c_str(), i-50,i+49);
 								string Window(fai_fetch(seq, region, &dummy));
@@ -286,12 +292,14 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 							GCstruct.write(FGC);
 						}
 
-						SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len*2)+string("N")+FetchedSeq.substr(opt->flank_len*2+1,opt->flank_len*2));// position 500 was replaced by AltAllele
+						SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string("N")+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));// position 500 was replaced by AltAllele
 						sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 						RefTableIndex.insert( make_pair(string(region),nseqs));
 						//sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 						//longRefTable.insert(make_pair(string(region),true));
 						//VariantLongTable[string(region)]=1;
+						sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_long_len, Position+opt->flank_long_len);
+						BedFile<<region<<endl;
 						nseqs++;
 						if(chr_flag==0)
 						Xnmarker++;
@@ -307,6 +315,11 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string MaskPath, const gap
 		//int total=(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct);
 		//FGC.write((char*) &nmarker, sizeof( unsigned int));
 		FGC.close();
+		BedFile.close();
+		char cmdline[2048];
+		sprintf(cmdline,"tabix  -h -B %s %s  > %s.subset.vcf",DBsnpPath.c_str(),BedPath.c_str(),Prefix.c_str());
+		int ret=system(cmdline);
+		if(ret!=0) {cerr<<"building dbsnp subset.vcf failed!"<<endl;exit(1);}
 		FoutSelectedSite.ifclose();
 		reader.close();
 
