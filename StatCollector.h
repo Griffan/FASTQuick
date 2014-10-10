@@ -62,6 +62,9 @@ private:
 
 	std::unordered_map<std::string,bool> duplicateTable;
 
+	std::unordered_map<std::string,ContigStatus> contigStatusTable;
+
+
 
 
 public:
@@ -70,12 +73,19 @@ public:
 	int addAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt);
 	int addPairAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,const gap_opt_t* opt , std::ofstream & fout,int &);
 	int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,const gap_opt_t* opt, int type, std::ofstream & fout);
+//overload functions for direct bam reading
+	int addPairAlignment(SamRecord & p, SamRecord& q, const gap_opt_t* opt, std::ofstream & fout, int &);
+	int IsDuplicated(  SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
+	int addAlignment( SamRecord& p,const gap_opt_t* opt);
+	int ReadAlignmentFromBam( const gap_opt_t* opt, SamFileHeader& SFH, BamInterface& BamIO, IFILE BamFile, StatGenStatus &StatusTracker, std::ofstream & fout,int & total_add);
+
 	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
 	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
 	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
 	int getEmpRepDist(const std::string & outputPath);
 	int getEmpCycleDist(const std::string & outputPath);
 	int getInsertSizeDist(const std::string & outputPath);
+	int getSexChromInfo(const std::string & outputPath);
 	int outputPileup(const std::string & statPrefix);
 
 	int processCore(const std::string & statPrefix, const gap_opt_t*opt);
@@ -98,6 +108,13 @@ public:
 				}
 			}
 		return 0;
+	}
+	inline int isPartialAlign( SamRecord& q)
+	{
+		if(std::string(q.getCigar()).find('S')!= std::string::npos)
+			return 1;
+		else
+			return 0;
 	}
 	inline bool ConstructFakeSeqQual(const std::string &seq, const std::string &qual,const int & n_cigar, const bwa_cigar_t* cigar,std::string & newSeq, std::string &newQual)
 	{
