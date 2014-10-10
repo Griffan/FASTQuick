@@ -37,12 +37,22 @@ gap_opt_t *gap_init_opt()
 	o->max_top2 = 30;
 	o->trim_qual = 0;
 	o->flank_len=500;
+	o->flank_long_len=1000;
 	o->num_variant_long=0;
 	o->num_variant_short=10000;
 	o->bam_name=0;
 	o->RG=0;
 	o->cal_dup=0;
+	o->frac=1;
 	return o;
+}
+void gap_free_opt(gap_opt_t * o)
+{
+	if(o->bam_name!=0)
+	free(o->bam_name);
+	if(o->RG!=0)
+	free(o->RG);
+	free(o);
 }
 
 int bwa_cal_maxdiff(int l, double err, double thres)

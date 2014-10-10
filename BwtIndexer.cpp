@@ -262,7 +262,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 {
 
 	uint64_t datum(0);
-	int i = 0;
+	unsigned int i = 0;
 	uint32_t shrinked(0);
 	//std::string tmp=Seq.substr(0,KMER_SIZE);
 
@@ -414,7 +414,8 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	// read sequences
 	//while ((l = kseq_read(seq)) >= 0) {
 	DBG(fprintf(stderr,"Come into Fa2Pac...\n");)
-	string RefOutput("Ref.out");
+	string RefOutput(prefix);
+	RefOutput+=".ref.fa";
 	ofstream Fout(RefOutput);
 	for (unordered_map<string, uint32_t>::iterator iter =
 			ArtiRef.RefTableIndex.begin(); iter != ArtiRef.RefTableIndex.end();
@@ -507,6 +508,7 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 		//}//inner for-loop
 	} //outer for-loop
 	  //clean tmp variables
+	Fout.close();
 	xassert(bns->l_pac, "zero length sequence.");
 	{ // finalize .pac file
 		ubyte_t ct;
@@ -528,7 +530,7 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	return 0;
 }
 bool BwtIndexer::Fa2RevPac(const char * prefix)
-{
+{//TODO: check usage of j
 	int64_t seq_len, i;
 	bwtint_t pac_len, j;
 	ubyte_t *bufin, *bufout, ct;

@@ -11,10 +11,7 @@
 #include "./libbwa/bwt.h"
 #include <cstdio>
 #include <cstdlib>
-//#include <string>
-//#include <unordered_map>
 #include "RefBuilder.h"
-//using namespace std;
 #include <sys/stat.h>
 #include <assert.h>
 #include <cmath>
@@ -40,13 +37,14 @@ class BwtIndexer
 {
 public:
 
-	bntseq_t *bns;
-	int l_buf;
+
+
 	ubyte_t * pac_buf;
 	ubyte_t * rpac_buf;
 	unsigned char* bwt_buf;
 	unsigned char* rbwt_buf;
-
+	bntseq_t *bns;
+	int l_buf;
 	int32_t m_pac_buf, m_rpac_buf, m_bwt_buf, m_rbwt_buf;
 
 	bwt_t *bwt_d;
