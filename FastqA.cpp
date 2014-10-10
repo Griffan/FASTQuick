@@ -38,7 +38,7 @@ int main(int argc, char ** argv)
 	 */
 
 	std::string RefPath, VcfPath, MaskPath("Empty"), Fastq_1("Empty"), Fastq_2(
-			"Empty"), BamOut("Empty"), ReadGroup("default"),DepthDist, SitePileup,FaList("Empty"),DBsnpPath;
+			"Empty"), BamOut("Empty"), BamIn("Empty"),ReadGroup("default"),DepthDist, SitePileup,FaList("Empty"),DBsnpPath;
 
 	bool loggap(0), compread(0), nonstop(0), IL13(0);
 	paramList pl;
@@ -51,6 +51,7 @@ int main(int argc, char ** argv)
 	LONG_STRING_PARAM("fastq_1",&Fastq_1,"Pair end 1 fastq file.")
 	LONG_STRING_PARAM("fastq_2",&Fastq_2,"Pair end 2 fastq file.[Leave empty if using single end]")
 	LONG_STRING_PARAM("bam_out",&BamOut,"Output file prefix")
+	LONG_STRING_PARAM("bam_in",&BamIn,"Input bam file path")
 	LONG_STRING_PARAM("fq_list",&FaList,"Path of input fastq files, tab-delimited, one pair-end files per line(one file per line for single end) ")
 	LONG_STRING_PARAM("prefix",&Prefix,"Prefix of all the statistic files")
 
@@ -108,7 +109,11 @@ int main(int argc, char ** argv)
 	pl.Status();
 	if(BamOut!="Empty")
 	{
-	opt->bam_name=strdup(BamOut.c_str());
+	opt->out_bam=strdup(BamOut.c_str());
+	}
+	if(BamIn!="Empty")
+	{
+	opt->in_bam=strdup(BamIn.c_str());
 	}
 	opt->RG=strdup(ReadGroup.c_str());
 	if (opte > 0)
