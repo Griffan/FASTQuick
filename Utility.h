@@ -75,4 +75,114 @@ public:
 	}
 };
 
+
+
+class ContigStatus
+{
+public:
+	 ContigStatus()
+	{
+		name="default";
+		length=0;
+		numOverlappedReads=0;
+		numPairOverlappedReads=0;
+		numFullyIncludedReads=0;
+		numFullyIncludedPairedReads=0;
+	}
+	 ContigStatus(std::string chr, int len)
+	{
+		name=chr;
+		length=len;
+		numOverlappedReads=0;
+		numPairOverlappedReads=0;
+		numFullyIncludedReads=0;
+		numFullyIncludedPairedReads=0;
+	}
+	 ~ContigStatus()
+	 {
+
+	 }
+//	 SamRecord bwtSeq2SamRecord(const bntseq_t *bns, bwa_seq_t *p)
+//	 {
+//		 SamRecord tmp;
+//
+//	 }
+//	 int addPair(SamRecord& p, SamRecord&q)
+//	 {
+//		 return 0;
+//	 }
+//	 int addSingle(SamRecord& p)
+//	 {
+//			if(std::string(p.getReferenceName()).find(name)!=std::string::npos||std::string(p.getReferenceName()).find("Y")!=std::string::npos)
+//			{
+//				addNumOverlappedReads();
+//			}
+//
+//		 return 0;
+//	 }
+//	 int addPair(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q)
+//	 {
+//		 return 0;
+//	 }
+//	 int addSingle(const bntseq_t *bns, bwa_seq_t *p)
+//	 {
+//		 return 0;
+//	 }
+	 int addNumOverlappedReads()
+	 {
+		 numOverlappedReads++;
+		 return 0;
+	 }
+	 int addNumPairOverlappedReads()
+	 {
+		 numPairOverlappedReads++;
+		 return 0;
+	 }
+	 int addNumFullyIncludedReads()
+	 {
+		 numFullyIncludedReads++;
+		 return 0;
+	 }
+	 int addNumFullyIncludedPairedReads()
+	 {
+		 numFullyIncludedPairedReads++;
+		 return 0;
+	 }
+	 int getNumOverlappedReads()
+	 {
+
+		 return 		 numOverlappedReads;
+	 }
+	 int getNumPairOverlappedReads()
+	 {
+
+		 return 		 numPairOverlappedReads++;
+	 }
+	 int getNumFullyIncludedReads()
+	 {
+
+		 return 		 numFullyIncludedReads++;
+	 }
+	 int getNumFullyIncludedPairedReads()
+	 {
+
+		 return 		 numFullyIncludedPairedReads++;
+	 }
+	 std::string getName()
+	 {
+		 return name;
+	 }
+	 int getLength()
+	 {
+		 return length;
+	 }
+private:
+		std::string name;
+		int length;
+		int numOverlappedReads;
+		int numPairOverlappedReads;//same contig
+		int numFullyIncludedReads;
+		int numFullyIncludedPairedReads;//same contig
+};
+
 #endif /* UTILITY_ */
