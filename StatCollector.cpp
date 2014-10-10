@@ -11,7 +11,9 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 using namespace std;
+extern string Prefix;
 StatCollector::StatCollector()
 {
 	// TODO Auto-generated constructor stub
@@ -98,7 +100,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	//ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
 	string RefSeq(seq), MD(p->md);
 	int last(0), total_len(0);
-	for (int i = 0; i != MD.size(); ++i)
+	for (uint32_t i = 0; i != MD.size(); ++i)
 		if (isdigit(MD[i]))
 			continue;
 		else if (MD[i] == '^')
@@ -133,16 +135,22 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	size_t slashPos = PosName.find("/");
 	//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
 	unsigned int realCoord(0);
+	unsigned int RefRealStart(0), RefRealEnd(0);
 	if (PosName[PosName.size() - 1] == 'L')
 	{
-		realCoord = refCoord - opt->flank_len * 2 + pos - 1; //real coordinate of current reads on reference
+		realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
+		RefRealStart = refCoord - opt->flank_long_len;
+		RefRealEnd = refCoord + opt->flank_long_len;
 	}
 	else
 	{
 		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+		RefRealStart = refCoord - opt->flank_len;
+		RefRealEnd = refCoord + opt->flank_len;
 	}
-
-	unsigned int tmpCycle = 0, tmpCycleVcfTable(0);
+	realCoord += 100; //
+	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
+			tmp_left_to_right_coord(0);
 	char sign[2] =
 	{ 1, -1 };
 	if (p->strand != 0)
@@ -172,24 +180,31 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 				if (VcfTable.find(Chrom) != VcfTable.end())
 				{
 					tmpCycleVcfTable = tmpCycle;
-					for (int i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycleVcfTable += 1 * sign[p->strand])
+					tmp_left_to_right_coord = left_to_right_coord;
+					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
+					{
 						if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
 						{
 							tmp_index = VcfTable[Chrom][i];
-							SeqVec[tmp_index] += seq[tmpCycleVcfTable];
-							QualVec[tmp_index] += qual[tmpCycleVcfTable];
+							SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+							QualVec[tmp_index] += qual[tmp_left_to_right_coord];
 							CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-							MaqVec[tmp_index].push_back(p->mapQ);
+							MaqVec[tmp_index].push_back(p->mapQ + 33);
 							StrandVec[tmp_index].push_back(p->strand);
 						}
+					}
 				}
 
 				/*****************************************************************************/
 				if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-					for (int i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycle += 1 * sign[p->strand])
+					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 					{
+						if (i < RefRealStart)
+							continue;
+						if (i > RefRealEnd)
+							break;
 						//std::pair<unordered_map<int, bool>::iterator, bool> ret =
 						//		PositionTable[Chrom].insert(make_pair(i, 1));
 						if (PositionTable[Chrom].find(i)
@@ -198,14 +213,19 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 							tmp_index = PositionTable[Chrom][i];
 							DepthVec[tmp_index]++;
-							EmpRepDist[qual[tmpCycle]]++;
-							if (RefSeq[tmpCycle] != seq[tmpCycle])
+							if (dbSNPTable[Chrom].find(i)
+									== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
-								misEmpRepDist[qual[tmpCycle]]++;
-								misEmpCycleDist[tmpCycle]++;
+								EmpRepDist[qual[left_to_right_coord]]++;
+								if (RefSeq[left_to_right_coord]
+										!= seq[left_to_right_coord])
+								{
+									misEmpRepDist[qual[left_to_right_coord]]++;
+									misEmpCycleDist[tmpCycle]++;
+								}
+								/************EmpCycle**************************************************************/
+								EmpCycleDist[tmpCycle]++;
 							}
-							/************EmpCycle**************************************************************/
-							EmpCycleDist[tmpCycle]++;
 						}
 						else //coord not exists
 						{
@@ -214,34 +234,48 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							DepthVec[index]++;
 							PositionTable[Chrom][i] = index;
 							index++;
-							EmpRepDist[qual[tmpCycle]]++;
-							if (RefSeq[tmpCycle] != seq[tmpCycle])
+							if (dbSNPTable[Chrom].find(i)
+									== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
-								misEmpRepDist[qual[tmpCycle]]++;
-								misEmpCycleDist[tmpCycle]++;
+								EmpRepDist[qual[left_to_right_coord]]++;
+								if (RefSeq[left_to_right_coord]
+										!= seq[left_to_right_coord])
+								{
+									misEmpRepDist[qual[left_to_right_coord]]++;
+									misEmpCycleDist[tmpCycle]++;
+								}
+								/************EmpCycle**************************************************************/
+								EmpCycleDist[tmpCycle]++;
 							}
-							/************EmpCycle**************************************************************/
-							EmpCycleDist[tmpCycle]++;
 						}
 					}
 				else // chrom not exists
 				{
-					for (int i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycle += 1 * sign[p->strand])
+					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 					{
+						if (i < RefRealStart)
+							continue;
+						if (i > RefRealEnd)
+							break;
 						//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 						DepthVec.push_back(0);
 						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
 						index++;
-						EmpRepDist[qual[tmpCycle]]++;
-						if (RefSeq[tmpCycle] != seq[tmpCycle])
+						if (dbSNPTable[Chrom].find(i)
+								== dbSNPTable[Chrom].end()) //not in dbsnp table
 						{
-							misEmpRepDist[qual[tmpCycle]]++;
-							misEmpCycleDist[tmpCycle]++;
+							EmpRepDist[qual[left_to_right_coord]]++;
+							if (RefSeq[left_to_right_coord]
+									!= seq[left_to_right_coord])
+							{
+								misEmpRepDist[qual[left_to_right_coord]]++;
+								misEmpCycleDist[tmpCycle]++;
+							}
+							/************EmpCycle**************************************************************/
+							EmpCycleDist[tmpCycle]++;
 						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
 					}
 				}
 				realCoord += cl;
@@ -258,6 +292,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 //	      /* printf("[%d]", pos);  // No coverage
 //	      /* pos is not advanced by this operation
 				tmpCycle += cl * sign[p->strand];
+				left_to_right_coord += cl;
 				break;
 
 			case 'D':
@@ -280,6 +315,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 				/* pos is not advanced by this operation*/
 
 				tmpCycle += cl * sign[p->strand];
+				left_to_right_coord += cl;
 				break;
 
 //	 case BAM_CREF_SKIP:
@@ -301,23 +337,28 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		if (VcfTable.find(Chrom) != VcfTable.end())
 		{
 			tmpCycleVcfTable = tmpCycle;
-			for (int i = realCoord; i != realCoord +p->len - 1 + 1;
-					++i, tmpCycleVcfTable += 1 * sign[p->strand])
+			tmp_left_to_right_coord = left_to_right_coord;
+			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
 				if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
 				{
 					tmp_index = VcfTable[Chrom][i];
-					SeqVec[tmp_index] += seq[tmpCycleVcfTable];
-					QualVec[tmp_index] += qual[tmpCycleVcfTable];
+					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
 					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-					MaqVec[tmp_index].push_back(p->mapQ);
+					MaqVec[tmp_index].push_back(p->mapQ + 33);
 					StrandVec[tmp_index].push_back(p->strand);
 				}
 		}
 		/************************************************************************************/
 		if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-			for (int i = realCoord; i != realCoord + p->len - 1 + 1;
-					++i, tmpCycle += 1 * sign[p->strand])
+			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 			{
+				if (i < RefRealStart)
+					continue;
+				if (i > RefRealEnd)
+					break;
 				//std::pair<unordered_map<int, bool>::iterator, bool> ret =
 				//		PositionTable[Chrom].insert(make_pair(i, 1));
 				if (PositionTable[Chrom].find(i) != PositionTable[Chrom].end())	//!ret.second) //if insert failed, this coord exists
@@ -325,14 +366,18 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 					tmp_index = PositionTable[Chrom][i];
 					DepthVec[tmp_index]++;
-					EmpRepDist[qual[tmpCycle]]++;
-					if (RefSeq[tmpCycle] != seq[tmpCycle])
+					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
-						misEmpRepDist[qual[tmpCycle]]++;
-						misEmpCycleDist[tmpCycle]++;
+						EmpRepDist[qual[left_to_right_coord]]++;
+						if (RefSeq[left_to_right_coord]
+								!= seq[left_to_right_coord])
+						{
+							misEmpRepDist[qual[left_to_right_coord]]++;
+							misEmpCycleDist[tmpCycle]++;
+						}
+						/************EmpCycle**************************************************************/
+						EmpCycleDist[tmpCycle]++;
 					}
-					/************EmpCycle**************************************************************/
-					EmpCycleDist[tmpCycle]++;
 				}
 				else //coord not exists
 				{
@@ -341,34 +386,45 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
 					index++;
-					EmpRepDist[qual[tmpCycle]]++;
-					if (RefSeq[tmpCycle] != seq[tmpCycle])
+					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
-						misEmpRepDist[qual[tmpCycle]]++;
-						misEmpCycleDist[tmpCycle]++;
+						EmpRepDist[qual[left_to_right_coord]]++;
+						if (RefSeq[left_to_right_coord]
+								!= seq[left_to_right_coord])
+						{
+							misEmpRepDist[qual[left_to_right_coord]]++;
+							misEmpCycleDist[tmpCycle]++;
+						}
+						/************EmpCycle**************************************************************/
+						EmpCycleDist[tmpCycle]++;
 					}
-					/************EmpCycle**************************************************************/
-					EmpCycleDist[tmpCycle]++;
 				}
 			}
 		else // chrom not exists
 		{
-			for (int i = realCoord; i != realCoord + p->len - 1 + 1;
-					++i, tmpCycle += 1 * sign[p->strand])
+			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 			{
+				if (i < RefRealStart)
+					continue;
+				if (i > RefRealEnd)
+					break;
 				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 				DepthVec.push_back(0);
 				DepthVec[index]++;
 				PositionTable[Chrom][i] = index;
 				index++;
-				EmpRepDist[qual[tmpCycle]]++;
-				if (RefSeq[tmpCycle] != seq[tmpCycle])
+				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
-					misEmpRepDist[qual[tmpCycle]]++;
-					misEmpCycleDist[tmpCycle]++;
+					EmpRepDist[qual[left_to_right_coord]]++;
+					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
+					{
+						misEmpRepDist[qual[left_to_right_coord]]++;
+						misEmpCycleDist[tmpCycle]++;
+					}
+					/************EmpCycle**************************************************************/
+					EmpCycleDist[tmpCycle]++;
 				}
-				/************EmpCycle**************************************************************/
-				EmpCycleDist[tmpCycle]++;
 			}
 		}
 	}
@@ -390,7 +446,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		//cerr<<"Duplicate function exit single q"<<endl;
 		fout << q->name << "\t" << MaxInsert << "\t" << 0 << "\t" << "*" << "\t"
 				<< "*" << "\t" << bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tRevOnly"
+				<< endl;
 		return 0;
 	}
 	else if (type == 3) //p is aligned only
@@ -402,7 +459,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
 				<< bns->anns[seqid_p].name << "\t"
 				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t" << "*" << "\t"
-				<< "*" << endl;
+				<< "*" << "\tFwdOnly" << endl;
 		return 0;
 	}
 	else if (type == 2) // both aligned
@@ -436,6 +493,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 
 	if (MaxInsert2 > MaxInsert)
 		MaxInsert = MaxInsert2;
+	if(MaxInsert>2047) MaxInsert=2047;
 	MaxInsertSizeDist[MaxInsert]++;
 	if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1)
 	{
@@ -447,7 +505,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 				<< bns->anns[seqid_p].name << "\t"
 				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
 				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tDiffChrom"
+				<< endl;
 		return 0;
 	}
 	if (p->mapQ >= 20 && q->mapQ >= 20)
@@ -473,7 +532,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 					<< bns->anns[seqid_p].name << "\t"
 					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
 					<< bns->anns[seqid_q].name << "\t"
-					<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+					<< q->pos - bns->anns[seqid_q].offset + 1 << "\tPropPair"
+					<< endl;
 			char start_end[256];
 			sprintf(start_end, "%d:%d", start, end);
 			pair<unordered_map<string, bool>::iterator, bool> iter =
@@ -487,21 +547,23 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		else
 		{
 			//cerr<<"exit from Inf"<<endl;
-			fout << p->name << "\t" << MaxInsert << "\t" << "Inf" << "\t"
+			fout << p->name << "\t" << MaxInsert << "\t" << "-1" << "\t"
 					<< bns->anns[seqid_p].name << "\t"
 					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
 					<< bns->anns[seqid_q].name << "\t"
-					<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+					<< q->pos - bns->anns[seqid_q].offset + 1 << "\tAbnormal"
+					<< endl;
 		}
 	}
 	else
 	{
 		//cerr<<"exit from LowQualf"<<endl;
-		fout << p->name << "\t" << MaxInsert << "\t" << "LowQual" << "\t"
+		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
 				<< bns->anns[seqid_p].name << "\t"
 				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
 				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << endl;
+				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tLowQual"
+				<< endl;
 		return 2; //low quality
 	}
 	/*
@@ -614,12 +676,12 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 
 	VcfHeader header;
 	VcfFileReader reader;
-	string SelectedSite = VcfPath + ".SelectedSite.vcf";
+	string SelectedSite = Prefix + ".SelectedSite.vcf";
 	if (!reader.open(SelectedSite.c_str(), header))
 	{
 		reader.open(VcfPath.c_str(), header);
 	}
-	string GCpath = VcfPath + ".gc";
+	string GCpath = Prefix + ".gc";
 	ifstream FGC(GCpath, ios_base::binary);
 	//int num_so_far(0);
 	while (!reader.isEOF())
@@ -651,6 +713,21 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 		//vcf_index++;
 
 	}
+	string BedFile = Prefix + ".subset.vcf";
+	if (!reader.open(BedFile.c_str(), header))
+	{
+		std::cerr << BedFile << " open failed!" << std::endl;
+		exit(1);
+	}
+	while (!reader.isEOF())
+	{
+		VcfRecord VcfLine;
+		;
+		reader.readRecord(VcfLine);
+		string chr(VcfLine.getChromStr());
+		int pos = VcfLine.get1BasedPosition();
+		dbSNPTable[chr][pos] = 1;
+	}
 
 	//string line, Chrom, PosStr, GCStr;
 	//_GCstruct * GCstruct = new _GCstruct [opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
@@ -676,11 +753,15 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	FGC.close();
 	return 0;
 }
-int StatCollector::getDepthDist(const string & outputPath)
+int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 {
 
 	ofstream fout(outputPath + ".DepthDist");
-	for (uint32_t i = 0; i != DepthDist.size(); ++i)
+	int sum = std::accumulate(DepthDist.begin(), DepthDist.end(), 0);
+	int all = (opt->flank_len * 2 + 1) * opt->num_variant_short
+			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long;
+	fout << 0 << "\t" << all - sum  << endl;
+	for (uint32_t i = 1; i != DepthDist.size(); ++i)
 	{
 		fout << i << "\t" << DepthDist[i] << endl;
 	}
@@ -713,7 +794,7 @@ int StatCollector::getGCDist(const string & outputPath,
 int StatCollector::getEmpRepDist(const string & outputPath)
 {
 	ofstream fout(outputPath + ".EmpRepDist");
-	for (uint32_t i = 0; i != EmpRepDist.size(); ++i)
+	for (uint32_t i = 33; i != EmpRepDist.size(); ++i)
 	{
 		fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
 				<< "\t"
@@ -747,23 +828,17 @@ int StatCollector::getInsertSizeDist(const string & outputPath)
 	fout.close();
 	return 0;
 }
-int StatCollector::processCore(const string & statPrefix)
+int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 {
-
-//unsigned int VcfIndex = 0;
-//unsigned int PosIndex = 0;
 	vector<int> PosNum(256, 0);
 	//int total(0);
-	for (string_map::iterator i = PositionTable.begin();
+	for (unsort_map::iterator i = PositionTable.begin();
 			i != PositionTable.end(); ++i) //each chr
 	{
-		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-				++j) //each site
+		for (std::unordered_map<int, unsigned int>::iterator j =
+				i->second.begin(); j != i->second.end(); ++j) //each site
 		{
-
 			/************DepthDist**************************************************************/
-			//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\tindex:"<<j->second<<"\t"<<VariantProxyTable[i->first][j->first]<<"\t"<<SeqVec[j->second] <<"\tend"<<endl;
-			//	if (VariantProxyTable[i->first][j->first] == 1) //if this is in a proxy region
 			{
 				if (DepthVec[j->second] > 255)
 					DepthDist[255]++;
@@ -772,12 +847,9 @@ int StatCollector::processCore(const string & statPrefix)
 			}
 			GCDist[GC[i->first][j->first]] += DepthVec[j->second];
 			PosNum[GC[i->first][j->first]]++;
-			//++total;
-			//cerr<<"We got here:"<<i->first<<"\t"<<j->first<<"\t"<<GC[i->first][j->first]<<"\t"<<total<<endl;
 		}
 	}
-
-	getDepthDist(statPrefix);
+	getDepthDist(statPrefix, opt);
 	getGCDist(statPrefix, PosNum);
 	getEmpRepDist(statPrefix);
 	getEmpCycleDist(statPrefix);
@@ -788,30 +860,34 @@ int StatCollector::processCore(const string & statPrefix)
 int StatCollector::outputPileup(const string & outputPath)
 {
 	ofstream fout(outputPath + ".Pileup");
-	for (string_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
+	for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
 	{
-		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-				++j) //each site
+		for (std::map<int, unsigned int>::iterator j =
+				i->second.begin(); j != i->second.end(); ++j) //each site
 		{
-			if(SeqVec[j->second].size()==0) continue;
-			fout << i->first << "\t" << j->first << "\t" << SeqVec[j->second]
-					<< "\t" << QualVec[j->second] << "\t";
-			for (uint32_t k = 0; k != CycleVec[j->second].size(); ++k)
+			if (SeqVec[j->second].size() == 0)
+				continue;
+			fout << i->first << "\t" << j->first << "\t.\t"
+					<< StrandVec[j->second].size()<<"\t";
+			for (uint32_t k = 0; k != StrandVec[j->second].size(); ++k)
 			{
-				fout << CycleVec[j->second][k];
-				if(k!=CycleVec[j->second].size()-1)
-				fout<<",";
+				if (StrandVec[j->second][k])
+					fout << (char)toupper(SeqVec[j->second][k]);
+				else
+					fout << (char)tolower(SeqVec[j->second][k]);
 			}
-			fout << "\t";
+			fout << "\t" << QualVec[j->second] << "\t";
 			for (uint32_t k = 0; k != MaqVec[j->second].size(); ++k)
 			{
 				fout << MaqVec[j->second][k];
-				if(k!=MaqVec[j->second].size()-1)
-				fout<<",";
 			}
 			fout << "\t";
-			for (uint32_t k = 0; k != StrandVec[j->second].size(); ++k)
-				fout << StrandVec[j->second][k];
+			for (uint32_t k = 0; k != CycleVec[j->second].size(); ++k)
+			{
+				fout << CycleVec[j->second][k];
+				if (k != CycleVec[j->second].size() - 1)
+					fout << ",";
+			}
 			fout << endl;
 		}
 	}
@@ -900,11 +976,11 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 	{ 0 };
 	char majAllele, minAllele;
 	int maxIndex = 0;
-	for (string_map::iterator i = PositionTable.begin();
+	for (unsort_map::iterator i = PositionTable.begin();
 			i != PositionTable.end(); ++i) //each chr
 	{
-		for (SeqPairIndex::iterator j = i->second.begin(); j != i->second.end();
-				++j) //each site
+		for (std::unordered_map<int, unsigned int>::iterator j =
+				i->second.begin(); j != i->second.end(); ++j) //each site
 		{
 			countAllele(numAllele, SeqVec[j->second]);
 			maxIndex = findMaxAllele(numAllele, 4);

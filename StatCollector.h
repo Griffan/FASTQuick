@@ -16,41 +16,43 @@
 #define STATCOLLECTOR_H_
 
 
-typedef std::string Seq;
-typedef std::string Qual;
-typedef std::unordered_map< int, unsigned int  >  SeqPairIndex;
-typedef std::unordered_map<std::string, SeqPairIndex> string_map;
+//typedef std::string Seq;
+//typedef std::string Qual;
+
+typedef std::unordered_map<std::string, std::unordered_map< int, unsigned int  > > unsort_map;
+typedef std::map<std::string, std::map< int, unsigned int  > > sort_map;
 typedef std::unordered_map<std::string, std::unordered_map< int, bool> > bool_table;
 //typedef vector<VcfRecord> VcfRecVec;
 
 class StatCollector
 {
 private:
-	string_map PositionTable;
+	unsort_map PositionTable;
 	unsigned int index;
 	//nsigned int vcf_index;
-	vector<uint32_t> DepthVec;
+	std::vector<uint32_t> DepthVec;
 	/****for SNP site******/
-	vector<std::string> SeqVec,QualVec;
-	vector<vector<unsigned int> > CycleVec;
-	vector<vector<unsigned char> > MaqVec;
-	vector<vector<bool> >StrandVec;
+	std::vector<std::string> SeqVec,QualVec;
+	std::vector<std::vector<unsigned int> > CycleVec;
+	std::vector<std::vector<unsigned char> > MaqVec;
+	std::vector<std::vector<bool> >StrandVec;
 	/************************/
-	vector<VcfRecord*> VcfRecVec;
-	string_map VcfTable;
+	std::vector<VcfRecord*> VcfRecVec;
+	sort_map VcfTable;
+	unsort_map dbSNPTable;
 	//string_map VcfObTable;//actually covered by reads
-	vector<vector<unsigned char> > QualDist;//40*40
-	vector<vector<unsigned char> > CycleDist;//100*40
+	std::vector<std::vector<unsigned char> > QualDist;//40*40
+	std::vector<std::vector<unsigned char> > CycleDist;//100*40
 
-	vector<int> DepthDist;
-	vector<int> EmpRepDist;
-	vector<int> misEmpRepDist;
-	vector<int> EmpCycleDist;
-	vector<int> misEmpCycleDist;
-	vector<int> GCDist;
-	vector<int> InsertSizeDist;
-	vector<int> MaxInsertSizeDist;
-	string_map GC;
+	std::vector<int> DepthDist;
+	std::vector<int> EmpRepDist;
+	std::vector<int> misEmpRepDist;
+	std::vector<int> EmpCycleDist;
+	std::vector<int> misEmpCycleDist;
+	std::vector<int> GCDist;
+	std::vector<int> InsertSizeDist;
+	std::vector<int> MaxInsertSizeDist;
+	unsort_map GC;
 
 	bool_table VariantProxyTable;
 
@@ -69,14 +71,14 @@ public:
 	int addPairAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,const gap_opt_t* opt , std::ofstream & fout,int &);
 	int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,const gap_opt_t* opt, int type, std::ofstream & fout);
 	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
-	int getDepthDist(const std::string & outputPath);
-	int getGCDist(const std::string & outputPath,const vector<int> & PosNum);
+	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
+	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
 	int getEmpRepDist(const std::string & outputPath);
 	int getEmpCycleDist(const std::string & outputPath);
 	int getInsertSizeDist(const std::string & outputPath);
 	int outputPileup(const std::string & statPrefix);
 
-	int processCore(const std::string & statPrefix);
+	int processCore(const std::string & statPrefix, const gap_opt_t*opt);
 	int getGenoLikelihood(const std::string & statPrefix);
 	inline int isPartialAlign(const bwa_seq_t * q)
 	{

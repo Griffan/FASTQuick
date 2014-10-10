@@ -47,7 +47,9 @@ public:
 		//delete Chrom;
 		//delete pos;
 		if(GC!=0)
-		delete GC;
+		{
+		delete [] GC;
+		}
 	}
 	void write(std::ofstream& fout)
 	{
