@@ -323,7 +323,7 @@ void bwa_correct_trimmed(bwa_seq_t *s)
 	s->len = s->full_len;
 }
 
-void bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ubyte_t *_pacseq, bntseq_t *ntbns)
+ubyte_t * bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ubyte_t *_pacseq, bntseq_t *ntbns)
 {
 	ubyte_t *pacseq, *ntpac = 0;
 	int i, j;
@@ -388,6 +388,7 @@ void bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ubyte_t
 			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand? s->rseq : s->seq, (ubyte_t*)tmp_qual, &(s->count),
 								bns->l_pac, ntbns? ntpac : pacseq, str, &nm);
 			s->nm = nm;
+			free(tmp_qual);
 		}
 	}
 	free(str->s); free(str);
@@ -397,7 +398,8 @@ void bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ubyte_t
 		for (i = 0; i < n_seqs; ++i) bwa_correct_trimmed(seqs + i);
 
 	//if (!_pacseq) free(pacseq);
-	//free(ntpac);
+	if (!ntpac) free(ntpac);
+	return pacseq;
 }
 
 int64_t pos_end(const bwa_seq_t *p)

@@ -18,7 +18,7 @@ public:
 	std::unordered_map<std::string,uint32_t > RefTableIndex;
 	//unordered_map<string,bool> longRefTable;
 	RefBuilder();
-	RefBuilder(std::string VcfPath,std::string RefPath, std::string MaskPath, const gap_opt_t* opt);//, std::unordered_map<std::string,bool>& longRefTable);
+	RefBuilder(std::string VcfPath,std::string RefPath, std::string DBsnpPath,std::string MaskPath, const gap_opt_t* opt);//, std::unordered_map<std::string,bool>& longRefTable);
 	virtual ~RefBuilder();
 };
 
