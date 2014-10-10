@@ -221,13 +221,16 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
 
 			}
 
-
+		int max_XorYmarker(0);
+		if(opt->num_variant_short>=100000) max_XorYmarker=3000;
+		else if(opt->num_variant_short>=10000) max_XorYmarker=300;
+		else max_XorYmarker=100;
 		// choosing chrX and chrY
 		int Ynmarker=0,Xnmarker=0, chr_flag(-1);
 
 				while(!reader.isEOF())
 					{
-						if(Ynmarker>=100&&Xnmarker>=100)// for long region
+						if(Ynmarker>=max_XorYmarker&&Xnmarker>=max_XorYmarker)// for long region
 						{
 							break;
 						}
@@ -240,12 +243,12 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
 						string Chrom(VcfLine.getChromStr());
 						if(Chrom=="X"||Chrom=="x"||Chrom=="chrX"||Chrom=="chrx")
 						{
-							if(Xnmarker>=100) continue;
+							if(Xnmarker>=max_XorYmarker) continue;
 							chr_flag=0;
 						}
 						else if(Chrom=="Y"||Chrom=="y"||Chrom=="chrY"||Chrom=="chry")
 						{
-							if(Ynmarker>=100) continue;
+							if(Ynmarker>=max_XorYmarker) continue;
 							chr_flag=1;
 						}
 						else
@@ -253,10 +256,10 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
 
 
 						int Position=VcfLine.get1BasedPosition();
-						if((Chrom==last_chr&&abs(Position-last_pos)<300)||(Position>3000000 && Position<151000000)) continue;
+						if(Chrom==last_chr&&abs(Position-last_pos)<300) continue;
 						int dummy;
-						sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-opt->flank_long_len,Position+opt->flank_long_len);
-						/*if(MaskPath!="Empty")
+						sprintf(region, "%s:%d-%d", Chrom.c_str(),Position-250,Position+250);
+						if(MaskPath!="Empty")
 						{
 						//	cerr<<"region:"<<region<<endl;
 						string MaskSeq(fai_fetch(FastaMask, region, &dummy));
@@ -268,13 +271,13 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
 								cerr<<"Writing retained sites failed!\n";
 							exit(1);
 							}
-						}*/
+						}
 
 						string FetchedSeq(fai_fetch(seq, region, &dummy));
 
 						{//Calculate GC content
-							_GCstruct GCstruct(opt->flank_long_len*2+1);
-							for(unsigned int i=Position-opt->flank_long_len,t=0;i!=Position+opt->flank_long_len+1;++i,++t)
+							_GCstruct GCstruct(250*2+1);
+							for(unsigned int i=Position-250,t=0;i!=Position+250+1;++i,++t)
 							{
 								sprintf(region, "%s:%d-%d",Chrom.c_str(), i-50,i+49);
 								string Window(fai_fetch(seq, region, &dummy));
@@ -292,13 +295,13 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
 							GCstruct.write(FGC);
 						}
 
-						SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string("N")+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));// position 500 was replaced by AltAllele
+						SeqVec.push_back(FetchedSeq.substr(0,250)+string("N")+FetchedSeq.substr(250+1,250));// position 500 was replaced by AltAllele
 						sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 						RefTableIndex.insert( make_pair(string(region),nseqs));
 						//sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
 						//longRefTable.insert(make_pair(string(region),true));
 						//VariantLongTable[string(region)]=1;
-						sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_long_len, Position+opt->flank_long_len);
+						sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-250, Position+250);
 						BedFile<<region<<endl;
 						nseqs++;
 						if(chr_flag==0)
