@@ -108,10 +108,11 @@ typedef struct {
 	int flank_long_len;
 	unsigned int num_variant_short;//short region
 	unsigned int num_variant_long;//long region
-	bool cal_dup;//take duplicated_reads into account when cal depth
+	char cal_dup;//take duplicated_reads into account when cal depth
 	//bool out_bam;
 	char * RG;
-	char* bam_name;
+	char* out_bam;
+	char* in_bam;
 } gap_opt_t;
 
 #define BWA_PET_STD   1
@@ -119,7 +120,7 @@ typedef struct {
 
 typedef struct {
 	int max_isize, force_isize;
-	int max_occ;
+	uint32_t max_occ;
 	int n_multi, N_multi;
 	int type, is_sw, is_preload;
 	double ap_prior;
