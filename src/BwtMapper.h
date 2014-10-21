@@ -15,6 +15,7 @@
 #include "SamFileHeader.h"
 #include "SamRecord.h"
 #include "BamInterface.h"
+#include "SamFile.h"
 #ifndef BWAPE_H_
 #include "../libbwa/bwape.h"
 #endif
