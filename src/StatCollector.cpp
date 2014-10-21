@@ -436,7 +436,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 {
 	//int seqid(0), j(0);
 
-	if (p.getFlag() == SAM_FSU)
+	if (p.getFlag() & SAM_FSU)
 	{
 		return false;
 	}
@@ -520,7 +520,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 	char sign[2] =
 	{ 1, -1 };
 
-	bool strand = p.getFlag() & SAM_FSR;
+	bool strand = (p.getFlag() & SAM_FSR);
 	int mapQ = p.getMapQuality();
 	if (strand != 0)
 	{
@@ -1193,9 +1193,9 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 {
 
 //	if (p->type == BWA_TYPE_NO_MATCH)
-	if (p==0||(p->getFlag() ) == SAM_FSU)
+	if (p==0||(p->getFlag() & SAM_FSU))
 	{
-		if (q==0||(q->getFlag() ) == SAM_FSU) //both end are not mapped
+		if (q==0||(q->getFlag() & SAM_FSU)) //both end are not mapped
 			return 0;
 		else if (isPartialAlign(*q))  //only one pair partially mapped
 		{
@@ -1237,7 +1237,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 	}
 	else if (isPartialAlign(*p)) //p is partially aligned
 	{
-		if (q==0||(q->getFlag() ) == SAM_FSU) //q is not aligned
+		if (q==0||(q->getFlag() & SAM_FSU)) //q is not aligned
 		{
 			string pname(p->getReferenceName());
 			if (string(pname).find("chrY") != string::npos
@@ -1294,7 +1294,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 	}
 	else //p is perfectly aligned
 	{
-		if (q==0||(q->getFlag() )== SAM_FSU) // p is perfectly aligned, q is not
+		if (q==0||(q->getFlag() & SAM_FSU)) // p is perfectly aligned, q is not
 		{
 			string pname(p->getReferenceName());
 			if (string(pname).find("chrY") != string::npos
@@ -1364,21 +1364,26 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 }
 
 int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
-		SamFileHeader& SFH, BamInterface& BamIO, IFILE BamFile,
-		StatGenStatus &StatusTracker, std::ofstream & fout, int & total_add)
+		SamFileHeader& SFH, SamFile & SFIO,const char * BamFile,
+		 std::ofstream & fout, int & total_add)
 {
-	BamIO.readHeader(BamFile, SFH, StatusTracker);
+	if(!SFIO.OpenForRead(BamFile, &SFH))
+	{
+		cerr << SFIO.GetStatusMessage() << endl;
+		cerr << "Reading Bam Header Failed!" << endl;
+		exit(1);
+	}
 
 	unordered_map<string, SamRecord*> pairBuffer;
 	while (1)
 	{
 		SamRecord*  SR= new SamRecord;
-		BamIO.readRecord(BamFile, SFH, *SR, StatusTracker);
-		if (StatusTracker.getStatus())
+		//SFIO.ReadRecord( SFH, *SR);
+		if (!SFIO.ReadRecord( SFH, *SR))
 		{
-			cerr << StatusTracker.getStatusMessage() << endl;
-			//cerr << StatusTracker.getStatusString(StatusTracker.getStatus())<< endl;
+			cerr << SFIO.GetStatusMessage() << endl;
 			cerr << "End Bam File Reading..." << endl;
+			delete SR;
 			break;
 		}
 		string readName;

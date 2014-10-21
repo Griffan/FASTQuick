@@ -214,9 +214,11 @@ FastqA-FastqA.o: FastqA.cpp /usr/include/c++/4.8/iostream \
  /usr/include/libintl.h /usr/include/c++/4.8/bits/locale_facets_nonio.tcc \
  ../libStatGen/include/BamInterface.h \
  ../libStatGen/include/GenericSamInterface.h \
- ../libStatGen/include/SamRecord.h ../libStatGen/include/SamFileHeader.h \
- ../libbwa/bwape.h ../libbwa/bwtaln.h ../libbwa/kvec.h ../libbwa/bntseq.h \
- ../libbwa/utils.h ../misc/params.h ../libmpu/src/mpuTool.h
+ ../libStatGen/include/SamRecord.h ../libStatGen/include/SamFile.h \
+ ../libStatGen/include/BamIndex.h ../libStatGen/include/SamStatistics.h \
+ ../libStatGen/include/SamFileHeader.h ../libbwa/bwape.h \
+ ../libbwa/bwtaln.h ../libbwa/kvec.h ../libbwa/bntseq.h ../libbwa/utils.h \
+ ../misc/params.h ../libmpu/src/mpuTool.h
 
 /usr/include/c++/4.8/iostream:
 
@@ -817,6 +819,12 @@ StatCollector.h:
 ../libStatGen/include/GenericSamInterface.h:
 
 ../libStatGen/include/SamRecord.h:
+
+../libStatGen/include/SamFile.h:
+
+../libStatGen/include/BamIndex.h:
+
+../libStatGen/include/SamStatistics.h:
 
 ../libStatGen/include/SamFileHeader.h:
 
