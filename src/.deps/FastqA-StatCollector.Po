@@ -217,8 +217,10 @@ FastqA-StatCollector.o: StatCollector.cpp StatCollector.h Utility.h \
  /usr/include/libintl.h /usr/include/c++/4.8/bits/locale_facets_nonio.tcc \
  ../libStatGen/include/BamInterface.h \
  ../libStatGen/include/GenericSamInterface.h \
- ../libStatGen/include/SamRecord.h ../libbwa/bwase.h ../libbwa/bntseq.h \
- ../libbwa/bwtaln.h ../libbwa/bamlite.h /usr/include/c++/4.8/algorithm \
+ ../libStatGen/include/SamRecord.h ../libStatGen/include/SamFile.h \
+ ../libStatGen/include/BamIndex.h ../libStatGen/include/SamStatistics.h \
+ ../libbwa/bwase.h ../libbwa/bntseq.h ../libbwa/bwtaln.h \
+ ../libbwa/bamlite.h /usr/include/c++/4.8/algorithm \
  /usr/include/c++/4.8/bits/stl_algo.h \
  /usr/include/c++/4.8/bits/algorithmfwd.h \
  /usr/include/c++/4.8/bits/stl_heap.h \
@@ -827,6 +829,12 @@ Utility.h:
 ../libStatGen/include/GenericSamInterface.h:
 
 ../libStatGen/include/SamRecord.h:
+
+../libStatGen/include/SamFile.h:
+
+../libStatGen/include/BamIndex.h:
+
+../libStatGen/include/SamStatistics.h:
 
 ../libbwa/bwase.h:
 
