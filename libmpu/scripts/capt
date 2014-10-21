@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+
+##################################################################
+## CAPT : Contamination Aware Pileup Toolkit
+## Hyun Min Kang, Matthew Flickinger, Goo Jun
+##################################################################
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+use Cwd;
+use FindBin;
+use lib "$FindBin::Bin";
+my $dir = $FindBin::Bin;
+my $bindir = $dir;
+
+if ( $#ARGV < 0 ) {
+    print STDERR "ERROR: Missing command. Please see the usage below.\n";
+    pod2usage(1);
+}
+elsif ( $ARGV[0] =~ /^([\-])*man$/ ) {
+    pod2usage(-verbose => 2);
+}
+elsif ( $ARGV[0] =~ /^([\-])*help$/ ) {
+    pod2usage(1);
+}
+elsif ( $ARGV[0] eq "pileup" ) {
+    shift(@ARGV);
+    exec("$bindir/capt-pileup",@ARGV);
+}
+elsif ( $ARGV[0] eq "verify") {
+    shift(@ARGV);
+    exec("$bindir/capt-verify",@ARGV);
+}
+elsif ( $ARGV[0] eq "genotype") {
+    shift(@ARGV);
+    exec("$bindir/capt-genotype",@ARGV);
+}
+elsif ( $ARGV[0] eq "set-genotype") {
+    shift(@ARGV);
+    exec("$bindir/capt-set-genotype",@ARGV);
+}
+else {
+    print STDERR "ERROR: Unknown command $ARGV[0]. Please see the usage below.\n";
+    pod2usage(1);
+}
+
+__END__
+
+=head1 NAME
+
+capt - Contamination Aware Pileup Toolkit
+
+=head1 SYNOPSIS
+
+capt [command] [options] 
+
+ Command:
+   help            Print out brief help message
+   man             Print the full documentation in man page style
+   verify          Verify the sequence quality and estimate contamination
+   genotype        Genotype known variants allowing contamination estimates
+
+ Visit http://genome.sph.umich.edu/wiki/CAPT for more detailed documentation
+
+=head1 COMMANDS
+
+=over 8
+
+=item B<help>
+
+Print a brief help message and exits.
+
+=item B<man>
+
+Prints the manual page and exits.
+
+=item B<verify>
+
+Detect and estimate contamination level from pileup data
+
+=item B<genotype>
+
+Genotype known variants under statistical model for contamination.
+
+=cut
