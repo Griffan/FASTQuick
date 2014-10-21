@@ -1150,18 +1150,19 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
     {
       cerr << "Input alignments from bam file..." << endl;
       SamFileHeader SFH;
-      BamInterface BamIO;
-      IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
-      StatGenStatus StatusTracker;
-      StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+      //BamInterface BamIO;
+      SamFile SFIO;
+      //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
+      //StatGenStatus StatusTracker;
+     // StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
       fprintf(stderr, "Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
-      collector.ReadAlignmentFromBam(opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
+      collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam, fout, total_add);
       cerr << "In total " << total_add << " reads were calculated!" << endl;
       fout.close();
-      BamFile->ifclose();
+     // BamFile->ifclose();
       // destroy
       fprintf(stderr, "Calculate distributions...\n ");
       collector.processCore(Prefix,opt);
@@ -1251,19 +1252,19 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
     {
       cerr << "Input alignments from bam file..." << endl;
       SamFileHeader SFH;
-      BamInterface BamIO;
-      IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
-      StatGenStatus StatusTracker;
-      StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-      fprintf(stderr, "Restore Variant Site Info...\n");
-      collector.restoreVcfSites(VcfPath, opt);
-      ofstream fout(Prefix + ".InsertSizeTable");
-      int total_add = 0;
-      collector.ReadAlignmentFromBam(opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-      cerr << "In total " << total_add << " reads were calculated!" << endl;
-      fout.close();
-      BamFile->ifclose();
-
+         //BamInterface BamIO;
+         SamFile SFIO;
+         //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
+        // StatGenStatus StatusTracker;
+         //StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+         fprintf(stderr, "Restore Variant Site Info...\n");
+         collector.restoreVcfSites(VcfPath, opt);
+         ofstream fout(Prefix + ".InsertSizeTable");
+         int total_add = 0;
+         collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam,fout, total_add);
+         cerr << "In total " << total_add << " reads were calculated!" << endl;
+         fout.close();
+        // BamFile->ifclose();
       fprintf(stderr, "Calculate distributions... ");
       collector.processCore(Prefix,opt);
     }
