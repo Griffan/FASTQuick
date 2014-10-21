@@ -1,0 +1,3 @@
+[submodule "libStatGen"]
+	path = libStatGen
+	url = https://github.com/statgen/libStatGen.git
