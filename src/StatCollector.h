@@ -14,6 +14,7 @@
 #include "../libbwa/bntseq.h"
 #include "SamRecord.h"
 #include "BamInterface.h"
+#include "SamFile.h"
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 
@@ -81,7 +82,7 @@ public:
 	int addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q, const gap_opt_t* opt, std::ofstream & fout, int &);
 	int IsDuplicated(  SamFileHeader& SFH, SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
 
-	int ReadAlignmentFromBam( const gap_opt_t* opt, SamFileHeader& SFH, BamInterface& BamIO, IFILE BamFile, StatGenStatus &StatusTracker, std::ofstream & fout,int & total_add);
+	int ReadAlignmentFromBam( const gap_opt_t* opt, SamFileHeader& SFH, SamFile& BamIO, const char * BamFile, std::ofstream & fout,int & total_add);
 
 	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
 	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
