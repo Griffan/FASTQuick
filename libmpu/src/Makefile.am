@@ -29,7 +29,7 @@ libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp BaseAsci
 
 libmpu_a_LIBADD = libtabix.a
 
-libmpu_a_LDFLAGS = -static
+#libmpu_a_LDFLAGS = -static
 
 ## Define an independent executable script for inclusion in the distribution
 ## archive. It will not be installed on an end user's system, however.
