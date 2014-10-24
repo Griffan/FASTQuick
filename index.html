@@ -40,16 +40,25 @@ It rapidly map reads to selected region and generate a variety of quality contro
 <p>FastqA has multiple modes:</p>
 
 <ol>
-<li><p>Generate selected region using user specified parameters, then do the following analysis.
-Typical command line instruction:
-FastqA --vcf hapmap_3.3.b37.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --mask 20141007.all.strict_mask.fasta --fastq_1 read1.fastq --fastq_2 read2.fastq --bam_out debug.bam --cal_dup  --prefix shuffled.all</p></li>
-<li><p>Use pre-selected sites to analyze. FastqA also accept single end fastq as well as fastq file list as input.
-Typical command line instruction:
-FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --fastq_1 read1.fastq  --bam_out debug.bam --cal_dup  --prefix shuffled.all</p></li>
-<li><p>Use bam files along with corresponding selected regions to analyze.
-Typical command line instruction:
-FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000  --bam_in debug.bam --cal_dup  --prefix shuffled.all</p></li>
+<li>Generate selected region using user specified parameters, then do the following analysis.</li>
 </ol>
+
+<p>Typical command line instruction:
+<code>FastqA --vcf hapmap_3.3.b37.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --mask 20141007.all.strict_mask.fasta --fastq_1 read1.fastq --fastq_2 read2.fastq --bam_out debug.bam --cal_dup  --prefix shuffled.all</code></p>
+
+<ol>
+<li>Use pre-selected sites to analyze. FastqA also accept single end fastq as well as fastq file list as input.</li>
+</ol>
+
+<p>Typical command line instruction:
+<code>FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --fastq_1 read1.fastq  --bam_out debug.bam --cal_dup  --prefix shuffled.all</code></p>
+
+<ol>
+<li>Use bam files along with corresponding selected regions to analyze.</li>
+</ol>
+
+<p>Typical command line instruction:
+<code>FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000  --bam_in debug.bam --cal_dup  --prefix shuffled.all</code></p>
 
 <h1>
 <a name="faq" class="anchor" href="#faq"><span class="octicon octicon-link"></span></a>FAQ:</h1>
