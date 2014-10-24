@@ -218,7 +218,7 @@ FastqA-FastqA.o: FastqA.cpp /usr/include/c++/4.8/iostream \
  ../libStatGen/include/BamIndex.h ../libStatGen/include/SamStatistics.h \
  ../libStatGen/include/SamFileHeader.h ../libbwa/bwape.h \
  ../libbwa/bwtaln.h ../libbwa/kvec.h ../libbwa/bntseq.h ../libbwa/utils.h \
- ../misc/params.h ../libmpu/src/mpuTool.h
+ ../misc/params.h ../libmpu/mpuTool.h ../misc/Error.h
 
 /usr/include/c++/4.8/iostream:
 
@@ -840,4 +840,6 @@ StatCollector.h:
 
 ../misc/params.h:
 
-../libmpu/src/mpuTool.h:
+../libmpu/mpuTool.h:
+
+../misc/Error.h:

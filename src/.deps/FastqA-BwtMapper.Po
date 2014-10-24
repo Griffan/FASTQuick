@@ -220,7 +220,7 @@ FastqA-BwtMapper.o: BwtMapper.cpp BwtMapper.h BwtIndexer.h \
  ../libStatGen/include/BamIndex.h ../libStatGen/include/SamStatistics.h \
  ../libStatGen/include/SamFileHeader.h ../libbwa/bwape.h \
  ../libbwa/bwtaln.h ../libbwa/kvec.h ../libbwa/bntseq.h ../libbwa/utils.h \
- ../libbwa/bwtgap.h ../libbwa/bwase.h ../libbwa/khash.h \
+ ../libbwa/bwtgap.h ../libbwa/bwase.h ../libbwa/khash.h ../misc/Error.h \
  /usr/include/c++/4.8/algorithm /usr/include/c++/4.8/bits/stl_algo.h \
  /usr/include/c++/4.8/bits/algorithmfwd.h \
  /usr/include/c++/4.8/bits/stl_heap.h \
@@ -861,6 +861,8 @@ StatCollector.h:
 ../libbwa/bwase.h:
 
 ../libbwa/khash.h:
+
+../misc/Error.h:
 
 /usr/include/c++/4.8/algorithm:
 
