@@ -195,7 +195,7 @@ top_build_prefix =
 top_builddir = .
 top_srcdir = .
 AUTOMAKE_OPTIONS = foreign     
-SUBDIRS = libmpu libbwa misc src
+SUBDIRS = libStatGen  libmpu libbwa misc src
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

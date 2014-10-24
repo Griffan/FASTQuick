@@ -14,10 +14,13 @@
 #include <algorithm>
 using namespace std;
 extern string Prefix;
+extern void notice(const char*,...);
+extern void warning(const char*,...);
+extern void error(const char*,...);
 StatCollector::StatCollector()
 {
 	// TODO Auto-generated constructor stub
-	cerr << "Using default initializer..." << endl;
+	//cerr << "NOTE:Using default initializer..." << endl;
 	PositionTable.clear();
 	VcfRecVec.clear();
 	duplicateTable.clear();
@@ -325,7 +328,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 //	      break;
 
 			default:
-				fprintf(stderr, "Unhandled cigar_op %d:%d\n", cop, cl);
+				warning("Unhandled cigar_op %d:%d\n", cop, cl);
 				printf("?");
 			}
 		}			//end for
@@ -660,7 +663,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 				left_to_right_coord += cl;
 				break;
 			default:
-				fprintf(stderr, "Unhandled cigar_op %d:%d\n", cop, cl);
+				warning("Unhandled cigar_op %d:%d\n", cop, cl);
 				printf("?");
 			}
 		}			//end for
@@ -826,7 +829,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	}
 	else
 	{
-		cerr << "alignment status fatal error!" << endl;
+		warning("Alignment status fatal error!\n");
 		exit(1);
 	}
 
@@ -963,7 +966,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 	}
 	else
 	{
-		cerr << "alignment status fatal error!" << endl;
+		warning("Alignment status fatal error!\n");
 		exit(1);
 	}
 
@@ -1370,7 +1373,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 	if(!SFIO.OpenForRead(BamFile, &SFH))
 	{
 		cerr << SFIO.GetStatusMessage() << endl;
-		cerr << "Reading Bam Header Failed!" << endl;
+		warning("Reading Bam Header Failed!\n");
 		exit(1);
 	}
 
@@ -1382,7 +1385,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 		if (!SFIO.ReadRecord( SFH, *SR))
 		{
 			cerr << SFIO.GetStatusMessage() << endl;
-			cerr << "End Bam File Reading..." << endl;
+			notice("End Bam File Reading...\n");
 			delete SR;
 			break;
 		}
@@ -1427,7 +1430,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	string SelectedSite = Prefix + ".SelectedSite.vcf.gz";
 	if (!reader.open(SelectedSite.c_str(), header))
 	{
-		std::cerr<<"File open failed: "<<SelectedSite<<std::endl;
+		warning("File open failed: %s\n",SelectedSite.c_str());
 	}
 	string GCpath = Prefix + ".gc";
 	ifstream FGC(GCpath, ios_base::binary);
@@ -1464,7 +1467,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	string BedFile = Prefix + ".subset.vcf";
 	if (!reader.open(BedFile.c_str(), header))
 	{
-		std::cerr << BedFile << " open failed!" << std::endl;
+		notice("Open %s failed!\n",BedFile.c_str());
 		exit(1);
 	}
 	while (!reader.isEOF())
@@ -1655,12 +1658,12 @@ int StatCollector::outputPileup(const string & outputPath)
 	sprintf(cmdline,"bgzip -f %s.Pileup",outputPath.c_str());
 	if(system(cmdline)!=0)
 	{
-		std::cerr<<"Call command line:\n"<<cmdline<<"\nfailed!"<<std::endl;
+		warning("Call command line:\n%s\nfailed!\n",cmdline);
 	}
 	sprintf(cmdline,"tabix  -s 1 -b 2 -e 2 %s.Pileup.gz",outputPath.c_str());
 	if(system(cmdline)!=0)
 	{
-		std::cerr<<"Call command line:\n"<<cmdline<<"\nfailed!"<<std::endl;
+		warning("Call command line:\n%s\nfailed!\n",cmdline);
 	}
 	return 0;
 }

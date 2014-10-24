@@ -42,6 +42,6 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([gettimeofday memmove memset pow strdup strerror strstr])
 
-AC_CONFIG_FILES([Makefile src/Makefile libbwa/Makefile misc/Makefile libmpu/Makefile libmpu/src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile libbwa/Makefile misc/Makefile libmpu/Makefile])
 AC_CONFIG_SUBDIRS([libmpu][libbwa][src][misc])
 AC_OUTPUT()
