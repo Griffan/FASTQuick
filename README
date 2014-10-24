@@ -1,1 +1,20 @@
+Introduction:
 FastqA is a software used for fast validation of fastq files in short time.
+It rapidly map reads to selected region and generate a variety of quality control statistics. 
+
+Usage:
+FastqA has multiple modes:
+1. Generate selected region using user specified parameters, then do the following analysis.
+Typical command line instruction:
+FastqA --vcf hapmap_3.3.b37.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --mask 20141007.all.strict_mask.fasta --fastq_1 read1.fastq --fastq_2 read2.fastq --bam_out debug.bam --cal_dup  --prefix shuffled.all
+
+2. Use pre-selected sites to analyze. FastqA also accept single end fastq as well as fastq file list as input.
+Typical command line instruction:
+FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000 --fastq_1 read1.fastq  --bam_out debug.bam --cal_dup  --prefix shuffled.all
+
+3. Use bam files along with corresponding selected regions to analyze.
+Typical command line instruction:
+FastqA --vcf pre-selected.sites.vcf --dbsnp dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --flank_len 1000 --var_short 1000  --bam_in debug.bam --cal_dup  --prefix shuffled.all
+
+FAQ:
+
