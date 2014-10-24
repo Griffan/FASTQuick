@@ -159,7 +159,7 @@ FastqA-BwtIndexer.o: BwtIndexer.cpp BwtIndexer.h ../libbwa/bntseq.h \
  /usr/include/x86_64-linux-gnu/bits/mathdef.h \
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
  /usr/include/x86_64-linux-gnu/bits/mathinline.h ../libbwa/utils.h \
- ../libbwa/kseq.h /usr/include/c++/4.8/iostream
+ ../libbwa/kseq.h /usr/include/c++/4.8/iostream ../misc/Error.h
 
 BwtIndexer.h:
 
@@ -584,3 +584,5 @@ Utility.h:
 ../libbwa/kseq.h:
 
 /usr/include/c++/4.8/iostream:
+
+../misc/Error.h:

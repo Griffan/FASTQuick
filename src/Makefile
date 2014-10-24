@@ -49,7 +49,7 @@ am_FastqA_OBJECTS = FastqA-FastqA.$(OBJEXT) \
 	FastqA-BwtIndexer.$(OBJEXT) FastqA-BwtMapper.$(OBJEXT) \
 	FastqA-RefBuilder.$(OBJEXT) FastqA-StatCollector.$(OBJEXT)
 FastqA_OBJECTS = $(am_FastqA_OBJECTS)
-FastqA_DEPENDENCIES = ../libmpu/src/libtabix.a ../libmpu/src/libmpu.a \
+FastqA_DEPENDENCIES = ../libmpu/libtabix.a ../libmpu/libmpu.a \
 	../libbwa/libbwa.a ../misc/libmisc.a
 FastqA_LINK = $(CXXLD) $(FastqA_CXXFLAGS) $(CXXFLAGS) \
 	$(FastqA_LDFLAGS) $(LDFLAGS) -o $@
@@ -162,8 +162,8 @@ top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign     
 FastqA_SOURCES = FastqA.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp
 FastqA_LDFLAGS = 
-FastqA_LDADD = ../libmpu/src/libtabix.a ../libmpu/src/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a -lStatGen -lmpu -ltabix
-FastqA_CXXFLAGS = -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/src/
+FastqA_LDADD = ../libmpu/libtabix.a ../libmpu/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a -lStatGen -lmpu -ltabix
+FastqA_CXXFLAGS = -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/
 all: all-am
 
 .SUFFIXES:

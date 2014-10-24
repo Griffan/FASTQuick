@@ -13,6 +13,7 @@
 #include  <unordered_map>
 #include <vector>
 #include <fstream>
+
 //static std::unordered_map<std::string, bool> VariantLongTable;
 class _GCstruct
 {

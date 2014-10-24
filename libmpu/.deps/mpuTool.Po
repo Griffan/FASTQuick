@@ -119,7 +119,7 @@ mpuTool.o: mpuTool.cpp Parameters.h /usr/include/ctype.h \
  /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
  /usr/include/x86_64-linux-gnu/bits/environments.h \
  /usr/include/x86_64-linux-gnu/bits/confname.h /usr/include/getopt.h \
- /usr/include/x86_64-linux-gnu/bits/unistd.h bgzf.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd.h mbgzf.h \
  /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h /usr/include/stdint.h \
  tabix.h kstring.h wFile.h /usr/include/c++/4.8/cstdarg boolParser.h \
  /usr/include/c++/4.8/climits PhredHelper.h Constant.h BaseAsciiMap.h \
@@ -450,7 +450,7 @@ pFile.h:
 
 /usr/include/x86_64-linux-gnu/bits/unistd.h:
 
-bgzf.h:
+mbgzf.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h:
 

@@ -161,11 +161,12 @@ FastqA-RefBuilder.o: RefBuilder.cpp /usr/include/c++/4.8/algorithm \
  /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++io.h \
  /usr/include/c++/4.8/bits/fstream.tcc ../libbwa/bwtaln.h ../libbwa/bwt.h \
  /usr/include/string.h /usr/include/x86_64-linux-gnu/bits/string3.h \
- ../libbwa/stdaln.h ../misc/faidx.h ../libStatGen/include/VcfFileReader.h \
- ../libStatGen/include/VcfFile.h ../libStatGen/include/InputFile.h \
- /usr/include/c++/4.8/iostream /usr/include/c++/4.8/cstring \
- ../libStatGen/include/FileType.h ../libStatGen/include/VcfHeader.h \
- ../libStatGen/include/StringArray.h ../libStatGen/include/StringBasics.h \
+ ../libbwa/stdaln.h ../misc/faidx.h ../misc/Error.h \
+ ../libStatGen/include/VcfFileReader.h ../libStatGen/include/VcfFile.h \
+ ../libStatGen/include/InputFile.h /usr/include/c++/4.8/iostream \
+ /usr/include/c++/4.8/cstring ../libStatGen/include/FileType.h \
+ ../libStatGen/include/VcfHeader.h ../libStatGen/include/StringArray.h \
+ ../libStatGen/include/StringBasics.h \
  ../libStatGen/include/StatGenStatus.h \
  ../libStatGen/include/ErrorHandler.h ../libStatGen/include/VcfRecord.h \
  ../libStatGen/include/VcfRecordFilter.h \
@@ -612,6 +613,8 @@ Utility.h:
 ../libbwa/stdaln.h:
 
 ../misc/faidx.h:
+
+../misc/Error.h:
 
 ../libStatGen/include/VcfFileReader.h:
 

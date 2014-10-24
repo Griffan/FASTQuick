@@ -17,8 +17,11 @@
 #include <zlib.h>
 #include "../libbwa/kseq.h"
 #include <iostream>
+#include "../misc/Error.h"
 using namespace std;
-
+extern void notice(const char*,...);
+extern void warning(const char*,...);
+extern void error(const char*,...);
 typedef uint32_t u_int32_t;
 
 #ifdef DEBUG
@@ -217,9 +220,7 @@ void BwtIndexer::InitializeRollHashTable()
 		roll_hash_table[i] = (unsigned char *) calloc(hash_table_size,
 				sizeof(char));
 
-	cerr << "Initializing Rolling Hash Table with size:" << hash_table_size
-			<< " bytes..." << (float) (clock() - t) / CLOCKS_PER_SEC << "sec"
-			<< endl;
+	notice(" Initializing Rolling Hash Table with size: %d bytes in %d sec\n",hash_table_size, (float) (clock() - t) / CLOCKS_PER_SEC);
 
 	assert(roll_hash_table != 0);
 }
@@ -230,7 +231,7 @@ void BwtIndexer::ReadRollHashTable(const std::string& prefix)
 	ifstream fin(infile, std::ofstream::binary);
 	if (!fin.is_open())
 	{
-		cerr << infile << " open failed!\n";
+		error("Open %s failed!\n",infile.c_str());
 		exit(1);
 	}
 	for (int i = 0; i != 6; ++i)
@@ -244,7 +245,7 @@ void BwtIndexer::DumpRollHashTable(const std::string& prefix)
 	ofstream fout(outfile, std::ofstream::binary);
 	if (!fout.is_open())
 	{
-		cerr << outfile << " open failed!\n";
+		error("Open %s failed!\n",outfile.c_str());
 		exit(1);
 	}
 	for (int i = 0; i != 6; ++i)
@@ -325,7 +326,7 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 	//str=prefix+".pac";
 	//std::cerr<<"The bwa seq len is:"<<bwa_seq_len(str.c_str())<<std::endl;
 	bns_dump(bns, prefix.c_str());
-	cerr << "Pac2Bwt..." << endl;
+	notice(" Building Pac from Bwt...\n");
 	bwt_d = Pac2Bwt(pac_buf);
 	//cerr<<"Pac2Bwt..."<<bwt_d->bwt_size<<endl;
 	rbwt_d = Pac2Bwt(rpac_buf);
@@ -335,7 +336,7 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 	bwt_bwtupdate_core(bwt_d);
 	//cerr<<"Bwt update..."<<bwt_d->bwt_size<<endl;
 	bwt_bwtupdate_core(rbwt_d);
-	cerr << "Dumping bwt..." << endl;
+	notice("Dumping Bwt...\n");
 	str = prefix + ".bwt";
 	bwt_dump_bwt(str.c_str(), bwt_d);
 	str = prefix + ".rbwt";
@@ -344,7 +345,7 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 
 	//bwt_d=bwt_gen_cnt_table(bwt_d);
 	//rbwt_d=bwt_gen_cnt_table(rbwt_d);
-	cerr << "Calculate bwt SA..." << endl;
+	notice("Calculate SA from Bwt...\n");
 	str = prefix + ".sa";
 	bwt_cal_sa(bwt_d, 32);
 	bwt_dump_sa(str.c_str(), bwt_d);
@@ -413,7 +414,7 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	fp = xopen(name, "wb");
 	// read sequences
 	//while ((l = kseq_read(seq)) >= 0) {
-	DBG(fprintf(stderr,"Come into Fa2Pac...\n");)
+	DBG(fprintf(stderr,"NOTE:Come into Fa2Pac...\n");)
 	string RefOutput(prefix);
 	RefOutput+=".ref.fa";
 	ofstream Fout(RefOutput);
