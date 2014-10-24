@@ -1,1 +1,0 @@
-dist_bin_SCRIPTS = capt capt-pileup capt-verify capt-verify-merge capt-genotype capt-set-genotype
