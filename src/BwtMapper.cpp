@@ -14,10 +14,16 @@
 #include "../libbwa/bwase.h"
 #include "../libbwa/bwape.h"
 #include "../libbwa/khash.h"
+#include "../misc/Error.h"
 #include <algorithm>
-KHASH_MAP_INIT_INT64(64, poslist_t)
+
+
 using namespace std;
 extern string Prefix;
+extern void notice(const char*,...);
+extern void warning(const char*,...);
+extern void error(const char*,...);
+KHASH_MAP_INIT_INT64(64, poslist_t)
 kh_64_t *g_hash;
 //#define DEBUG 0
 #ifdef DEBUG
@@ -476,7 +482,7 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns)
 
   /*PACKAGE_VERSION*/
   if(!SFH.setPGTag("VN", "1.0.0", "FastqA"))
-    std::cerr<<"SetPGTag failed"<<endl;
+    std::cerr<<"WARNING:SetPGTag failed"<<endl;
 
 
   if (bwa_rg_line&&strstr(bwa_rg_line, "@RG") == bwa_rg_line)
@@ -491,7 +497,7 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns)
           tag[2]=0;
           value=token.substr(3,token.size()-3);
           if(!SFH.setRGTag(tag, value.c_str(), bwa_rg_id))
-            std::cerr<<"SetRGTag failed"<<endl;
+            std::cerr<<"WARNING:SetRGTag failed"<<endl;
         }
     }
 
@@ -499,7 +505,7 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns)
     {
 
       if(!SFH.setSQTag("LN", std::to_string(bns->anns[i].len).c_str(), bns->anns[i].name))
-        std::cerr<<"SetSQTag failed"<<endl;
+        std::cerr<<"WARNING:SetSQTag failed"<<endl;
       //printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
     }
 
@@ -1148,28 +1154,28 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
   bwa_set_rg(opt->RG);
   if(opt->in_bam!=0)
     {
-      cerr << "Input alignments from bam file..." << endl;
+      notice(" Input alignments from Bam file...\n");
       SamFileHeader SFH;
       //BamInterface BamIO;
       SamFile SFIO;
       //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
       //StatGenStatus StatusTracker;
      // StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-      fprintf(stderr, "Restore Variant Site Info...\n");
+      notice("Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam, fout, total_add);
-      cerr << "In total " << total_add << " reads were calculated!" << endl;
+      notice( "%d reads were calculated...\n",total_add);
       fout.close();
      // BamFile->ifclose();
       // destroy
-      fprintf(stderr, "Calculate distributions...\n ");
+      notice("Calculate distributions...\n ");
       collector.processCore(Prefix,opt);
     }
   else if (Fastq_2 != "Empty")
     {
-      cerr << "Now processing Pair End mapping..." << endl;
+      notice("Using Pair End mapping...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
       IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
@@ -1186,28 +1192,28 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
         {
           if(!BamFile->isOpen())
             {
-              cerr<<"Open Bam file for writing failed, abort!"<<endl;
+              warning("Open Bam file for writing failed, abort!\n");
               exit(1);
             }
           SetSamFileHeader(SFH,BwtIndex.bns);
           BamIO.writeHeader(BamFile,SFH,StatusTracker);
         }
-      fprintf(stderr, "Restore Variant Site Info...\n");
+      notice("Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), Prefix, popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-      cerr << "In total " << total_add << " reads were calculated!" << endl;
+      notice( " %d reads were calculated...\n", total_add);
       fout.close();
       BamFile->ifclose();
       // destroy
-      fprintf(stderr, "Calculate distributions... ");
+      notice("Calculate distributions... \n");
       collector.processCore(Prefix,opt);
 
     }
   else
     {
-      cerr << "Now processing Single End mapping..." << endl;
+      notice("Using Single End mapping...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
       IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
@@ -1224,13 +1230,13 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
         {
           if(!BamFile->isOpen())
             {
-              cerr<<"Open Bam file for writing failed, abort!"<<endl;
+             warning("Open Bam file for writing failed, abort!\n");
               exit(1);
             }
           SetSamFileHeader(SFH,BwtIndex.bns);
           BamIO.writeHeader(BamFile,SFH,StatusTracker);
         }
-      fprintf(stderr, "Restore Variant Site Info...\n");
+      notice("Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
@@ -1239,7 +1245,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
       BamFile->ifclose();
       delete BamFile;
       // destroy
-      fprintf(stderr, "Calculate distributions...\n ");
+     notice("Calculate distributions...\n ");
       collector.processCore(Prefix,opt);
     }
 }
@@ -1250,27 +1256,27 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
   bwa_set_rg(opt->RG);
   if(opt->in_bam!=0)
     {
-      cerr << "Input alignments from bam file..." << endl;
+      notice("Input alignments from Bam file...\n");
       SamFileHeader SFH;
          //BamInterface BamIO;
          SamFile SFIO;
          //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
         // StatGenStatus StatusTracker;
          //StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-         fprintf(stderr, "Restore Variant Site Info...\n");
+        notice("Restore Variant Site Info...\n");
          collector.restoreVcfSites(VcfPath, opt);
          ofstream fout(Prefix + ".InsertSizeTable");
          int total_add = 0;
          collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam,fout, total_add);
-         cerr << "In total " << total_add << " reads were calculated!" << endl;
+         notice("%d reads were calculated!\n",total_add);
          fout.close();
         // BamFile->ifclose();
-      fprintf(stderr, "Calculate distributions... ");
+     notice("Calculate distributions...\n");
       collector.processCore(Prefix,opt);
     }
   else
     {
-	  std::cerr<<"Open Fastq List ... "<<endl;
+	  notice("Open Fastq List ...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
       IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
@@ -1285,13 +1291,13 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
         {
           if(!BamFile->isOpen())
             {
-              cerr<<"Open Bam file for writing failed, abort!"<<endl;
+              warning("Open Bam file for writing failed, abort!\n");
               exit(1);
             }
           SetSamFileHeader(SFH,BwtIndex.bns);
           BamIO.writeHeader(BamFile,SFH,StatusTracker);
         }
-      fprintf(stderr, "Restore Variant Site Info...\n");
+      notice("Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
@@ -1305,25 +1311,22 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
           ss>>Fastq_1>>Fastq_2;
           if (Fastq_2 != "")
             {
-              cerr << "Now processing Pair End mapping\t"<<i<<"\t..." << endl;
-              cerr<<Fastq_1<<endl;
-              cerr<<Fastq_2<<endl;
+              notice("Processing Pair End mapping\t%d\n%s\n%s\n",i,Fastq_1.c_str(),Fastq_2.c_str());
               PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), VcfPath, popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
 
             }
           else
             {
-              cerr << "Now processing Single End mapping\t"<<i<<"\t..." << endl;
-              cerr<<Fastq_1<<endl;
+              notice("Processing Single End mapping\t%d\n%s\n",i, Fastq_1.c_str() );
               SingleEndMapper(BwtIndex, Fastq_1.c_str(), VcfPath, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
             }
         }
-      cerr << "In total " << total_add << " reads were calculated!" << endl;
+      notice("%d reads were calculated!",total_add);
       fout.close();
       BamFile->ifclose();
       delete BamFile;
       // destroy
-      fprintf(stderr, "Calculate distributions... \n");
+      notice("Calculate distributions... \n");
       collector.processCore(Prefix,opt);
     }
 }
