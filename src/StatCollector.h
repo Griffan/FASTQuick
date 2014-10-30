@@ -26,7 +26,21 @@ typedef std::unordered_map<std::string, std::unordered_map< int, unsigned int  >
 typedef std::map<std::string, std::map< int, unsigned int  > > sort_map;
 typedef std::unordered_map<std::string, std::unordered_map< int, bool> > bool_table;
 //typedef vector<VcfRecord> VcfRecVec;
-
+class FileStatCollector
+{
+public:
+	int NumRead;
+	int NumBase;
+	std::string FileName1,FileName2;
+	FileStatCollector():NumRead(0),NumBase(0),FileName1(0),FileName2(0)
+	{}
+	FileStatCollector(const char* filename):NumRead(0),NumBase(0),FileName1(filename),FileName2(0)
+	{
+	}
+	FileStatCollector(const char* filename1, const char* filename2):NumRead(0),NumBase(0),FileName1(filename1),FileName2(filename2)
+	{
+	}
+};
 class StatCollector
 {
 private:
@@ -67,7 +81,7 @@ private:
 
 	std::unordered_map<std::string,ContigStatus> contigStatusTable;
 
-
+	std::vector<FileStatCollector> FSCVec;
 
 private:
 	int addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt);
@@ -82,7 +96,7 @@ public:
 	int addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q, const gap_opt_t* opt, std::ofstream & fout, int &);
 	int IsDuplicated(  SamFileHeader& SFH, SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
 
-	int ReadAlignmentFromBam( const gap_opt_t* opt, SamFileHeader& SFH, SamFile& BamIO, const char * BamFile, std::ofstream & fout,int & total_add);
+	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
 
 	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
 	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
@@ -179,6 +193,8 @@ public:
 		return true;
 	}
 
+	int addFSC(FileStatCollector a);
+	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
 	virtual ~StatCollector();
 };
 
