@@ -833,12 +833,12 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 
   ubyte_t *pacseq = 0;
   t = clock();
-
+  FileStatCollector FSC(fn_fa);
   while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt->mode, opt->trim_qual))
          != 0)
     {
       tot_seqs += n_seqs;
-
+      FSC.NumRead+=n_seqs;
       fprintf(stderr, "Reading in %d sequences into buffer...", n_seqs);
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
@@ -889,6 +889,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
       for (i = 0; i < n_seqs; ++i)
         {
           bwa_seq_t *p = seqs + i;
+          FSC.NumBase+=p->full_len;
           bwa_aln2seq_core(p->n_aln, p->aln, p, 1, N_OCC);
 
         }
@@ -940,6 +941,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
       fprintf(stderr, " %d sequences have been processed.\n", tot_seqs);
       //t = clock();
     } //end while
+  collector.addFSC(FSC);
   //bam_destroy1(b);
   if(pacseq)
     free(pacseq);
@@ -975,15 +977,17 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
   bwt[1] = BwtIndex.rbwt_d;
 
   ubyte_t *pacseq = 0;
-
+  FileStatCollector FSC(fn_fa1,fn_fa2);
   while ((seqs[0] = bwa_read_seq(ks[0], 0x40000, &n_seqs, opt->mode,
                                  opt->trim_qual)) != 0)
     { // opt should be different for two fa files theoretically
+	  FSC.NumRead+=n_seqs;
       int cnt_chg;
       isize_info_t ii;
 
 
       seqs[1] = bwa_read_seq(ks[1], 0x40000, &n_seqs, opt->mode, opt->trim_qual);
+	  FSC.NumRead+=n_seqs;
       tot_seqs += n_seqs;
       t = clock();
       fprintf(stderr, "Reading in %d sequences into buffer...\n", n_seqs);
@@ -1081,6 +1085,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
+        	  FSC.NumBase+=p[0]->full_len;
+        	  FSC.NumBase+=p[1]->full_len;
               if (p[0]->bc[0] || p[1]->bc[0])
                 {
                   strcat(p[0]->bc, p[1]->bc);
@@ -1101,6 +1107,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
+        	  FSC.NumBase+=p[0]->full_len;
+        	  FSC.NumBase+=p[1]->full_len;
               if (p[0]->bc[0] || p[1]->bc[0])
                 {
                   strcat(p[0]->bc, p[1]->bc);
@@ -1129,6 +1137,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
       last_ii = ii;
     } //end while
+
+  collector.addFSC(FSC);
   if(pacseq)
     free(pacseq);
   //bns_destroy(bns);
@@ -1155,17 +1165,14 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
   if(opt->in_bam!=0)
     {
       notice(" Input alignments from Bam file...\n");
+      /*
       SamFileHeader SFH;
-      //BamInterface BamIO;
-      SamFile SFIO;
-      //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
-      //StatGenStatus StatusTracker;
-     // StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+      SamFile SFIO;*/
       notice("Restore Variant Site Info...\n");
       collector.restoreVcfSites(VcfPath, opt);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
-      collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam, fout, total_add);
+      collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
       notice( "%d reads were calculated...\n",total_add);
       fout.close();
      // BamFile->ifclose();
@@ -1257,17 +1264,14 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
   if(opt->in_bam!=0)
     {
       notice("Input alignments from Bam file...\n");
+      /*
       SamFileHeader SFH;
-         //BamInterface BamIO;
-         SamFile SFIO;
-         //IFILE BamFile=new InputFile(opt->in_bam,"r", InputFile::ifileCompression::BGZF);
-        // StatGenStatus StatusTracker;
-         //StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+         SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
          collector.restoreVcfSites(VcfPath, opt);
          ofstream fout(Prefix + ".InsertSizeTable");
          int total_add = 0;
-         collector.ReadAlignmentFromBam(opt, SFH, SFIO, opt->in_bam,fout, total_add);
+         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam,fout, total_add);
          notice("%d reads were calculated!\n",total_add);
          fout.close();
         // BamFile->ifclose();
