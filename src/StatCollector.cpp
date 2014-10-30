@@ -1366,17 +1366,17 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 	return 1;
 }
 
-int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
-		SamFileHeader& SFH, SamFile & SFIO,const char * BamFile,
-		 std::ofstream & fout, int & total_add)
+int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,const char * BamFile,std::ofstream & fout, int & total_add)
 {
+    SamFileHeader SFH;
+    SamFile SFIO;
 	if(!SFIO.OpenForRead(BamFile, &SFH))
 	{
 		cerr << SFIO.GetStatusMessage() << endl;
 		warning("Reading Bam Header Failed!\n");
 		exit(1);
 	}
-
+	FileStatCollector FSC(BamFile);
 	unordered_map<string, SamRecord*> pairBuffer;
 	while (1)
 	{
@@ -1389,6 +1389,8 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 			delete SR;
 			break;
 		}
+		FSC.NumRead++;
+		FSC.NumBase+=SR->getReadLength();
 		string readName;
 		if(SR->getReadName()[SR->getReadNameLength()-2]=='\\')
 		readName=string(SR->getReadName()).substr(0,SR->getReadNameLength() - 3);
@@ -1412,7 +1414,8 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 			delete SRtmp;
 			pairBuffer.erase(readName);
 		}
-	}
+	}//end of while
+	addFSC(FSC);
 	for (unordered_map<string, SamRecord*>::iterator iter = pairBuffer.begin();
 			iter != pairBuffer.end(); ++iter)
 	{
@@ -1768,6 +1771,40 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 		}
 	}
 	fout.close();
+	return 0;
+}
+int StatCollector::addFSC(FileStatCollector a)
+{
+	FSCVec.push_back(a);
+	return 0;
+}
+int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
+{
+	ofstream fout(outputPath);
+	 int max_XorYmarker(0);
+	  if(opt->num_variant_short>=100000)
+	    max_XorYmarker=3000;
+	  else if(opt->num_variant_short>=10000)
+	    max_XorYmarker=300;
+	  else
+	    max_XorYmarker=100;
+	int total_genome_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
+			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long
+			+ (501)*max_XorYmarker;
+	int total_base(0);
+
+
+
+	fout<<"|FILE 1|FILE 2|# Reads|Average Length|"<<endl;
+	fout<<"|:------------------------------------------:|:------------------------------------------:|:---------------------:|:---------------------:|"<<endl;
+	for(int i=0;i!=FSCVec.size();++i)
+	{
+		fout<<"|"<<FSCVec[i].FileName1<<"|"<<FSCVec[i].FileName2<<"|"<<FSCVec[i].NumRead<<"|"<<FSCVec[i].NumBase/(double) FSCVec[i].NumRead<<"|"<<endl;
+		total_base+=FSCVec[i].NumBase;
+	}
+
+	fout<<endl;
+	fout<<"Expected Read Depth = "<<total_base/total_genome_size<<" ["<<total_base<<"/"<<total_genome_size<<"]"<<endl;
 	return 0;
 }
 StatCollector::~StatCollector()
