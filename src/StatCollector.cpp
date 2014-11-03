@@ -220,6 +220,14 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 									== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
+								if(qual[left_to_right_coord]-33>=20)
+								{
+									Q20DepthVec[tmp_index]++;
+									if(qual[left_to_right_coord]-33>=30)
+									{
+										Q30DepthVec[tmp_index]++;
+									}
+								}
 								if (RefSeq[left_to_right_coord]
 										!= seq[left_to_right_coord])
 								{
@@ -234,6 +242,9 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 						{
 							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 							DepthVec.push_back(0);
+							Q30DepthVec.push_back(0);
+							Q20DepthVec.push_back(0);
+
 							DepthVec[index]++;
 							PositionTable[Chrom][i] = index;
 							index++;
@@ -241,6 +252,14 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 									== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
+								if(qual[left_to_right_coord]-33>=20)
+								{
+									Q20DepthVec[tmp_index]++;
+									if(qual[left_to_right_coord]-33>=30)
+									{
+										Q30DepthVec[tmp_index]++;
+									}
+								}
 								if (RefSeq[left_to_right_coord]
 										!= seq[left_to_right_coord])
 								{
@@ -263,6 +282,8 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							break;
 						//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 						DepthVec.push_back(0);
+						Q30DepthVec.push_back(0);
+						Q20DepthVec.push_back(0);
 						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
 						index++;
@@ -270,6 +291,14 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 								== dbSNPTable[Chrom].end()) //not in dbsnp table
 						{
 							EmpRepDist[qual[left_to_right_coord]]++;
+							if(qual[left_to_right_coord]-33>=20)
+							{
+								Q20DepthVec[tmp_index]++;
+								if(qual[left_to_right_coord]-33>=30)
+								{
+									Q30DepthVec[tmp_index]++;
+								}
+							}
 							if (RefSeq[left_to_right_coord]
 									!= seq[left_to_right_coord])
 							{
@@ -372,6 +401,14 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
+						if(qual[left_to_right_coord]-33>=20)
+						{
+							Q20DepthVec[tmp_index]++;
+							if(qual[left_to_right_coord]-33>=30)
+							{
+								Q30DepthVec[tmp_index]++;
+							}
+						}
 						if (RefSeq[left_to_right_coord]
 								!= seq[left_to_right_coord])
 						{
@@ -386,12 +423,22 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 				{
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 					DepthVec.push_back(0);
+					Q30DepthVec.push_back(0);
+					Q20DepthVec.push_back(0);
 					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
 					index++;
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
+						if(qual[left_to_right_coord]-33>=20)
+						{
+							Q20DepthVec[tmp_index]++;
+							if(qual[left_to_right_coord]-33>=30)
+							{
+								Q30DepthVec[tmp_index]++;
+							}
+						}
 						if (RefSeq[left_to_right_coord]
 								!= seq[left_to_right_coord])
 						{
@@ -414,12 +461,22 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					break;
 				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 				DepthVec.push_back(0);
+				Q30DepthVec.push_back(0);
+				Q20DepthVec.push_back(0);
 				DepthVec[index]++;
 				PositionTable[Chrom][i] = index;
 				index++;
 				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
 					EmpRepDist[qual[left_to_right_coord]]++;
+					if(qual[left_to_right_coord]-33>=20)
+					{
+						Q20DepthVec[tmp_index]++;
+						if(qual[left_to_right_coord]-33>=30)
+						{
+							Q30DepthVec[tmp_index]++;
+						}
+					}
 					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
 					{
 						misEmpRepDist[qual[left_to_right_coord]]++;
@@ -590,6 +647,14 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 									== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
+								if(qual[left_to_right_coord]-33>=20)
+								{
+									Q20DepthVec[tmp_index]++;
+									if(qual[left_to_right_coord]-33>=30)
+									{
+										Q30DepthVec[tmp_index]++;
+									}
+								}
 								if (RefSeq[left_to_right_coord]
 										!= seq[left_to_right_coord])
 								{
@@ -603,6 +668,8 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 						else //coord not exists
 						{
 							DepthVec.push_back(0);
+							Q30DepthVec.push_back(0);
+							Q20DepthVec.push_back(0);
 							DepthVec[index]++;
 							PositionTable[Chrom][i] = index;
 							index++;
@@ -610,6 +677,14 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 									== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
+								if(qual[left_to_right_coord]-33>=20)
+								{
+									Q20DepthVec[tmp_index]++;
+									if(qual[left_to_right_coord]-33>=30)
+									{
+										Q30DepthVec[tmp_index]++;
+									}
+								}
 								if (RefSeq[left_to_right_coord]
 										!= seq[left_to_right_coord])
 								{
@@ -631,6 +706,8 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 						if (i > RefRealEnd)
 							break;
 						DepthVec.push_back(0);
+						Q30DepthVec.push_back(0);
+						Q20DepthVec.push_back(0);
 						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
 						index++;
@@ -638,6 +715,14 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 								== dbSNPTable[Chrom].end()) //not in dbsnp table
 						{
 							EmpRepDist[qual[left_to_right_coord]]++;
+							if(qual[left_to_right_coord]-33>=20)
+							{
+								Q20DepthVec[tmp_index]++;
+								if(qual[left_to_right_coord]-33>=30)
+								{
+									Q30DepthVec[tmp_index]++;
+								}
+							}
 							if (RefSeq[left_to_right_coord]
 									!= seq[left_to_right_coord])
 							{
@@ -709,6 +794,14 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
+						if(qual[left_to_right_coord]-33>=20)
+						{
+							Q20DepthVec[tmp_index]++;
+							if(qual[left_to_right_coord]-33>=30)
+							{
+								Q30DepthVec[tmp_index]++;
+							}
+						}
 						if (RefSeq[left_to_right_coord]
 								!= seq[left_to_right_coord])
 						{
@@ -723,12 +816,22 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 				{
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 					DepthVec.push_back(0);
+					Q30DepthVec.push_back(0);
+					Q20DepthVec.push_back(0);
 					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
 					index++;
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
+						if(qual[left_to_right_coord]-33>=20)
+						{
+							Q20DepthVec[tmp_index]++;
+							if(qual[left_to_right_coord]-33>=30)
+							{
+								Q30DepthVec[tmp_index]++;
+							}
+						}
 						if (RefSeq[left_to_right_coord]
 								!= seq[left_to_right_coord])
 						{
@@ -752,12 +855,22 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 					break;
 				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 				DepthVec.push_back(0);
+				Q30DepthVec.push_back(0);
+				Q20DepthVec.push_back(0);
 				DepthVec[index]++;
 				PositionTable[Chrom][i] = index;
 				index++;
 				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
 					EmpRepDist[qual[left_to_right_coord]]++;
+					if(qual[left_to_right_coord]-33>=20)
+					{
+						Q20DepthVec[tmp_index]++;
+						if(qual[left_to_right_coord]-33>=30)
+						{
+							Q30DepthVec[tmp_index]++;
+						}
+					}
 					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
 					{
 						misEmpRepDist[qual[left_to_right_coord]]++;
@@ -1780,7 +1893,7 @@ int StatCollector::addFSC(FileStatCollector a)
 }
 int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 {
-	ofstream fout(outputPath);
+	ofstream fout(outputPath+".summary");
 	 int max_XorYmarker(0);
 	  if(opt->num_variant_short>=100000)
 	    max_XorYmarker=3000;
@@ -1792,19 +1905,26 @@ int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long
 			+ (501)*max_XorYmarker;
 	int total_base(0);
+	int total_reads(0);
 
 
-
-	fout<<"|FILE 1|FILE 2|# Reads|Average Length|"<<endl;
+	fout<<"|:FILE 1:|:FILE 2:|:# Reads:|:Average Length:|"<<endl;
 	fout<<"|:------------------------------------------:|:------------------------------------------:|:---------------------:|:---------------------:|"<<endl;
 	for(int i=0;i!=FSCVec.size();++i)
 	{
 		fout<<"|"<<FSCVec[i].FileName1<<"|"<<FSCVec[i].FileName2<<"|"<<FSCVec[i].NumRead<<"|"<<FSCVec[i].NumBase/(double) FSCVec[i].NumRead<<"|"<<endl;
 		total_base+=FSCVec[i].NumBase;
+		total_reads+=FSCVec[i].NumRead;
 	}
-
+	fout<<"|:All:"<<"|:-:|"<<total_reads<<"|"<<total_base/(double)total_reads<<"|"<<endl;
 	fout<<endl;
-	fout<<"Expected Read Depth = "<<total_base/total_genome_size<<" ["<<total_base<<"/"<<total_genome_size<<"]"<<endl;
+	fout<<"Expected Read Depth = "<<(double)total_base/total_genome_size<<" ["<<total_base<<"/"<<total_genome_size<<"]"<<endl;
+	fout<<"Estimated AvgDepth ="<<[&DepthDist](int total_genome_size)->double{int tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_genome_size; }<<endl;
+	fout<<"Estimated percentage of accessible genome covered ="<<(1-(double)DepthDist[0]/total_genome_size)*100<<"/100"<<endl;
+	fout<<"Estimated AvgDepth for Q20 bases ="<<[&Q20DepthVec](int total_genome_size)->double{int tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; }<<endl;
+	fout<<"Estimated AvgDepth for Q30 bases ="<<[&Q30DepthVec](int total_genome_size)->double{int tmp(0);for(int i=0;i!=Q30DepthVec.size();++i) tmp+=Q30DepthVec[i]; return double(tmp)/total_genome_size; }<<endl;
+	fout<<"Median Insert Size(>=500bp) ="<<[&InsertSizeDist]()->double{int tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} }<<endl;
+	fout<<"Median Insert Size(>=300bp) ="<<[&InsertSizeDist]()->double{int tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} }<<endl;
 	return 0;
 }
 StatCollector::~StatCollector()
