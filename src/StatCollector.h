@@ -48,6 +48,8 @@ private:
 	unsigned int index;
 	//nsigned int vcf_index;
 	std::vector<uint32_t> DepthVec;
+	std::vector<uint32_t> Q20DepthVec;
+	std::vector<uint32_t> Q30DepthVec;
 	/****for SNP site******/
 	std::vector<std::string> SeqVec,QualVec;
 	std::vector<std::vector<unsigned int> > CycleVec;
@@ -60,6 +62,7 @@ private:
 	//string_map VcfObTable;//actually covered by reads
 	std::vector<std::vector<unsigned char> > QualDist;//40*40
 	std::vector<std::vector<unsigned char> > CycleDist;//100*40
+
 
 	std::vector<int> DepthDist;
 	std::vector<int> EmpRepDist;
