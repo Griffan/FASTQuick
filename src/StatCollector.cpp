@@ -1628,6 +1628,7 @@ int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 	int all = (opt->flank_len * 2 + 1) * opt->num_variant_short
 			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long;
 	fout << 0 << "\t" << all - sum << endl;
+	DepthDist[0]=all-sum;
 	for (uint32_t i = 1; i != DepthDist.size(); ++i)
 	{
 		fout << i << "\t" << DepthDist[i] << endl;
@@ -1733,6 +1734,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getInsertSizeDist(statPrefix);
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix);
+	SummaryOutput(statPrefix,opt);
 	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath)
@@ -1901,30 +1903,35 @@ int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 	    max_XorYmarker=300;
 	  else
 	    max_XorYmarker=100;
-	int total_genome_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
+	long long total_genome_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
 			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long
 			+ (501)*max_XorYmarker;
-	int total_base(0);
-	int total_reads(0);
+	long total_base(0);
+	long total_reads(0);
 
 
-	fout<<"|:FILE 1:|:FILE 2:|:# Reads:|:Average Length:|"<<endl;
-	fout<<"|:------------------------------------------:|:------------------------------------------:|:---------------------:|:---------------------:|"<<endl;
+	fout<<"FILE 1|FILE 2|# Reads|Average Length"<<endl;
+	fout<<"---|---|---|---"<<endl;
 	for(int i=0;i!=FSCVec.size();++i)
 	{
-		fout<<"|"<<FSCVec[i].FileName1<<"|"<<FSCVec[i].FileName2<<"|"<<FSCVec[i].NumRead<<"|"<<FSCVec[i].NumBase/(double) FSCVec[i].NumRead<<"|"<<endl;
+		fout<<FSCVec[i].FileName1<<"|"<<FSCVec[i].FileName2<<"|"<<FSCVec[i].NumRead<<"|"<<FSCVec[i].NumBase/FSCVec[i].NumRead<<endl;
 		total_base+=FSCVec[i].NumBase;
 		total_reads+=FSCVec[i].NumRead;
 	}
-	fout<<"|:All:"<<"|:-:|"<<total_reads<<"|"<<total_base/(double)total_reads<<"|"<<endl;
+	fout<<"All"<<"|-|"<<total_reads<<"|"<<total_base/total_reads<<endl;
 	fout<<endl;
 	fout<<"Expected Read Depth = "<<(double)total_base/total_genome_size<<" ["<<total_base<<"/"<<total_genome_size<<"]"<<endl;
-	fout<<"Estimated AvgDepth ="<<[&DepthDist](int total_genome_size)->double{int tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_genome_size; }<<endl;
+	auto AvgDepth=[&]()->double{long long  tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_genome_size; };
+	fout<<"Estimated AvgDepth ="<<AvgDepth()<<endl;
 	fout<<"Estimated percentage of accessible genome covered ="<<(1-(double)DepthDist[0]/total_genome_size)*100<<"/100"<<endl;
-	fout<<"Estimated AvgDepth for Q20 bases ="<<[&Q20DepthVec](int total_genome_size)->double{int tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; }<<endl;
-	fout<<"Estimated AvgDepth for Q30 bases ="<<[&Q30DepthVec](int total_genome_size)->double{int tmp(0);for(int i=0;i!=Q30DepthVec.size();++i) tmp+=Q30DepthVec[i]; return double(tmp)/total_genome_size; }<<endl;
-	fout<<"Median Insert Size(>=500bp) ="<<[&InsertSizeDist]()->double{int tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} }<<endl;
-	fout<<"Median Insert Size(>=300bp) ="<<[&InsertSizeDist]()->double{int tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} }<<endl;
+	auto Q20AvgDepth= [&]()->double{long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; };
+	fout<<"Estimated AvgDepth for Q20 bases ="<<Q20AvgDepth()<<endl;
+	auto Q30AvgDepth= [&]()->double{long long  tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; };
+	fout<<"Estimated AvgDepth for Q30 bases ="<<Q30AvgDepth()<<endl;
+	auto MIS500=[&]()->double{long long  tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} };
+	fout<<"Median Insert Size(>=500bp) ="<<MIS500()<<endl;
+	auto MIS300=[&]()->double{long long  tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} };
+	fout<<"Median Insert Size(>=300bp) ="<<MIS300()<<endl;
 	return 0;
 }
 StatCollector::~StatCollector()

@@ -29,8 +29,8 @@ typedef std::unordered_map<std::string, std::unordered_map< int, bool> > bool_ta
 class FileStatCollector
 {
 public:
-	int NumRead;
-	int NumBase;
+	long long  NumRead;
+	long long  NumBase;
 	std::string FileName1,FileName2;
 	FileStatCollector():NumRead(0),NumBase(0),FileName1(0),FileName2(0)
 	{}
