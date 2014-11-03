@@ -37,30 +37,32 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 args=commandArgs(trailingOnly = TRUE);
 input=args[1]
-input="E:\\Dropbox\\workingspace\\FastqA\\FastPopCon\\FastqA\\bin\\hapmap_3.3.b37.vcf.shuffled.all.vcf"
+input="C:\\Users\\PC\\Dropbox\\workingspace\\FastqA\\FastPopCon\\FastqA\\bin\\hapmap_3.3.b37.vcf.shuffled.all.vcf"
 print(args)
 pdf(file=paste(input,".pdf",sep=""))
 par(mfrow=c(2,2));
 mydata= read.table(paste(input,".DepthDist",sep=""),header=FALSE);
 Depth=mydata[,1];
 DepCount=mydata[,2];
-q1=ggplot(mydata,aes(x=Depth,y=DepCount))+geom_line()+ggtitle("DepthDist");
+DCMax=max(mydata[,2]);
+q1=ggplot(mydata,aes(x=Depth,y=DepCount))+geom_line()+ggtitle("DepthDist")+xlim(0,100)+ylim(0,DCMax);
 mydata= read.table(paste(input,".EmpCycleDist",sep=""),header=FALSE);
 Emperical_Quality=mydata[,4];
 Cycle=mydata[,1];
-q2=ggplot(mydata,aes(x=Emperical_Quality,y=Cycle))+geom_line()+ggtitle("EmpCycleDist")
+CyMax=max(mydata[,1]);
+q2=ggplot(mydata,aes(y=Emperical_Quality,x=Cycle))+geom_line()+ggtitle("EmpCycleDist")+xlim(0,CyMax)+ylim(0,80)
 mydata= read.table(paste(input,".EmpRepDist",sep=""),header=FALSE);
 EmpericalQuality=mydata[,1];
-ReportQuality=mydata[,4];
-q3=ggplot(mydata,aes(x=EmpericalQuality,y=ReportQuality))+geom_line()+ggtitle("EmpRepDist");
+ReportQuality=mydata[,4]+33;
+q3=ggplot(mydata,aes(y=EmpericalQuality,x=ReportQuality))+geom_line()+ggtitle("EmpRepDist")+xlim(33,80)+ylim(33,80);
 mydata= read.table(paste(input,".GCDist",sep=""),header=FALSE);
 GC=mydata[,1];
-GC_Count=mydata[,4];
-q4=ggplot(mydata,aes(x=GC,y=GC_Count))+geom_line()+ggtitle("GCDist");
+AvgDepth=mydata[,4];
+q4=ggplot(mydata,aes(x=GC,y=AvgDepth))+geom_line()+ggtitle("GCDist")+xlim(0,100)+ylim(0,255);
 mydata= read.table(paste(input,".InsertSizeDist",sep=""),header=FALSE);
 InsertSize=mydata[,1];
 IS_Count=mydata[,2];
-q5=ggplot(mydata,aes(x=InsertSize,y=IS_Count))+geom_line()+ggtitle("InsertSizeDist");
+q5=ggplot(mydata,aes(x=InsertSize,y=IS_Count))+geom_line()+ggtitle("InsertSizeDist")+xlim(0,1000)+ylim(0,1000);
 multiplot(q1,q2,q3,q4, cols=2);
 multiplot(q5, cols=2);
 dev.off()
