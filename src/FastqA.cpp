@@ -47,22 +47,22 @@ int main(int argc, char ** argv)
 	 */
 
 	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), Fastq_1("Empty"), Fastq_2(
-			"Empty"), BamOut("Empty"), BamIn("Empty"),ReadGroup("default"),DepthDist, SitePileup,FaList("Empty"),DBsnpPath("Empty");
+			"Empty"),  BamIn("Empty"),ReadGroup("default"),DepthDist, SitePileup,FaList("Empty"),DBsnpPath("Empty");
 
-	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0);
+	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0),BamOut(0);
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files","Input/Output files for the program[Complete Path Recommended]")
-	LONG_STRING_PARAM("vcf",&VcfPath,"Input Hapmap or Selected Sites VCF file[Required]")
-	LONG_STRING_PARAM("dbsnp",&DBsnpPath,"dbSNP VCF file[Required]")
-	LONG_STRING_PARAM("ref",&RefPath,"Reference FASTA file[Required]")
-	LONG_STRING_PARAM("mask",&MaskPath,"Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
-	LONG_STRING_PARAM("fastq_1",&Fastq_1,"Pair end 1 fastq file[Leave empty if using fq_list or bam_in]")
-	LONG_STRING_PARAM("fastq_2",&Fastq_2,"Pair end 2 fastq file.[Leave empty if using single end]")
-	LONG_STRING_PARAM("bam_out",&BamOut,"Output file prefix[Leave empty if using bam_in]")
-	LONG_STRING_PARAM("bam_in",&BamIn,"Input bam file path[Leave empty if using fq_list or fastq_1]")
-	LONG_STRING_PARAM("fq_list",&FaList,"Path of input fastq files, tab-delimited, one pair-end files per line(one file per line for single end)[Leave empty if using bam_in or fastq_1]")
-	LONG_STRING_PARAM("prefix",&Prefix,"Prefix of all the statistic files[Required]")
+	LONG_STRING_PARAM("vcf",&VcfPath,"[String] Input Hapmap or Selected Sites VCF file[Required]")
+	LONG_STRING_PARAM("dbsnp",&DBsnpPath,"[String] dbSNP VCF file[Required]")
+	LONG_STRING_PARAM("ref",&RefPath,"[String] Reference FASTA file[Required]")
+	LONG_STRING_PARAM("mask",&MaskPath,"[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
+	LONG_STRING_PARAM("fastq_1",&Fastq_1,"[String] Pair end 1 fastq file[Leave empty if using fq_list or bam_in]")
+	LONG_STRING_PARAM("fastq_2",&Fastq_2,"[String] Pair end 2 fastq file.[Leave empty if using single end]")
+	LONG_STRING_PARAM("fq_list",&FaList,"[String] Path of input fastq files, tab-delimited, one pair-end files per line(one file per line for single end)[Leave empty if using bam_in or fastq_1]")
+	LONG_STRING_PARAM("bam_in",&BamIn,"[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
+	LONG_PARAM("bam_out",&BamOut,"[Bool] If output bam file[Leave empty if using bam_in]")
+	LONG_STRING_PARAM("prefix",&Prefix,"[String] Prefix of all the output files[Required]")
 
 
 	//LONG_STRING_PARAM("out",&outf,"Output file prefix")
@@ -70,44 +70,44 @@ int main(int argc, char ** argv)
 	// LONG_INT_PARAM("K",&Indexer.RollParam.kmer_size,"kmer size for Rolling Hash filtering")
 	// LONG_INT_PARAM("T",&Indexer.RollParam.thresh,"threshold for filtering specific read")
 	// LONG_INT_PARAM("S",&Indexer.RollParam.read_step_size,"step size for extracting kmer")
-	LONG_INT_PARAM("var_long",&opt->num_variant_long,"number of variants with long flanking region")
-	LONG_INT_PARAM("var_short",&opt->num_variant_short,"number of variants with short flanking region")
-	LONG_INT_PARAM("flank_len",&opt->flank_len,"flanking region length around each marker")
-	LONG_INT_PARAM("flank_long_len",&opt->flank_long_len,"long flanking region length around each marker")
+	LONG_INT_PARAM("var_long",&opt->num_variant_long,"[INT] number of variants with long flanking region")
+	LONG_INT_PARAM("var_short",&opt->num_variant_short,"[INT] number of variants with short flanking region")
+	LONG_INT_PARAM("flank_len",&opt->flank_len,"[INT] flanking region length around each marker")
+	LONG_INT_PARAM("flank_long_len",&opt->flank_long_len,"[INT] long flanking region length around each marker")
 
 	LONG_PARAM_GROUP("Parameters for Alignment ", "Parameters the are universal for both single end and pair end alignment.[Optional]")
-	LONG_DOUBLE_PARAM("n",&opt->fnr,"Max #diff (int) or missing prob under 0.02 error rate [float]")
-	LONG_INT_PARAM("o",&opt->max_gapo,"maximum number or fraction of gap opens")
-	LONG_INT_PARAM("e",&opte,"maximum number of gap extensions, -1 for disabling long gaps [-1]")
-	LONG_INT_PARAM("i",&opt->indel_end_skip,"do not put an indel within INT bp towards the ends")
-	LONG_INT_PARAM("d",&opt->max_del_occ,"maximum occurrences for extending a long deletion")
-	LONG_INT_PARAM("l",&opt->seed_len,"seed length")
-	LONG_INT_PARAM("k",&opt->max_seed_diff,"maximal seed difference")
-	LONG_INT_PARAM("m",&opt->max_entries,"maximal stack entries")
-	LONG_INT_PARAM("t",&opt->n_threads,"number of threads")
+	LONG_DOUBLE_PARAM("n",&opt->fnr,"[INT or Float] Max #diff (int) or missing prob under 0.02 error rate")
+	LONG_INT_PARAM("o",&opt->max_gapo,"[INT] maximum number or fraction of gap opens")
+	LONG_INT_PARAM("e",&opte,"[INT] maximum number of gap extensions, -1 for disabling long gaps [-1]")
+	LONG_INT_PARAM("i",&opt->indel_end_skip,"[INT] do not put an indel within INT bp towards the ends")
+	LONG_INT_PARAM("d",&opt->max_del_occ,"[INT] maximum occurrences for extending a long deletion")
+	LONG_INT_PARAM("l",&opt->seed_len,"[INT] seed length")
+	LONG_INT_PARAM("k",&opt->max_seed_diff,"[INT] maximal seed difference")
+	LONG_INT_PARAM("m",&opt->max_entries,"[INT] maximal stack entries")
+	LONG_INT_PARAM("t",&opt->n_threads,"[INT] number of threads")
 	// LONG_INT_PARAM("L",&opt->seed_len,"seed length")
-	LONG_INT_PARAM("R",&opt->max_top2,"stop searching when there are >INT equally best hits")
-	LONG_INT_PARAM("q",&opt->trim_qual,"quality threshold for read trimming down to 35dbp")
-	LONG_STRING_PARAM("RG",&ReadGroup,"set ReadGroup name")
+	LONG_INT_PARAM("R",&opt->max_top2,"[INT] stop searching when there are >INT equally best hits")
+	LONG_INT_PARAM("q",&opt->trim_qual,"[INT] quality threshold for read trimming down to 35dbp")
+	LONG_STRING_PARAM("RG",&ReadGroup,"[String] set ReadGroup name")
 	//Roll Hash
 
 	// LONG_PARAM("c",&compread,"seed length")
-	LONG_PARAM("N",&nonstop,"non-iterative mode: search for all n-difference hits (slooow)")
-	LONG_PARAM("I",&IL13,"the input is in the Illumina 1.3+ FASTQ-like format")
-	LONG_PARAM("L",&loggap,"log-scaled gap penalty for long deletions")
+	LONG_PARAM("N",&nonstop,"[Bool] non-iterative mode: search for all n-difference hits (slooow)")
+	LONG_PARAM("I",&IL13,"[Bool] the input is in the Illumina 1.3+ FASTQ-like format")
+	LONG_PARAM("L",&loggap,"[Bool] log-scaled gap penalty for long deletions")
 
 	LONG_PARAM_GROUP("Parameters for PairEnd ", "Parameters specified for Pair end mapping.[Optional]")
-	LONG_INT_PARAM("max_isize",&popt->max_isize," maximum insert size")
-	LONG_INT_PARAM("max_occ",&popt->max_occ,"maximum occurrences for one end ")
-	LONG_PARAM("is_sw",&popt->is_sw,"disable Smith-Waterman for the unmapped mate")
-	LONG_INT_PARAM("n_multi",&popt->n_multi,"maximum hits to output for paired reads")
-	LONG_INT_PARAM("N_multi",&popt->N_multi,"maximum hits to output for discordant pairs")
-	LONG_DOUBLE_PARAM("ap_prior",&popt->ap_prior,"prior of chimeric rate (lower bound) ")
-	LONG_PARAM("force_isize",&popt->force_isize," disable insert size estimate")
+	LONG_INT_PARAM("max_isize",&popt->max_isize,"[INT] maximum insert size")
+	LONG_INT_PARAM("max_occ",&popt->max_occ,"[INT] maximum occurrences for one end ")
+	LONG_PARAM("is_sw",&popt->is_sw,"[Bool] disable Smith-Waterman for the unmapped mate")
+	LONG_INT_PARAM("n_multi",&popt->n_multi,"[INT] maximum hits to output for paired reads")
+	LONG_INT_PARAM("N_multi",&popt->N_multi,"[INT] maximum hits to output for discordant pairs")
+	LONG_DOUBLE_PARAM("ap_prior",&popt->ap_prior,"[Double] prior of chimeric rate (lower bound) ")
+	LONG_PARAM("force_isize",&popt->force_isize," [Bool] disable insert size estimate")
 
 	LONG_PARAM_GROUP("Parameters for Statistics ", "Parameters specified for statistics and summary.[Optional]")
-	LONG_PARAM("cal_dup",&opt->cal_dup,"enable the calculation of duplicated reads in depth calculation ")
-	LONG_PARAM("frac_samp",&opt->frac,"specify the downsampling fraction ")
+	LONG_PARAM("cal_dup",&opt->cal_dup,"[Bool] enable the calculation of duplicated reads in depth calculation ")
+	LONG_PARAM("frac_samp",&opt->frac,"[Double] specify the downsampling fraction ")
 	//LONG_STRING_PARAM("depth_dist",&DepthDist,"Output file for depth distribution ")
 	//LONG_STRING_PARAM("site_pileup",&SitePileup,"Output file for Pileup information on specified sites ")
 
@@ -131,9 +131,9 @@ int main(int argc, char ** argv)
 		error("--dbsnp is required");
 		exit(1);
 	}
-	if(BamOut!="Empty")
+	if(BamOut)
 	{
-	opt->out_bam=strdup(BamOut.c_str());
+	opt->out_bam=1;
 	}
 	if(BamIn!="Empty")
 	{
