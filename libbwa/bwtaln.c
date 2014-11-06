@@ -49,8 +49,6 @@ gap_opt_t *gap_init_opt()
 }
 void gap_free_opt(gap_opt_t * o)
 {
-	if(o->out_bam!=0)
-	free(o->out_bam);
 	if(o->RG!=0)
 	free(o->RG);
 	free(o);
