@@ -35,7 +35,7 @@ extern int is_bwt(ubyte_t *T, int n);
 //extern int64_t bwa_seq_len(const char *fn_pac);
 extern bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is);
 extern void bwa_pac_rev_core(const char *fn, const char *fn_rev);
-BwtIndexer::BwtIndexer() :
+BwtIndexer::BwtIndexer() :RefPath(),
 		pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
 				0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
 				0)
@@ -66,7 +66,7 @@ BwtIndexer::BwtIndexer() :
 	InitializeRollHashTable();
 
 }
-BwtIndexer::BwtIndexer(RefBuilder & ArtiRef, string & prefix) :
+BwtIndexer::BwtIndexer(RefBuilder & ArtiRef, string & prefix) :RefPath(prefix),
 		pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
 				0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
 				0)
@@ -97,7 +97,7 @@ BwtIndexer::BwtIndexer(RefBuilder & ArtiRef, string & prefix) :
 	InitializeRollHashTable();
 }
 
-BwtIndexer::BwtIndexer(string & prefix) :
+BwtIndexer::BwtIndexer(string & prefix) :RefPath(prefix),
 		pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
 				0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
 				0)
@@ -317,7 +317,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 		const gap_opt_t * opt)
 {
-
+	RefPath=prefix;
 	string str;
 	Fa2Pac(ArtiRef, prefix.c_str(), opt); //dump .pac
 	Fa2RevPac(prefix.c_str()); //dump .rpac
@@ -358,6 +358,7 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 }
 bool BwtIndexer::LoadIndex(string & prefix)
 {
+	RefPath=prefix;
 	ReadRollHashTable(prefix);
 	string str = prefix + ".bwt";
 	bwt_d = bwt_restore_bwt(str.c_str());
