@@ -152,7 +152,7 @@ int main(int argc, char ** argv)
 	}
 	if (IL13)
 	{
-		error( "Using Illumina 1.3 version quality system..." );
+		notice( "Using Illumina 1.3 version quality system..." );
 		opt->mode |= BWA_MODE_IL13;
 	}
 	if (loggap)
