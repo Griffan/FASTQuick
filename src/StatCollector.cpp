@@ -1893,6 +1893,21 @@ int StatCollector::addFSC(FileStatCollector a)
 	FSCVec.push_back(a);
 	return 0;
 }
+int StatCollector::getGenomeSize(std::string RefPath)
+{
+	ifstream fin(RefPath+".fai");
+	if(!fin.is_open()) {cerr<<"Open file:"<<RefPath+".fai"<<" failed!"<<endl;exit(1);}
+	string line,dummy,length;
+	while(getline(fin,line))
+	{
+		stringstream ss(line);
+		ss>>dummy;
+		ss>>length;
+		ref_genome_size+=atoi(length.c_str());
+	}
+	fin.close();
+	return 0;
+}
 int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 {
 	ofstream fout(outputPath+".summary");
@@ -1903,7 +1918,7 @@ int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 	    max_XorYmarker=300;
 	  else
 	    max_XorYmarker=100;
-	long long total_genome_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
+	 total_region_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
 			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long
 			+ (501)*max_XorYmarker;
 	long total_base(0);
@@ -1920,13 +1935,13 @@ int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
 	}
 	fout<<"All"<<"|-|"<<total_reads<<"|"<<total_base/total_reads<<endl;
 	fout<<endl;
-	fout<<"Expected Read Depth = "<<(double)total_base/total_genome_size<<" ["<<total_base<<"/"<<total_genome_size<<"]"<<endl;
-	auto AvgDepth=[&]()->double{long long  tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_genome_size; };
+	fout<<"Expected Read Depth = "<<(double)total_base/ref_genome_size<<" ["<<total_base<<"/"<<ref_genome_size<<"]"<<endl;
+	auto AvgDepth=[&]()->double{long long  tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_region_size; };
 	fout<<"Estimated AvgDepth ="<<AvgDepth()<<endl;
-	fout<<"Estimated percentage of accessible genome covered ="<<(1-(double)DepthDist[0]/total_genome_size)*100<<"/100"<<endl;
-	auto Q20AvgDepth= [&]()->double{long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; };
+	fout<<"Estimated percentage of accessible genome covered ="<<(1-(double)DepthDist[0]/total_region_size)*100<<"/100"<<endl;
+	auto Q20AvgDepth= [&]()->double{long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size; };
 	fout<<"Estimated AvgDepth for Q20 bases ="<<Q20AvgDepth()<<endl;
-	auto Q30AvgDepth= [&]()->double{long long  tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_genome_size; };
+	auto Q30AvgDepth= [&]()->double{long long  tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size; };
 	fout<<"Estimated AvgDepth for Q30 bases ="<<Q30AvgDepth()<<endl;
 	auto MIS500=[&]()->double{long long  tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} };
 	fout<<"Median Insert Size(>=500bp) ="<<MIS500()<<endl;

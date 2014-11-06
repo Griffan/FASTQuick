@@ -184,7 +184,7 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
       //free(p->name); free(p->seq); free(p->rseq); free(p->qual);
       //p->name = 0; p->seq = p->rseq = p->qual = 0;
     }
-  fprintf(stderr, "RollingHash filtered %d reads...\n", unmapped_num);
+ notice( "RollingHash filtered %d reads...\n", unmapped_num);
   free(seed_w[0]);
   free(seed_w[1]);
   free(w[0]);
@@ -839,9 +839,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
     {
       tot_seqs += n_seqs;
       FSC.NumRead+=n_seqs;
-      fprintf(stderr, "Reading in %d sequences into buffer...", n_seqs);
-      fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
-      t = clock();
+     fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...", n_seqs);
+//      fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+//      t = clock();
       //t = clock();
 
 #ifdef HAVE_PTHREAD
@@ -882,7 +882,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
       //DBG(fprintf(stderr,"After come into cal sa reg gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 #endif
 
-      fprintf(stderr, "Calculate SA coordinate and ");
+      fprintf(stderr, "NOTICE - Calculate SA coordinate and ");
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
 
@@ -894,12 +894,12 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 
         }
 
-      fprintf(stderr, "Convert to sequence coordinate... ");
+      fprintf(stderr, "NOTICE - Convert to sequence coordinate... ");
       bwa_cal_pac_pos(BwtIndex, n_seqs, seqs, opt->max_diff, opt->fnr); // forward bwt will be destroyed here
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
 
-      fprintf(stderr, "Refine gapped alignments... ");
+      fprintf(stderr, "NOTICE - Refine gapped alignments... ");
 
       //DBG(fprintf(stderr,"Before come into refined gap...%s\n%s\n",seqs->name,seqs->seq);)
       if (pacseq == 0)
@@ -909,7 +909,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
 
-      fprintf(stderr, "Print alignments... ");
+      fprintf(stderr, "NOTICE - Print alignments... ");
 
       if (!opt->out_bam)
         {
@@ -938,7 +938,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
       bwa_free_read_seq(n_seqs, seqs);
-      fprintf(stderr, " %d sequences have been processed.\n", tot_seqs);
+      fprintf(stderr, "NOTICE - %d sequences have been processed.\n", tot_seqs);
       //t = clock();
     } //end while
   collector.addFSC(FSC);
@@ -990,7 +990,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 	  FSC.NumRead+=n_seqs;
       tot_seqs += n_seqs;
       t = clock();
-      fprintf(stderr, "Reading in %d sequences into buffer...\n", n_seqs);
+      fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...\n", n_seqs);
 
       for (int iter = 0; iter != 2; ++iter)
         {
@@ -1032,7 +1032,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 #endif
 
         }
-      fprintf(stderr, "Calculate SA coordinate... ");
+      fprintf(stderr, "NOTICE - Calculate SA coordinate... ");
       fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
 
@@ -1047,14 +1047,14 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
        }
        }*/
 
-      fprintf(stderr, "convert to sequence coordinate... \n");
+      fprintf(stderr, "NOTICE - convert to sequence coordinate... \n");
       cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs, seqs, &ii, popt, opt, &last_ii);
-      fprintf(stderr, "time elapses: %.2f sec\n",
+      fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
               (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
-      fprintf(stderr, "changing coordinates of %d alignments.\n", cnt_chg);
+      fprintf(stderr, "NOTICE - changing coordinates of %d alignments.\n", cnt_chg);
 
-      fprintf(stderr, "align unmapped mate...\n");
+      fprintf(stderr, "NOTICE - align unmapped mate...\n");
       if (pacseq == 0) //indexing path
         /*pacseq = */
         pacseq= bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs, seqs,
@@ -1062,11 +1062,11 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
       else
         /*pacseq = */
         pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs, popt, &ii);
-      fprintf(stderr, "time elapses: %.2f sec\n",
+      fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
               (float) (clock() - t) / CLOCKS_PER_SEC);
       t = clock();
 
-      fprintf(stderr, "refine gapped alignments... ");
+      fprintf(stderr, "NOTICE - refine gapped alignments... ");
       for (j = 0; j < 2; ++j)
         /*  if (BwtIndex.bns->fp_pac == 0) //indexing path
             bwa_refine_gapped(BwtIndex.bns, n_seqs, seqs[j], BwtIndex.pac_buf,
@@ -1077,7 +1077,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
       t = clock();
       //if (pacseq!= 0) free(pacseq);
 
-      fprintf(stderr, "print alignments... ");
+      fprintf(stderr, "NOTICE - print alignments... ");
       if (!opt->out_bam)
         {
           for (i = 0; i < n_seqs; ++i)
@@ -1133,7 +1133,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
       for (j = 0; j < 2; ++j)
         bwa_free_read_seq(n_seqs, seqs[j]);
-      fprintf(stderr, " %d sequences have been processed.\n", tot_seqs);
+      fprintf(stderr, "NOTICE - %d sequences have been processed.\n", tot_seqs);
 
       last_ii = ii;
     } //end while
@@ -1169,7 +1169,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
       SamFileHeader SFH;
       SamFile SFIO;*/
       notice("Restore Variant Site Info...\n");
-      collector.restoreVcfSites(VcfPath, opt);
+      collector.restoreVcfSites(VcfPath, opt);collector.getGenomeSize(BwtIndex.RefPath);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
@@ -1244,7 +1244,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
           BamIO.writeHeader(BamFile,SFH,StatusTracker);
         }
       notice("Restore Variant Site Info...\n");
-      collector.restoreVcfSites(VcfPath, opt);
+      collector.restoreVcfSites(VcfPath, opt);collector.getGenomeSize(BwtIndex.RefPath);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       SingleEndMapper(BwtIndex, Fastq_1.c_str(), VcfPath, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
@@ -1268,7 +1268,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
       SamFileHeader SFH;
          SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
-         collector.restoreVcfSites(VcfPath, opt);
+         collector.restoreVcfSites(VcfPath, opt);collector.getGenomeSize(BwtIndex.RefPath);
          ofstream fout(Prefix + ".InsertSizeTable");
          int total_add = 0;
          collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam,fout, total_add);
@@ -1302,7 +1302,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
           BamIO.writeHeader(BamFile,SFH,StatusTracker);
         }
       notice("Restore Variant Site Info...\n");
-      collector.restoreVcfSites(VcfPath, opt);
+      collector.restoreVcfSites(VcfPath, opt);collector.getGenomeSize(BwtIndex.RefPath);
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       ifstream fin(FaList);
