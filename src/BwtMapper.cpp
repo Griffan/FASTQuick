@@ -1185,7 +1185,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
       notice("Using Pair End mapping...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
-      IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
+      IFILE BamFile=new InputFile((Prefix+".bam").c_str(),"w", InputFile::ifileCompression::BGZF);
       StatGenStatus StatusTracker;
       StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
       /*********bam header init end***********/
@@ -1223,7 +1223,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
       notice("Using Single End mapping...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
-      IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
+      IFILE BamFile=new InputFile((Prefix+".bam").c_str(),"w", InputFile::ifileCompression::BGZF);
       StatGenStatus StatusTracker;
       StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
       /*********bam header init end***********/
@@ -1283,7 +1283,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 	  notice("Open Fastq List ...\n");
       SamFileHeader SFH;
       BamInterface BamIO;
-      IFILE BamFile=new InputFile(opt->out_bam,"w", InputFile::ifileCompression::BGZF);
+      IFILE BamFile=new InputFile((Prefix+".bam").c_str(),"w", InputFile::ifileCompression::BGZF);
       StatGenStatus StatusTracker;
       StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
       if (!opt->out_bam)

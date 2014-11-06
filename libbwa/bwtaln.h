@@ -111,8 +111,8 @@ typedef struct {
 	char cal_dup;//take duplicated_reads into account when cal depth
 	//bool out_bam;
 	char * RG;
-	char* out_bam;
 	char* in_bam;
+	bool out_bam;
 } gap_opt_t;
 
 #define BWA_PET_STD   1
