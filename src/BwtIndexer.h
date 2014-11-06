@@ -38,7 +38,7 @@ class BwtIndexer
 public:
 
 
-
+	std::string RefPath;
 	ubyte_t * pac_buf;
 	ubyte_t * rpac_buf;
 	unsigned char* bwt_buf;

@@ -79,6 +79,7 @@ private:
 
 	uint64_t total_base;
 	uint64_t total_region_size;
+	uint64_t ref_genome_size;
 
 	std::unordered_map<std::string,bool> duplicateTable;
 
@@ -197,6 +198,7 @@ public:
 	}
 
 	int addFSC(FileStatCollector a);
+	int getGenomeSize(std::string RefPath);
 	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
 	virtual ~StatCollector();
 };
