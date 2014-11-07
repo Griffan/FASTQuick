@@ -220,7 +220,7 @@ void BwtIndexer::InitializeRollHashTable()
 		roll_hash_table[i] = (unsigned char *) calloc(hash_table_size,
 				sizeof(char));
 
-	notice(" Initializing Rolling Hash Table with size: %d bytes in %d sec\n",hash_table_size, (float) (clock() - t) / CLOCKS_PER_SEC);
+	notice("Initializing Rolling Hash Table with size: %d bytes in %d sec\n",hash_table_size, (float) (clock() - t) / CLOCKS_PER_SEC);
 
 	assert(roll_hash_table != 0);
 }
