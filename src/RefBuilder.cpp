@@ -344,22 +344,22 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
     }
   FoutSelectedSite.ifclose();
 
-  sprintf(cmdline,"(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp",VcfPath.c_str(),VcfPath.c_str(),VcfPath.c_str());
+  sprintf(cmdline,"(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp",Prefix.c_str(),Prefix.c_str(),Prefix.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
     }
-  sprintf(cmdline,"mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf",VcfPath.c_str(),VcfPath.c_str());
+  sprintf(cmdline,"mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf",Prefix.c_str(),Prefix.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
     }
-  sprintf(cmdline,"bgzip -f %s.SelectedSite.vcf",VcfPath.c_str());
+  sprintf(cmdline,"bgzip -f %s.SelectedSite.vcf",Prefix.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
     }
-  sprintf(cmdline,"tabix -pvcf %s.SelectedSite.vcf.gz",VcfPath.c_str());
+  sprintf(cmdline,"tabix -pvcf %s.SelectedSite.vcf.gz",Prefix.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
