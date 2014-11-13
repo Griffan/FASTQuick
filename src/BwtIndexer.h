@@ -211,7 +211,7 @@ static std::unordered_map<char, char> match_table =
 	{ 't', 'A' },
 	{ 'T', 'A' } };
 
-inline bool BwtIndexer::IsReadHighQ(const ubyte_t *Q, int len)const
+inline bool BwtIndexer::IsReadHighQ(const ubyte_t *Q, int len)const//check if first 25 bases are of high quality
 {
 	double tmp(1);
 	for (int i = 0; i != 25; ++i)
