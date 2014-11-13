@@ -98,6 +98,8 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
   for (i = 0; i != n_seqs; ++i)
     {
       bwa_seq_t *p = seqs + i;
+      //notice("Read %s",p->name);
+
 
       if ( drand48() >opt->frac ||Indexer->IsReadFiltered(p->seq, p->qual, p->len))
         {
@@ -114,6 +116,8 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
           unmapped_num++;
           continue;
         }
+
+
 
 #ifdef HAVE_PTHREAD
       if (opt->n_threads > 1)
@@ -184,7 +188,7 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
       //free(p->name); free(p->seq); free(p->rseq); free(p->qual);
       //p->name = 0; p->seq = p->rseq = p->qual = 0;
     }
- notice( "RollingHash filtered %d reads...\n", unmapped_num);
+ notice( "RollingHash filtered %d reads...", unmapped_num);
   free(seed_w[0]);
   free(seed_w[1]);
   free(w[0]);
@@ -304,13 +308,13 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], int n_seqs,
     }
   DBG(cerr<<"Arrived check point 2....\n";)
   // infer isize
-  //infer_isize(n_seqs, seqs, ii, opt->ap_prior, bwt[0]->seq_len);
-  //if (ii->avg < 0.0 && last_ii->avg > 0.0) *ii = *last_ii;
-  //if (opt->force_isize) {
-  //fprintf(stderr, "[%s] discard insert size estimate as user's request.\n", __func__);
+  infer_isize(n_seqs, seqs, ii, opt->ap_prior, bwt[0]->seq_len);
+  if (ii->avg < 0.0 && last_ii->avg > 0.0) *ii = *last_ii;
+  if (opt->force_isize) {
+  notice("[%s] discard insert size estimate as user's request.\n", __func__);
   ii->low = ii->high = 0;
   ii->avg = ii->std = -1.0;
-  //}
+  }
 
   // PE
   for (i = 0; i != n_seqs; ++i)
@@ -1115,8 +1119,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
                   strcpy(p[1]->bc, p[0]->bc);
                 }
 
-              if (collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-                                              fout, total_add)!=1)
+          if (collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                              fout, total_add)==0)// means no successfully added reads
                 continue;
               SamRecord SR[2];
               SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1]+i, opt->mode, opt->max_top2, SFH,SR[0]);
@@ -1306,11 +1310,13 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
       ofstream fout(Prefix + ".InsertSizeTable");
       int total_add = 0;
       ifstream fin(FaList);
-      std::string line,Fastq_1,Fastq_2;
+      if(!fin.is_open()) error("Open file %s failed",FaList.c_str());
+      std::string line;
       int i(0);
       while(getline(fin,line))
         {
           ++i;
+          std::string Fastq_1(""),Fastq_2("");
           stringstream ss(line);
           ss>>Fastq_1>>Fastq_2;
           if (Fastq_2 != "")

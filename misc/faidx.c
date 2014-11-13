@@ -324,6 +324,7 @@ char *fai_fetch(const faidx_t *fai, const char *str, int *len)
 	iter = kh_get(s, h, s); /* get the ref_id */
 	if (iter == kh_end(h)) {
 		*len = 0;
+		warning("faidx fetch %s failed",str);
 		free(s); return 0;
 	}
 	val = kh_value(h, iter);
