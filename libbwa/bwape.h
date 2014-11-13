@@ -99,6 +99,7 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 void bwa_print_sam_SQ(const bntseq_t *bns);
 void bwa_print_sam_PG();
  int pairing(bwa_seq_t *p[2], pe_data_t *d, const pe_opt_t *opt, int s_mm, const isize_info_t *ii);
+ int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double ap_prior, int64_t L);
 
 #ifdef __cplusplus
 }

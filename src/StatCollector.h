@@ -34,7 +34,7 @@ public:
 	std::string FileName1,FileName2;
 	FileStatCollector():NumRead(0),NumBase(0),FileName1(0),FileName2(0)
 	{}
-	FileStatCollector(const char* filename):NumRead(0),NumBase(0),FileName1(filename),FileName2(0)
+	FileStatCollector(const char* filename):NumRead(0),NumBase(0),FileName1(filename),FileName2("")
 	{
 	}
 	FileStatCollector(const char* filename1, const char* filename2):NumRead(0),NumBase(0),FileName1(filename1),FileName2(filename2)

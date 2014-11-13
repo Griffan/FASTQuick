@@ -1,5 +1,5 @@
 #include "bwape.h"
-
+#include "../misc/Error.h"
 
 #include "ksort.h"
 KSORT_INIT_GENERIC(uint64_t)
@@ -45,8 +45,8 @@ static double ierfc(double x) // inverse erfc(); iphi(x) = M_SQRT2 *ierfc(2 * x)
 
 // for normal distribution, this is about 3std
 #define OUTLIER_BOUND 2.0
-/*
-static int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double ap_prior, int64_t L)
+
+ int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double ap_prior, int64_t L)
 {
 	uint64_t x, *isizes, n_ap = 0;
 	int n, i, tot, p25, p75, p50, max_len = 1, tmp;
@@ -66,7 +66,7 @@ static int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double 
 		if (p[1]->len > max_len) max_len = p[1]->len;
 	}
 	if (tot < 20) {
-		fprintf(stderr, "[infer_isize] fail to infer insert size: too few good pairs\n");
+		warning(" fail to infer insert size: too few good pairs\n");
 		free(isizes);
 		return -1;
 	}
@@ -100,21 +100,21 @@ static int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double 
 	ii->ap_prior = .01 * (n_ap + .01) / tot;
 	if (ii->ap_prior < ap_prior) ii->ap_prior = ap_prior;
 	free(isizes);
-	fprintf(stderr, "[infer_isize] (25, 50, 75) percentile: (%d, %d, %d)\n", p25, p50, p75);
+	//fprintf(stderr, "[infer_isize] (25, 50, 75) percentile: (%d, %d, %d)\n", p25, p50, p75);
 	if (isnan(ii->std) || p75 > 100000) {
 		ii->low = ii->high = ii->high_bayesian = 0; ii->avg = ii->std = -1.0;
-		fprintf(stderr, "[infer_isize] fail to infer insert size: weird pairing\n");
+		warning("fail to infer insert size: weird pairing\n");
 		return -1;
 	}
 	for (y = 1.0; y < 10.0; y += 0.01)
 		if (.5 * erfc(y / M_SQRT2) < ap_prior / L * (y * ii->std + ii->avg)) break;
 	ii->high_bayesian = (bwtint_t)(y * ii->std + ii->avg + .499);
-	fprintf(stderr, "[infer_isize] low and high boundaries: %d and %d for estimating avg and std\n", ii->low, ii->high);
-	fprintf(stderr, "[infer_isize] inferred external isize from %d pairs: %.3lf +/- %.3lf\n", n, ii->avg, ii->std);
-	fprintf(stderr, "[infer_isize] skewness: %.3lf; kurtosis: %.3lf; ap_prior: %.2e\n", skewness, kurtosis, ii->ap_prior);
-	fprintf(stderr, "[infer_isize] inferred maximum insert size: %d (%.2lf sigma)\n", ii->high_bayesian, y);
+	//fprintf(stderr, "[infer_isize] low and high boundaries: %d and %d for estimating avg and std\n", ii->low, ii->high);
+	//fprintf(stderr, "[infer_isize] inferred external isize from %d pairs: %.3lf +/- %.3lf\n", n, ii->avg, ii->std);
+	//fprintf(stderr, "[infer_isize] skewness: %.3lf; kurtosis: %.3lf; ap_prior: %.2e\n", skewness, kurtosis, ii->ap_prior);
+	//fprintf(stderr, "[infer_isize] inferred maximum insert size: %d (%.2lf sigma)\n", ii->high_bayesian, y);
 	return 0;
-}*/
+}
 
  int pairing(bwa_seq_t *p[2], pe_data_t *d, const pe_opt_t *opt, int s_mm, const isize_info_t *ii)
 {
@@ -567,9 +567,9 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 			free(cigar[0]); free(cigar[1]);
 		}
 	}
-	fprintf(stderr, "[bwa_paired_sw] %lld out of %lld Q%d singletons are mated.\n",
+	notice("%lld out of %lld Q%d singletons are mated.",
 			(long long)n_mapped[1], (long long)n_tot[1], SW_MIN_MAPQ);
-	fprintf(stderr, "[bwa_paired_sw] %lld out of %lld Q%d discordant pairs are fixed.\n",
+	notice("%lld out of %lld Q%d discordant pairs are fixed.",
 			(long long)n_mapped[0], (long long)n_tot[0], SW_MIN_MAPQ);
 	return pacseq;
 }
