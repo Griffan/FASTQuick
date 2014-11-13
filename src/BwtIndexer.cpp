@@ -133,11 +133,11 @@ BwtIndexer::BwtIndexer(string & prefix) :RefPath(prefix),
 bool BwtIndexer::IsKmerInHash(uint64_t kmer)const
 {
 	int counter(0);
-	uint32_t shrinked(0);
+	//uint32_t shrinked(0);
 	for (int iter = 0; iter != 6; ++iter)
 	{
 		//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",kmer,KmerShrinkage(kmer, mask[iter]),roll_hash_table[iter][KmerShrinkage(kmer, mask[iter])], mask[iter]);
-		shrinked = KmerShrinkage(kmer, mask[iter]);
+		uint32_t shrinked = KmerShrinkage(kmer, mask[iter]);
 		if (roll_hash_table[iter][shrinked / 8] & (1 << (shrinked % 8)))
 			counter++;
 	}
@@ -164,6 +164,11 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 }
 bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const
 {
+/*	if(len==0)
+	{
+		warning("Read with empty sequence.");
+		return true;
+	}*/
 	if (IsReadHighQ(Q, len)) //pass error
 	{
 		if (IsReadInHash(S, len))

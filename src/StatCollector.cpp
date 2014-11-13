@@ -14,9 +14,9 @@
 #include <algorithm>
 using namespace std;
 extern string Prefix;
-extern void notice(const char*,...);
-extern void warning(const char*,...);
-extern void error(const char*,...);
+extern void notice(const char*, ...);
+extern void warning(const char*, ...);
+extern void error(const char*, ...);
 StatCollector::StatCollector()
 {
 	// TODO Auto-generated constructor stub
@@ -29,6 +29,7 @@ StatCollector::StatCollector()
 	index = 0;
 	total_base = 0;
 	total_region_size = 0;
+	ref_genome_size = 0;
 	DepthDist = vector<int>(256, 0);
 	GCDist = vector<int>(256, 0);
 	EmpRepDist = vector<int>(256, 0);
@@ -48,6 +49,7 @@ StatCollector::StatCollector(const string & OutFile)
 	index = 0;
 	total_base = 0;
 	total_region_size = 0;
+	ref_genome_size = 0;
 	DepthDist = vector<int>(256, 0);
 	GCDist = vector<int>(256, 0);
 	EmpRepDist = vector<int>(256, 0);
@@ -59,7 +61,7 @@ StatCollector::StatCollector(const string & OutFile)
 }
 
 int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
-		const gap_opt_t* opt) // TODO: cycle of reverse read need to be fixed
+		const gap_opt_t* opt) //
 {
 	int seqid(0), j(0);
 
@@ -78,10 +80,10 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	{
 		return false; //this alignment bridges two adjacent reference sequences
 	}
-	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
-	{
-		return false;
-	}
+//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
+//	{
+//		return false;
+//	}
 
 	string seq, qual, newSeq, newQual;
 
@@ -95,7 +97,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		for (j = 0; j != p->full_len; ++j)
 		{
 			seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
-			qual += (char) p->qual[p->full_len - 1 - j];
+			qual += (char) p->qual[p->full_len - 1 - j];//33 based
 		}
 	//if (p->strand) seq_reverse(p->len, p->qual, 0);
 	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
@@ -120,6 +122,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		{
 			int len = atoi(MD.substr(last, i - last).c_str()) + 1;
 			total_len += len;
+			if(total_len-1>=RefSeq.size()) cerr<<"Here is the read with glitch:\t"<<p->name<<"\t"<<seq<<"\tMD:"<<MD.size()<<"\t"<<total_len<<endl;
 			RefSeq[total_len - 1] = MD[i];
 			last = i + 1;
 		}
@@ -142,18 +145,18 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	if (PosName[PosName.size() - 1] == 'L')
 	{
 		realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_long_len;
-		RefRealEnd = refCoord + opt->flank_long_len;
+		RefRealStart = refCoord - opt->flank_long_len+100;
+		RefRealEnd = refCoord + opt->flank_long_len-100;
 	}
 	else
 	{
 		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_len;
-		RefRealEnd = refCoord + opt->flank_len;
+		RefRealStart = refCoord - opt->flank_len+100;
+		RefRealEnd = refCoord + opt->flank_len-100;
 	}
-	realCoord += 100; //
-	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
-			tmp_left_to_right_coord(0);
+	//realCoord += 100; //
+	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),//coords on reads
+			tmp_left_to_right_coord(0);//coord on reads
 	char sign[2] =
 	{ 1, -1 };
 	if (p->strand != 0)
@@ -220,10 +223,10 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 									== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if(qual[left_to_right_coord]-33>=20)
+								if (qual[left_to_right_coord] - 33 >= 20)
 								{
 									Q20DepthVec[tmp_index]++;
-									if(qual[left_to_right_coord]-33>=30)
+									if (qual[left_to_right_coord] - 33 >= 30)
 									{
 										Q30DepthVec[tmp_index]++;
 									}
@@ -247,17 +250,17 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 
 							DepthVec[index]++;
 							PositionTable[Chrom][i] = index;
-							index++;
+
 							if (dbSNPTable[Chrom].find(i)
 									== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if(qual[left_to_right_coord]-33>=20)
+								if (qual[left_to_right_coord] - 33 >= 20)
 								{
-									Q20DepthVec[tmp_index]++;
-									if(qual[left_to_right_coord]-33>=30)
+									Q20DepthVec[index]++;
+									if (qual[left_to_right_coord] - 33 >= 30)
 									{
-										Q30DepthVec[tmp_index]++;
+										Q30DepthVec[index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
@@ -269,6 +272,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 								/************EmpCycle**************************************************************/
 								EmpCycleDist[tmpCycle]++;
 							}
+							index++;
 						}
 					}
 				else // chrom not exists
@@ -286,17 +290,17 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 						Q20DepthVec.push_back(0);
 						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
-						index++;
+
 						if (dbSNPTable[Chrom].find(i)
 								== dbSNPTable[Chrom].end()) //not in dbsnp table
 						{
 							EmpRepDist[qual[left_to_right_coord]]++;
-							if(qual[left_to_right_coord]-33>=20)
+							if (qual[left_to_right_coord] - 33 >= 20)
 							{
-								Q20DepthVec[tmp_index]++;
-								if(qual[left_to_right_coord]-33>=30)
+								Q20DepthVec[index]++;
+								if (qual[left_to_right_coord] - 33 >= 30)
 								{
-									Q30DepthVec[tmp_index]++;
+									Q30DepthVec[index]++;
 								}
 							}
 							if (RefSeq[left_to_right_coord]
@@ -308,6 +312,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							/************EmpCycle**************************************************************/
 							EmpCycleDist[tmpCycle]++;
 						}
+						index++;
 					}
 				}
 				realCoord += cl;
@@ -401,10 +406,10 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if(qual[left_to_right_coord]-33>=20)
+						if (qual[left_to_right_coord] - 33 >= 20)
 						{
 							Q20DepthVec[tmp_index]++;
-							if(qual[left_to_right_coord]-33>=30)
+							if (qual[left_to_right_coord] - 33 >= 30)
 							{
 								Q30DepthVec[tmp_index]++;
 							}
@@ -427,16 +432,16 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					Q20DepthVec.push_back(0);
 					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
-					index++;
+
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if(qual[left_to_right_coord]-33>=20)
+						if (qual[left_to_right_coord] - 33 >= 20)
 						{
-							Q20DepthVec[tmp_index]++;
-							if(qual[left_to_right_coord]-33>=30)
+							Q20DepthVec[index]++;
+							if (qual[left_to_right_coord] - 33 >= 30)
 							{
-								Q30DepthVec[tmp_index]++;
+								Q30DepthVec[index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
@@ -448,6 +453,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 						/************EmpCycle**************************************************************/
 						EmpCycleDist[tmpCycle]++;
 					}
+					index++;
 				}
 			}
 		else // chrom not exists
@@ -465,16 +471,16 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 				Q20DepthVec.push_back(0);
 				DepthVec[index]++;
 				PositionTable[Chrom][i] = index;
-				index++;
+
 				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
 					EmpRepDist[qual[left_to_right_coord]]++;
-					if(qual[left_to_right_coord]-33>=20)
+					if (qual[left_to_right_coord] - 33 >= 20)
 					{
-						Q20DepthVec[tmp_index]++;
-						if(qual[left_to_right_coord]-33>=30)
+						Q20DepthVec[index]++;
+						if (qual[left_to_right_coord] - 33 >= 30)
 						{
-							Q30DepthVec[tmp_index]++;
+							Q30DepthVec[index]++;
 						}
 					}
 					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
@@ -485,6 +491,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					/************EmpCycle**************************************************************/
 					EmpCycleDist[tmpCycle]++;
 				}
+				index++;
 			}
 		}
 	}
@@ -492,7 +499,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	return true;
 }
 
-int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TODO: cycle of reverse read need to be fixed
+int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 {
 	//int seqid(0), j(0);
 
@@ -565,16 +572,16 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 	if (PosName[PosName.size() - 1] == 'L')
 	{
 		realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_long_len;
-		RefRealEnd = refCoord + opt->flank_long_len;
+		RefRealStart = refCoord - opt->flank_long_len+100;
+		RefRealEnd = refCoord + opt->flank_long_len-100;
 	}
 	else
 	{
 		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_len;
-		RefRealEnd = refCoord + opt->flank_len;
+		RefRealStart = refCoord - opt->flank_len+100;
+		RefRealEnd = refCoord + opt->flank_len-100;
 	}
-	realCoord += 100; //
+	//realCoord += 100; //
 	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
 			tmp_left_to_right_coord(0);
 	char sign[2] =
@@ -589,19 +596,19 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 
 	unsigned int tmp_index = 0;
 
-	if (strcmp(p.getCigar(), "*") != 0)
+	if (std::string(p.getCigar()).find_first_of( "SID") != std::string::npos)//DONE: change not mapped to only M
 	{
 
 		string cigar = p.getCigar();
 		int n_cigar = cigar.size();
 		int digitNow(0), digitLast(0);
 		//for (int k = 0; k < n_cigar; ++k)
-		while (digitNow != n_cigar )
+		while (digitNow != n_cigar)
 		{
 			while (isdigit(cigar[digitNow]))
 				digitNow++;
 			int cl = atoi(
-					cigar.substr(digitLast, digitNow - digitLast).c_str());//digitNow is "SMID"
+					cigar.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
 			digitLast = digitNow + 1;
 			char cop = cigar[digitNow];
 			digitNow++;
@@ -647,10 +654,10 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 									== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if(qual[left_to_right_coord]-33>=20)
+								if (qual[left_to_right_coord] - 33 >= 20)
 								{
 									Q20DepthVec[tmp_index]++;
-									if(qual[left_to_right_coord]-33>=30)
+									if (qual[left_to_right_coord] - 33 >= 30)
 									{
 										Q30DepthVec[tmp_index]++;
 									}
@@ -672,17 +679,17 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 							Q20DepthVec.push_back(0);
 							DepthVec[index]++;
 							PositionTable[Chrom][i] = index;
-							index++;
+
 							if (dbSNPTable[Chrom].find(i)
 									== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if(qual[left_to_right_coord]-33>=20)
+								if (qual[left_to_right_coord] - 33 >= 20)
 								{
-									Q20DepthVec[tmp_index]++;
-									if(qual[left_to_right_coord]-33>=30)
+									Q20DepthVec[index]++;
+									if (qual[left_to_right_coord] - 33 >= 30)
 									{
-										Q30DepthVec[tmp_index]++;
+										Q30DepthVec[index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
@@ -694,6 +701,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 								/************EmpCycle**************************************************************/
 								EmpCycleDist[tmpCycle]++;
 							}
+							index++;
 						}
 					}
 				else // chrom not exists
@@ -710,17 +718,17 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 						Q20DepthVec.push_back(0);
 						DepthVec[index]++;
 						PositionTable[Chrom][i] = index;
-						index++;
+
 						if (dbSNPTable[Chrom].find(i)
 								== dbSNPTable[Chrom].end()) //not in dbsnp table
 						{
 							EmpRepDist[qual[left_to_right_coord]]++;
-							if(qual[left_to_right_coord]-33>=20)
+							if (qual[left_to_right_coord] - 33 >= 20)
 							{
-								Q20DepthVec[tmp_index]++;
-								if(qual[left_to_right_coord]-33>=30)
+								Q20DepthVec[index]++;
+								if (qual[left_to_right_coord] - 33 >= 30)
 								{
-									Q30DepthVec[tmp_index]++;
+									Q30DepthVec[index]++;
 								}
 							}
 							if (RefSeq[left_to_right_coord]
@@ -732,6 +740,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 							/************EmpCycle**************************************************************/
 							EmpCycleDist[tmpCycle]++;
 						}
+						index++;
 					}
 				}
 				realCoord += cl;
@@ -794,10 +803,10 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if(qual[left_to_right_coord]-33>=20)
+						if (qual[left_to_right_coord] - 33 >= 20)
 						{
 							Q20DepthVec[tmp_index]++;
-							if(qual[left_to_right_coord]-33>=30)
+							if (qual[left_to_right_coord] - 33 >= 30)
 							{
 								Q30DepthVec[tmp_index]++;
 							}
@@ -820,16 +829,16 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 					Q20DepthVec.push_back(0);
 					DepthVec[index]++;
 					PositionTable[Chrom][i] = index;
-					index++;
+
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if(qual[left_to_right_coord]-33>=20)
+						if (qual[left_to_right_coord] - 33 >= 20)
 						{
-							Q20DepthVec[tmp_index]++;
-							if(qual[left_to_right_coord]-33>=30)
+							Q20DepthVec[index]++;
+							if (qual[left_to_right_coord] - 33 >= 30)
 							{
-								Q30DepthVec[tmp_index]++;
+								Q30DepthVec[index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
@@ -841,6 +850,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 						/************EmpCycle**************************************************************/
 						EmpCycleDist[tmpCycle]++;
 					}
+					index++;
 				}
 			}
 		else // chrom not exists
@@ -859,16 +869,16 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 				Q20DepthVec.push_back(0);
 				DepthVec[index]++;
 				PositionTable[Chrom][i] = index;
-				index++;
+
 				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
 					EmpRepDist[qual[left_to_right_coord]]++;
-					if(qual[left_to_right_coord]-33>=20)
+					if (qual[left_to_right_coord] - 33 >= 20)
 					{
-						Q20DepthVec[tmp_index]++;
-						if(qual[left_to_right_coord]-33>=30)
+						Q20DepthVec[index]++;
+						if (qual[left_to_right_coord] - 33 >= 30)
 						{
-							Q30DepthVec[tmp_index]++;
+							Q30DepthVec[index]++;
 						}
 					}
 					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
@@ -879,6 +889,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) // TOD
 					/************EmpCycle**************************************************************/
 					EmpCycleDist[tmpCycle]++;
 				}
+				index++;
 			}
 		}
 	}
@@ -1025,15 +1036,16 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	return 0;
 }
 //overload of function IsDuplicated for direct bam reading
-int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
+int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		const gap_opt_t* opt, int type, ofstream & fout)
 {
 	int MaxInsert(-1), MaxInsert2(-1);
 
 	if (type == 1) //q is aligned only
 	{
-		if(q.getFlag()&SAM_FR1)//if it's read one
-			MaxInsert = atoi(SFH.getSQTagValue("LN",q.getReferenceName()))- q.get1BasedPosition() + 1;
+		if (q.getFlag() & SAM_FR1) //if it's read one
+			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
+					- q.get1BasedPosition() + 1;
 		else
 			MaxInsert = q.get1BasedPosition() + q.getReadLength();
 		fout << q.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t" << "*"
@@ -1043,9 +1055,9 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 	}
 	else if (type == 3) //p is aligned only
 	{
-		if(p.getFlag()&SAM_FR1)//if it's read one
-		MaxInsert =  atoi(SFH.getSQTagValue("LN",p.getReferenceName()))
-				- p.get1BasedPosition() + 1;
+		if (p.getFlag() & SAM_FR1) //if it's read one
+			MaxInsert = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
+					- p.get1BasedPosition() + 1;
 		else
 			MaxInsert = p.get1BasedPosition() + p.getReadLength();
 		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
@@ -1062,7 +1074,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 			MaxInsert = q.get1BasedPosition() + q.getReadLength();
 			//j = pos_end(p) - p->pos; //length of read
 			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-			MaxInsert2 = atoi(SFH.getSQTagValue("LN",p.getReferenceName()))
+			MaxInsert2 = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
 					- p.get1BasedPosition() + 1;
 			;
 		}
@@ -1070,7 +1082,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 		{
 			//j = pos_end(q) - q->pos; //length of read
 			//bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-			MaxInsert = atoi(SFH.getSQTagValue("LN",q.getReferenceName()))
+			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
 					- q.get1BasedPosition() + 1;
 			//j = pos_end(p) - p->pos; //length of read
 			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
@@ -1088,7 +1100,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 	if (MaxInsert > 2047)
 		MaxInsert = 2047;
 	MaxInsertSizeDist[MaxInsert]++;
-	if (strcmp(p.getReferenceName() , q.getReferenceName())!=0)
+	if (strcmp(p.getReferenceName(), q.getReferenceName()) != 0)
 	{
 
 		InsertSizeDist[0]++;
@@ -1153,28 +1165,26 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH,SamRecord& p, SamRecord& q,
 	return 0;
 }
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
-int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
-		bwa_seq_t *q, const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
+int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
+		const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
 {
 	int seqid(0), seqid2(0), j(0), j2(0);
-	if (p==0||p->type == BWA_TYPE_NO_MATCH)
+	if (p == 0 || p->type == BWA_TYPE_NO_MATCH)
 	{
-		if(p==0&&q!=0&&addSingleAlignment(bns,q, opt))//adding single via pair interface
+		if (q != 0 && addSingleAlignment(bns, q, opt)) //adding single via pair interface
 		{
 			bns_coor_pac2real(bns, q->pos, j2, &seqid2);
 			string qname(bns->anns[seqid2].name);
-			if (string(qname).find("chrY") != string::npos
-								|| string(qname).find("Y") != string::npos
-								|| string(qname).find("chrX") != string::npos
-								|| string(qname).find("X") != string::npos)
+			if (string(qname).find("Y") != string::npos
+					|| string(qname).find("X") != string::npos)
 			{
-				 if (!isPartialAlign(q))
-				 {
-						contigStatusTable[qname].addNumOverlappedReads();
-						contigStatusTable[qname].addNumFullyIncludedReads();
-				 }
-				 else
-					 contigStatusTable[qname].addNumOverlappedReads();
+				if (!isPartialAlign(q))
+				{
+					contigStatusTable[qname].addNumOverlappedReads();
+					contigStatusTable[qname].addNumFullyIncludedReads();
+				}
+				else
+					contigStatusTable[qname].addNumOverlappedReads();
 			}
 			total_add++;
 			return 2;
@@ -1186,24 +1196,23 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	{
 		j = pos_end(p) - p->pos; //length of read
 	}
+	//until now p is aligned
 	bns_coor_pac2real(bns, p->pos, j, &seqid);
 	string pname(bns->anns[seqid].name);
-	if (q==0||q->type == BWA_TYPE_NO_MATCH)
+	if (q == 0 || q->type == BWA_TYPE_NO_MATCH)
 	{
-		if(q==0&&p!=0&&addSingleAlignment(bns,p, opt))//adding single via pair interface
+		if (addSingleAlignment(bns, p, opt)) //adding single via pair interface
 		{
-			if (string(pname).find("chrY") != string::npos
-								|| string(pname).find("Y") != string::npos
-								|| string(pname).find("chrX") != string::npos
-								|| string(pname).find("X") != string::npos)
+			if (string(pname).find("Y") != string::npos
+					|| string(pname).find("X") != string::npos)
 			{
-				 if (!isPartialAlign(p))
-				 {
-						contigStatusTable[pname].addNumOverlappedReads();
-						contigStatusTable[pname].addNumFullyIncludedReads();
-				 }
-				 else
-					 contigStatusTable[pname].addNumOverlappedReads();
+				if (!isPartialAlign(p))
+				{
+					contigStatusTable[pname].addNumOverlappedReads();
+					contigStatusTable[pname].addNumFullyIncludedReads();
+				}
+				else
+					contigStatusTable[pname].addNumOverlappedReads();
 			}
 			total_add++;
 			return 2;
@@ -1218,14 +1227,182 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	bns_coor_pac2real(bns, q->pos, j2, &seqid2);
 	string qname(bns->anns[seqid2].name);
 //until now both reads are aligned
-if (isPartialAlign(p)) //p is partially aligned
+	if (isPartialAlign(p)) //p is partially aligned
 	{
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
+		if (string(qname).find("Y") != string::npos
+				|| string(qname).find("X") != string::npos)
+		{
+			if (isPartialAlign(q))
+			{
+				contigStatusTable[qname].addNumOverlappedReads();
+			}
+			else //q is perfectly aligned
+			{
+				contigStatusTable[qname].addNumOverlappedReads();
+				contigStatusTable[qname].addNumFullyIncludedReads();
+			}
+			if (pname == qname)
+			{
+				contigStatusTable[qname].addNumPairOverlappedReads();
+			}
+			contigStatusTable[pname].addNumOverlappedReads();
+		}
+
+		if ( IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)
+		{
+			if (addSingleAlignment(bns, p, opt))
+			{
+				if (addSingleAlignment(bns, q, opt))
+				{
+					total_add += 2;
+					return 1;
+				}
+				else
+				{
+					total_add += 1;
+					return 2;
+				}
+			}
+			else
+			{
+				if (addSingleAlignment(bns, q, opt))
+				{
+					total_add += 1;
+					return 2;
+				}
+				else
+					return 0;
+			}
+		}
+		return 0;
+	}
+	else //p is perfectly aligned
+	{
+		// p and q are both aligned
+		if (string(qname).find("Y") != string::npos
+				|| string(qname).find("X") != string::npos)
+		{
+			if (isPartialAlign(q)) //q is partially aligned
+			{
+				contigStatusTable[qname].addNumOverlappedReads();
+				if (pname == qname)
+				{
+					contigStatusTable[qname].addNumPairOverlappedReads();
+				}
+			}
+			else //q is perfectly aligned
+			{
+				contigStatusTable[qname].addNumOverlappedReads();
+				contigStatusTable[qname].addNumFullyIncludedReads();
+				if (pname == qname)
+				{
+					contigStatusTable[qname].addNumPairOverlappedReads();
+					contigStatusTable[qname].addNumFullyIncludedPairedReads();
+				}
+			}
+			contigStatusTable[pname].addNumOverlappedReads();
+			contigStatusTable[pname].addNumFullyIncludedReads();
+		}
+		if ( IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)
+		{
+			if (addSingleAlignment(bns, p, opt))
+			{
+				if (addSingleAlignment(bns, q, opt))
+				{
+					total_add += 2;
+					return 1;
+				}
+				else
+				{
+					total_add += 1;
+					return 2;
+				}
+			}
+			else
+			{
+				if (addSingleAlignment(bns, q, opt))
+				{
+					total_add += 1;
+					return 2;
+				}
+				else
+					return 0;
+			}
+		}
+		else
+			return 0;
+	}
+	//cerr << "currently added reads " << total_add << endl;
+	return 1;
+}
+//overload of addAlignment function for direct bam reading
+//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
+int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
+		SamRecord* q, const gap_opt_t* opt, ofstream & fout, int &total_add)
+{
+
+//	if (p->type == BWA_TYPE_NO_MATCH)
+	if (p == 0 || (p->getFlag() & SAM_FSU))
+	{
+		if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
+			return 0;
+		else if (isPartialAlign(*q))  //only one pair partially mapped
+		{
+			string qname(q->getReferenceName());
+			if (string(qname).find("Y") != string::npos
 					|| string(qname).find("X") != string::npos)
 			{
-				if (isPartialAlign(q))
+				contigStatusTable[qname].addNumOverlappedReads();
+			}
+			if (p == 0 && addSingleAlignment(*q, opt)) //adding single via pair interface
+			{
+				total_add++;
+				return 2;
+			}
+			return 0;
+		}
+		else // q is perfectly aligned, p is not
+		{
+			string qname(q->getReferenceName());
+			if (string(qname).find("Y") != string::npos
+					|| string(qname).find("X") != string::npos)
+			{
+				contigStatusTable[qname].addNumOverlappedReads();
+				contigStatusTable[qname].addNumFullyIncludedReads();
+			}
+			if (addSingleAlignment(*q, opt)) //adding single via pair interface
+			{
+				total_add++;
+				return 2;
+			}
+			else
+				return 0;
+		}
+	}
+	else if (isPartialAlign(*p)) //p is partially aligned
+	{
+		if (q == 0 || (q->getFlag() & SAM_FSU)) //q is not aligned
+		{
+			string pname(p->getReferenceName());
+			if (string(pname).find("Y") != string::npos
+					|| string(pname).find("X") != string::npos)
+			{
+				contigStatusTable[pname].addNumOverlappedReads();
+			}
+			if (addSingleAlignment(*p, opt)) //adding single via pair interface
+			{
+				total_add++;
+				return 2;
+			}
+			return 0;
+		}
+		else // p is partially aligned q is aligned too
+		{
+			string pname(p->getReferenceName()), qname(q->getReferenceName());
+			if (string(qname).find("Y") != string::npos
+					|| string(qname).find("X") != string::npos)
+			{
+				if (isPartialAlign(*q))
 				{
 					contigStatusTable[qname].addNumOverlappedReads();
 				}
@@ -1238,190 +1415,50 @@ if (isPartialAlign(p)) //p is partially aligned
 				{
 					contigStatusTable[qname].addNumPairOverlappedReads();
 				}
-			}
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
-					|| string(pname).find("X") != string::npos)
-			{
 				contigStatusTable[pname].addNumOverlappedReads();
 			}
 
-			if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
+			if ( IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup)
 			{
-				if (addSingleAlignment(bns, p, opt) && addSingleAlignment(bns, q, opt))
-					total_add += 2;
-			}
-			return 0;
-	}
-	else //p is perfectly aligned
-	{
-		 // p and q are both aligned
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
-					|| string(qname).find("X") != string::npos)
-			{
-				if (isPartialAlign(q)) //q is partially aligned
+				if (addSingleAlignment(*p, opt))
 				{
-					contigStatusTable[qname].addNumOverlappedReads();
-					if (pname == qname)
+					if (addSingleAlignment(*q, opt))
 					{
-						contigStatusTable[qname].addNumPairOverlappedReads();
+						total_add += 2;
+						return 1;
+					}
+					else
+					{
+						total_add += 1;
+						return 2;
 					}
 				}
-				else //q is perfectly aligned
+				else
 				{
-					contigStatusTable[qname].addNumOverlappedReads();
-					contigStatusTable[qname].addNumFullyIncludedReads();
-					if (pname == qname)
+					if (addSingleAlignment(*q, opt))
 					{
-						contigStatusTable[qname].addNumPairOverlappedReads();
-						contigStatusTable[qname].addNumFullyIncludedPairedReads();
+						total_add += 1;
+						return 2;
 					}
+					else
+						return 0;
 				}
-
-			}
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
-					|| string(pname).find("X") != string::npos)
-			{
-				contigStatusTable[pname].addNumOverlappedReads();
-				contigStatusTable[pname].addNumFullyIncludedReads();
-			}
-
-			if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
-			{
-				if (addSingleAlignment(bns, p, opt) && addSingleAlignment(bns, q, opt))
-					total_add += 2;
-			}
-			else
-				return 0;
-	}
-	//cerr << "currently added reads " << total_add << endl;
-	return 1;
-}
-//overload of addAlignment function for direct bam reading
-//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
-int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q,
-		const gap_opt_t* opt, ofstream & fout, int &total_add)
-{
-
-//	if (p->type == BWA_TYPE_NO_MATCH)
-	if (p==0||(p->getFlag() & SAM_FSU))
-	{
-		if (q==0||(q->getFlag() & SAM_FSU)) //both end are not mapped
-			return 0;
-		else if (isPartialAlign(*q))  //only one pair partially mapped
-		{
-			string qname(q->getReferenceName());
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
-					|| string(qname).find("X") != string::npos)
-			{
-				contigStatusTable[qname].addNumOverlappedReads();
-			}
-			if(p==0&&addSingleAlignment(*q, opt))//adding single via pair interface
-			{
-				total_add++;
-				return 2;
-			}
-			return 0;
-		}
-		else // q is perfectly aligned, p is not
-		{
-			string qname(q->getReferenceName());
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
-					|| string(qname).find("X") != string::npos)
-			{
-				contigStatusTable[qname].addNumOverlappedReads();
-				contigStatusTable[qname].addNumFullyIncludedReads();
-			}
-
-			if(p==0&&addSingleAlignment(*q, opt))//adding single via pair interface
-			{
-				total_add++;
-				return 2;
-			}
-			else
-				return 0;
-		}
-	}
-	else if (isPartialAlign(*p)) //p is partially aligned
-	{
-		if (q==0||(q->getFlag() & SAM_FSU)) //q is not aligned
-		{
-			string pname(p->getReferenceName());
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
-					|| string(pname).find("X") != string::npos)
-			{
-				contigStatusTable[pname].addNumOverlappedReads();
-			}
-			if(q==0&&addSingleAlignment(*p, opt))//adding single via pair interface
-			{
-				total_add++;
-				return 2;
-			}
-			return 0;
-		}
-		else // p is partially aligned q is aligned too
-		{
-			string pname(p->getReferenceName()),qname(q->getReferenceName());
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
-					|| string(qname).find("X") != string::npos)
-			{
-				if (isPartialAlign(*q))
-				{
-					contigStatusTable[qname].addNumOverlappedReads();
-				}
-				else //q is perfectly aligned
-				{
-					contigStatusTable[qname].addNumOverlappedReads();
-					contigStatusTable[qname].addNumFullyIncludedReads();
-				}
-				if (pname==qname)
-				{
-					contigStatusTable[qname].addNumPairOverlappedReads();
-				}
-			}
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
-					|| string(pname).find("X") != string::npos)
-			{
-				contigStatusTable[pname].addNumOverlappedReads();
-			}
-
-			if (IsDuplicated(SFH,*p, *q, opt, 2, fout) != 1 || opt->cal_dup)
-			{
-				if (addSingleAlignment(*p, opt) && addSingleAlignment(*q, opt))
-					total_add += 2;
 			}
 			return 0;
 		}
 	}
 	else //p is perfectly aligned
 	{
-		if (q==0||(q->getFlag() & SAM_FSU)) // p is perfectly aligned, q is not
+		if (q == 0 || (q->getFlag() & SAM_FSU)) // p is perfectly aligned, q is not
 		{
 			string pname(p->getReferenceName());
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
+			if (string(pname).find("Y") != string::npos
 					|| string(pname).find("X") != string::npos)
 			{
 				contigStatusTable[pname].addNumOverlappedReads();
 				contigStatusTable[pname].addNumFullyIncludedReads();
 			}
-			if(q==0&&addSingleAlignment(*p, opt))//adding single via pair interface
+			if (addSingleAlignment(*p, opt)) //adding single via pair interface
 			{
 				total_add++;
 				return 2;
@@ -1431,10 +1468,8 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 		}
 		else // p and q are both aligned
 		{
-			string pname(p->getReferenceName()),qname(q->getReferenceName());
-			if (string(qname).find("chrY") != string::npos
-					|| string(qname).find("Y") != string::npos
-					|| string(qname).find("chrX") != string::npos
+			string pname(p->getReferenceName()), qname(q->getReferenceName());
+			if (string(qname).find("Y") != string::npos
 					|| string(qname).find("X") != string::npos)
 			{
 				if (isPartialAlign(*q)) //q is partially aligned
@@ -1449,27 +1484,41 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 				{
 					contigStatusTable[qname].addNumOverlappedReads();
 					contigStatusTable[qname].addNumFullyIncludedReads();
-					if (pname==qname)
+					if (pname == qname)
 					{
 						contigStatusTable[qname].addNumPairOverlappedReads();
 						contigStatusTable[qname].addNumFullyIncludedPairedReads();
 					}
 				}
-
-			}
-			if (string(pname).find("chrY") != string::npos
-					|| string(pname).find("Y") != string::npos
-					|| string(pname).find("chrX") != string::npos
-					|| string(pname).find("X") != string::npos)
-			{
 				contigStatusTable[pname].addNumOverlappedReads();
 				contigStatusTable[pname].addNumFullyIncludedReads();
 			}
 
-			if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup)
+			if ( IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup)
 			{
-				if (addSingleAlignment(*p, opt) && addSingleAlignment(*q, opt))
-					total_add += 2;
+				if (addSingleAlignment(*p, opt))
+				{
+					if (addSingleAlignment(*q, opt))
+					{
+						total_add += 2;
+						return 1;
+					}
+					else
+					{
+						total_add += 1;
+						return 2;
+					}
+				}
+				else
+				{
+					if (addSingleAlignment(*q, opt))
+					{
+						total_add += 1;
+						return 2;
+					}
+					else
+						return 0;
+				}
 			}
 			else
 				return 0;
@@ -1479,11 +1528,12 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q
 	return 1;
 }
 
-int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,const char * BamFile,std::ofstream & fout, int & total_add)
+int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
+		const char * BamFile, std::ofstream & fout, int & total_add)
 {
-    SamFileHeader SFH;
-    SamFile SFIO;
-	if(!SFIO.OpenForRead(BamFile, &SFH))
+	SamFileHeader SFH;
+	SamFile SFIO;
+	if (!SFIO.OpenForRead(BamFile, &SFH))
 	{
 		cerr << SFIO.GetStatusMessage() << endl;
 		warning("Reading Bam Header Failed!\n");
@@ -1493,9 +1543,9 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,const char * BamFil
 	unordered_map<string, SamRecord*> pairBuffer;
 	while (1)
 	{
-		SamRecord*  SR= new SamRecord;
+		SamRecord* SR = new SamRecord;
 		//SFIO.ReadRecord( SFH, *SR);
-		if (!SFIO.ReadRecord( SFH, *SR))
+		if (!SFIO.ReadRecord(SFH, *SR))
 		{
 			cerr << SFIO.GetStatusMessage() << endl;
 			notice("End Bam File Reading...\n");
@@ -1503,15 +1553,16 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,const char * BamFil
 			break;
 		}
 		FSC.NumRead++;
-		FSC.NumBase+=SR->getReadLength();
+		FSC.NumBase += SR->getReadLength();
 		string readName;
-		if(SR->getReadName()[SR->getReadNameLength()-2]=='\\')
-		readName=string(SR->getReadName()).substr(0,SR->getReadNameLength() - 3);
+		if (SR->getReadName()[SR->getReadNameLength() - 2] == '\\')
+			readName = string(SR->getReadName()).substr(0,
+					SR->getReadNameLength() - 3);
 		else
-			readName=string(SR->getReadName());
-		if (!(SR->getFlag() &SAM_FPP)) // read is not mapped in pair
+			readName = string(SR->getReadName());
+		if (!(SR->getFlag() & SAM_FPP)) // read is not mapped in pair
 		{
-			addAlignment(SFH, SR, 0,opt, fout, total_add);
+			addAlignment(SFH, SR, 0, opt, fout, total_add);
 			delete SR;
 			continue;
 		}
@@ -1522,17 +1573,17 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,const char * BamFil
 		else
 		{
 			SamRecord* SRtmp = pairBuffer[readName];
-			addAlignment(SFH,SR, SRtmp, opt, fout, total_add);
+			addAlignment(SFH, SR, SRtmp, opt, fout, total_add);
 			delete SR;
 			delete SRtmp;
 			pairBuffer.erase(readName);
 		}
-	}//end of while
+	} //end of while
 	addFSC(FSC);
 	for (unordered_map<string, SamRecord*>::iterator iter = pairBuffer.begin();
 			iter != pairBuffer.end(); ++iter)
 	{
-		addAlignment(SFH,iter->second,0,opt, fout, total_add);
+		addAlignment(SFH, iter->second, 0, opt, fout, total_add);
 		delete iter->second;
 	}
 	return 0;
@@ -1546,7 +1597,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	string SelectedSite = Prefix + ".SelectedSite.vcf.gz";
 	if (!reader.open(SelectedSite.c_str(), header))
 	{
-		warning("File open failed: %s\n",SelectedSite.c_str());
+		warning("File open failed: %s\n", SelectedSite.c_str());
 	}
 	string GCpath = Prefix + ".gc";
 	ifstream FGC(GCpath, ios_base::binary);
@@ -1583,7 +1634,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	string BedFile = Prefix + ".subset.vcf";
 	if (!reader.open(BedFile.c_str(), header))
 	{
-		notice("Open %s failed!\n",BedFile.c_str());
+		notice("Open %s failed!\n", BedFile.c_str());
 		exit(1);
 	}
 	while (!reader.isEOF())
@@ -1624,11 +1675,19 @@ int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 {
 
 	ofstream fout(outputPath + ".DepthDist");
+	int max_XorYmarker(0);
+	if (opt->num_variant_short >= 100000)
+		max_XorYmarker = 3000;
+	else if (opt->num_variant_short >= 10000)
+		max_XorYmarker = 300;
+	else
+		max_XorYmarker = 100;
 	int sum = std::accumulate(DepthDist.begin(), DepthDist.end(), 0);
-	int all = (opt->flank_len * 2 + 1) * opt->num_variant_short
-			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long;
-	fout << 0 << "\t" << all - sum << endl;
-	DepthDist[0]=all-sum;
+	total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
+			+ ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
+			+ (501-100) * max_XorYmarker;
+	fout << 0 << "\t" << total_region_size - sum << endl;
+	DepthDist[0] = total_region_size - sum;
 	for (uint32_t i = 1; i != DepthDist.size(); ++i)
 	{
 		fout << i << "\t" << DepthDist[i] << endl;
@@ -1699,9 +1758,13 @@ int StatCollector::getInsertSizeDist(const string & outputPath)
 int StatCollector::getSexChromInfo(const string & outputPath)
 {
 	ofstream fout(outputPath + ".SexChromInfo");
-	for (unordered_map<string,ContigStatus>::iterator iter = contigStatusTable.begin(); iter != contigStatusTable.end(); ++iter)
+	for (unordered_map<string, ContigStatus>::iterator iter =
+			contigStatusTable.begin(); iter != contigStatusTable.end(); ++iter)
 	{
-		fout << iter->first<< "\t" <<  iter->second.getNumOverlappedReads()<<"\t"<<iter->second.getNumFullyIncludedReads()<<"\t"<<iter->second.getNumPairOverlappedReads()<<"\t"<<iter->second.getNumFullyIncludedPairedReads()<< endl;
+		fout << iter->first << "\t" << iter->second.getNumOverlappedReads()
+				<< "\t" << iter->second.getNumFullyIncludedReads() << "\t"
+				<< iter->second.getNumPairOverlappedReads() << "\t"
+				<< iter->second.getNumFullyIncludedPairedReads() << endl;
 	}
 	fout.close();
 	return 0;
@@ -1734,7 +1797,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getInsertSizeDist(statPrefix);
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix);
-	SummaryOutput(statPrefix,opt);
+	SummaryOutput(statPrefix, opt);
 	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath)
@@ -1773,15 +1836,15 @@ int StatCollector::outputPileup(const string & outputPath)
 	}
 	fout.close();
 	char cmdline[2048];
-	sprintf(cmdline,"bgzip -f %s.Pileup",outputPath.c_str());
-	if(system(cmdline)!=0)
+	sprintf(cmdline, "bgzip -f %s.Pileup", outputPath.c_str());
+	if (system(cmdline) != 0)
 	{
-		warning("Call command line:\n%s\nfailed!\n",cmdline);
+		warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install bgzip!\n", cmdline);
 	}
-	sprintf(cmdline,"tabix  -s 1 -b 2 -e 2 %s.Pileup.gz",outputPath.c_str());
-	if(system(cmdline)!=0)
+	sprintf(cmdline, "tabix  -s 1 -b 2 -e 2 %s.Pileup.gz", outputPath.c_str());
+	if (system(cmdline) != 0)
 	{
-		warning("Call command line:\n%s\nfailed!\n",cmdline);
+		warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install tabix!\n", cmdline);
 	}
 	return 0;
 }
@@ -1895,58 +1958,80 @@ int StatCollector::addFSC(FileStatCollector a)
 }
 int StatCollector::getGenomeSize(std::string RefPath)
 {
-	ifstream fin(RefPath+".fai");
-	if(!fin.is_open()) {cerr<<"Open file:"<<RefPath+".fai"<<" failed!"<<endl;exit(1);}
-	string line,dummy,length;
-	while(getline(fin,line))
+	ifstream fin(RefPath + ".fai");
+	if (!fin.is_open())
+	{
+		cerr << "Open file:" << RefPath + ".fai" << " failed!" << endl;
+		exit(1);
+	}
+	string line, dummy, length;
+	while (getline(fin, line))
 	{
 		stringstream ss(line);
-		ss>>dummy;
-		ss>>length;
-		ref_genome_size+=atoi(length.c_str());
+		ss >> dummy;
+		ss >> length;
+		ref_genome_size += atoi(length.c_str());
 	}
 	fin.close();
 	return 0;
 }
-int StatCollector::SummaryOutput(const string & outputPath,const gap_opt_t* opt)
+int StatCollector::SummaryOutput(const string & outputPath,
+		const gap_opt_t* opt)
 {
-	ofstream fout(outputPath+".summary");
-	 int max_XorYmarker(0);
-	  if(opt->num_variant_short>=100000)
-	    max_XorYmarker=3000;
-	  else if(opt->num_variant_short>=10000)
-	    max_XorYmarker=300;
-	  else
-	    max_XorYmarker=100;
-	 total_region_size= (opt->flank_len * 2 + 1) * opt->num_variant_short
-			+ (opt->flank_long_len * 2 + 1) * opt->num_variant_long
-			+ (501)*max_XorYmarker;
+	ofstream fout(outputPath + ".summary");
+/*	int max_XorYmarker(0);
+	if (opt->num_variant_short >= 100000)
+		max_XorYmarker = 3000;
+	else if (opt->num_variant_short >= 10000)
+		max_XorYmarker = 300;
+	else
+		max_XorYmarker = 100;
+	total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
+			+ ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
+			+ (501-100) * max_XorYmarker;*/
 	long total_base(0);
 	long total_reads(0);
 
-
-	fout<<"FILE 1|FILE 2|# Reads|Average Length"<<endl;
-	fout<<"---|---|---|---"<<endl;
-	for(int i=0;i!=FSCVec.size();++i)
+	fout << "FILE 1|FILE 2|# Reads|Average Length" << endl;
+	fout << "---|---|---|---" << endl;
+	for (int i = 0; i != FSCVec.size(); ++i)
 	{
-		fout<<FSCVec[i].FileName1<<"|"<<FSCVec[i].FileName2<<"|"<<FSCVec[i].NumRead<<"|"<<FSCVec[i].NumBase/FSCVec[i].NumRead<<endl;
-		total_base+=FSCVec[i].NumBase;
-		total_reads+=FSCVec[i].NumRead;
+		fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
+				<< FSCVec[i].NumRead << "|"
+				<< FSCVec[i].NumBase / FSCVec[i].NumRead << endl;
+		total_base += FSCVec[i].NumBase;
+		total_reads += FSCVec[i].NumRead;
 	}
-	fout<<"All"<<"|-|"<<total_reads<<"|"<<total_base/total_reads<<endl;
-	fout<<endl;
-	fout<<"Expected Read Depth = "<<(double)total_base/ref_genome_size<<" ["<<total_base<<"/"<<ref_genome_size<<"]"<<endl;
-	auto AvgDepth=[&]()->double{long long  tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_region_size; };
-	fout<<"Estimated AvgDepth ="<<AvgDepth()<<endl;
-	fout<<"Estimated percentage of accessible genome covered ="<<(1-(double)DepthDist[0]/total_region_size)*100<<"/100"<<endl;
-	auto Q20AvgDepth= [&]()->double{long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size; };
-	fout<<"Estimated AvgDepth for Q20 bases ="<<Q20AvgDepth()<<endl;
-	auto Q30AvgDepth= [&]()->double{long long  tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size; };
-	fout<<"Estimated AvgDepth for Q30 bases ="<<Q30AvgDepth()<<endl;
-	auto MIS500=[&]()->double{long long  tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} };
-	fout<<"Median Insert Size(>=500bp) ="<<MIS500()<<endl;
-	auto MIS300=[&]()->double{long long  tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i) {tmp+=InsertSizeDist[i];if(tmp>total/2) return i;} };
-	fout<<"Median Insert Size(>=300bp) ="<<MIS300()<<endl;
+	fout << "All" << "|-|" << total_reads << "|" << total_base / total_reads
+			<< endl;
+	fout << endl;
+	fout << "Expected Read Depth = " << (double) total_base / ref_genome_size
+			<< " [" << total_base << "/" << ref_genome_size << "]" << endl;
+	auto AvgDepth =
+			[&]()->double
+			{	long long tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_region_size;};
+	fout << "Estimated AvgDepth =" << AvgDepth() << endl;
+	fout << "Estimated percentage of accessible genome covered ="
+			<< (1 - (double) DepthDist[0] / total_region_size) * 100 << "/100"
+			<< endl;
+	auto Q20AvgDepth =
+			[&]()->double
+			{	long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size;};
+	fout << "Estimated AvgDepth for Q20 bases =" << Q20AvgDepth() << endl;
+	auto Q30AvgDepth =
+			[&]()->double
+			{	long long tmp(0);for(int i=0;i!=Q30DepthVec.size();++i) tmp+=Q30DepthVec[i]; return double(tmp)/total_region_size;};
+	fout << "Estimated AvgDepth for Q30 bases =" << Q30AvgDepth() << endl;
+	auto MIS500 =
+			[&]()->double
+			{	long long tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i)
+				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
+	fout << "Median Insert Size(>=500bp) =" << MIS500() << endl;
+	auto MIS300 =
+			[&]()->double
+			{	long long tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i)
+				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
+	fout << "Median Insert Size(>=300bp) =" << MIS300() << endl;
 	return 0;
 }
 StatCollector::~StatCollector()
