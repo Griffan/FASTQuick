@@ -33,6 +33,7 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
   //string RefFaiPath=RefPath+".fai";
   faidx_t * seq;
   seq=fai_load(RefPath.c_str());
+  cerr<<endl;
   notice("Loading Ref fai file done!\n");
 
   faidx_t * FastaMask=0;
