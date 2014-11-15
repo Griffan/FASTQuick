@@ -12,10 +12,10 @@
 #include "StatCollector.h"
 #include <iostream>
 #include <fstream>
-#include "SamFileHeader.h"
-#include "SamRecord.h"
-#include "BamInterface.h"
-#include "SamFile.h"
+#include "../libStatGen/bam/SamFileHeader.h"
+#include "../libStatGen/bam/SamRecord.h"
+#include "../libStatGen/bam/BamInterface.h"
+#include "../libStatGen/bam/SamFile.h"
 #ifndef BWAPE_H_
 #include "../libbwa/bwape.h"
 #endif
