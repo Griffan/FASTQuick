@@ -920,7 +920,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
           for (i = 0; i < n_seqs; ++i)
             {
               //collector.addAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
-              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)!=2)
+              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)==0)
                 continue; //failed
               bwa_print_sam1(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2);
               //exit(1);
@@ -930,7 +930,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
         {
           for (i = 0; i < n_seqs; ++i)
             {
-              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)!=2)
+              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)==0)
                 continue; //failed
               SamRecord SR;
               SetSamRecord(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2, SFH,SR);
@@ -1098,7 +1098,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
                 }
 
               if (collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-                                              fout, total_add)!=1)
+                                              fout, total_add)==0)
                 continue;
               bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
               bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode, opt->max_top2);
@@ -1120,8 +1120,9 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
                 }
 
           if (collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-                                              fout, total_add)==0)// means no successfully added reads
-                continue;
+                                             fout, total_add)==0)// means no successfully added reads
+           //   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
+               continue;
               SamRecord SR[2];
               SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1]+i, opt->mode, opt->max_top2, SFH,SR[0]);
               BamIO.writeRecord(BamFile,SFH,SR[0],SamRecord::SequenceTranslation::NONE);
