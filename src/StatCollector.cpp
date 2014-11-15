@@ -59,7 +59,7 @@ StatCollector::StatCollector(const string & OutFile)
 	InsertSizeDist = vector<int>(2048, 0);
 	MaxInsertSizeDist = vector<int>(2048, 0);
 }
-
+int flag2=0;
 int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		const gap_opt_t* opt) //
 {
@@ -114,7 +114,7 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 			while (!isdigit(MD[i])) // we don't need to take care of Deletion
 			{
 				i++;
-				total_len++;
+				//total_len++;
 			}
 			last = i;
 		}
@@ -122,13 +122,22 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 		{
 			int len = atoi(MD.substr(last, i - last).c_str()) + 1;
 			total_len += len;
-			if(total_len-1>=RefSeq.size()) cerr<<"Here is the read with glitch:\t"<<p->name<<"\t"<<seq<<"\tMD:"<<MD.size()<<"\t"<<total_len<<endl;
+			//if(total_len-1>=RefSeq.size()) cerr<<"Here is the read with glitch:\t"<<p->name<<"\t"<<seq<<"\tMD:"<<MD.size()<<"\t"<<total_len<<endl;//MD:Z:6T1A3C4C4C3C1C2^CAGTGGAAAC9G3G0C3T4T3A0T3G5C3T11T0G7C4T1A0G3G0C0G9C1C4T2G8G4A2C3
 			RefSeq[total_len - 1] = MD[i];
 			last = i + 1;
 		}
 
 	//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
 
+/*	if(flag2==1&&strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
+	{
+		cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
+		exit(1);
+	}else
+	{
+		if(strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
+		flag2=1;
+	}*/
 	string PosName = string(bns->anns[seqid].name);
 
 	int pos = (int) (p->pos - bns->anns[seqid].offset + 1);
