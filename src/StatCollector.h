@@ -7,14 +7,14 @@
 #include "Utility.h"
 #include "cmath"
 #include "fstream"
-#include "VcfFileReader.h"
-#include "VcfHeader.h"
-#include "VcfRecord.h"
+#include "../libStatGen/vcf/VcfFileReader.h"
+#include "../libStatGen/vcf/VcfHeader.h"
+#include "../libStatGen/vcf/VcfRecord.h"
 #include "../libbwa/bwtaln.h"
 #include "../libbwa/bntseq.h"
-#include "SamRecord.h"
-#include "BamInterface.h"
-#include "SamFile.h"
+#include "../libStatGen/bam/SamRecord.h"
+#include "../libStatGen/bam/BamInterface.h"
+#include "../libStatGen/bam/SamFile.h"
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 
