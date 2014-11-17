@@ -1603,12 +1603,12 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 
 	VcfHeader header;
 	VcfFileReader reader;
-	string SelectedSite = Prefix + ".SelectedSite.vcf.gz";
+	string SelectedSite = VcfPath + ".SelectedSite.vcf.gz";
 	if (!reader.open(SelectedSite.c_str(), header))
 	{
 		warning("File open failed: %s\n", SelectedSite.c_str());
 	}
-	string GCpath = Prefix + ".gc";
+	string GCpath = VcfPath + ".gc";
 	ifstream FGC(GCpath, ios_base::binary);
 	//int num_so_far(0);
 	while (!reader.isEOF())
@@ -1640,7 +1640,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 		//vcf_index++;
 
 	}
-	string BedFile = Prefix + ".subset.vcf";
+	string BedFile = VcfPath + ".dpSNP.subset.vcf";
 	if (!reader.open(BedFile.c_str(), header))
 	{
 		notice("Open %s failed!\n", BedFile.c_str());
@@ -2019,28 +2019,28 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	auto AvgDepth =
 			[&]()->double
 			{	long long tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth =" << AvgDepth() << endl;
-	fout << "Estimated percentage of accessible genome covered ="
+	fout << "Estimated AvgDepth = " << AvgDepth() << endl;
+	fout << "Estimated percentage of accessible genome covered = "
 			<< (1 - (double) DepthDist[0] / total_region_size) * 100 << "/100"
 			<< endl;
 	auto Q20AvgDepth =
 			[&]()->double
 			{	long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth for Q20 bases =" << Q20AvgDepth() << endl;
+	fout << "Estimated AvgDepth for Q20 bases = " << Q20AvgDepth() << endl;
 	auto Q30AvgDepth =
 			[&]()->double
 			{	long long tmp(0);for(int i=0;i!=Q30DepthVec.size();++i) tmp+=Q30DepthVec[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth for Q30 bases =" << Q30AvgDepth() << endl;
+	fout << "Estimated AvgDepth for Q30 bases = " << Q30AvgDepth() << endl;
 	auto MIS500 =
 			[&]()->double
 			{	long long tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i)
 				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
-	fout << "Median Insert Size(>=500bp) =" << MIS500() << endl;
+	fout << "Median Insert Size(>=500bp) = " << MIS500() << endl;
 	auto MIS300 =
 			[&]()->double
 			{	long long tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i)
 				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
-	fout << "Median Insert Size(>=300bp) =" << MIS300() << endl;
+	fout << "Median Insert Size(>=300bp) = " << MIS300() << endl;
 	return 0;
 }
 StatCollector::~StatCollector()
