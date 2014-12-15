@@ -30,14 +30,15 @@ StatCollector::StatCollector()
 	total_base = 0;
 	total_region_size = 0;
 	ref_genome_size = 0;
-	DepthDist = vector<int>(256, 0);
-	GCDist = vector<int>(256, 0);
-	EmpRepDist = vector<int>(256, 0);
-	misEmpRepDist = vector<int>(256, 0);
-	EmpCycleDist = vector<int>(256, 0);
-	misEmpCycleDist = vector<int>(256, 0);
-	InsertSizeDist = vector<int>(2048, 0);
-	MaxInsertSizeDist = vector<int>(2048, 0);
+	DepthDist = vector<size_t>(256, 0);
+	CycleDist = vector<size_t>(512, 0);
+	GCDist = vector<size_t>(256, 0);
+	EmpRepDist = vector<size_t>(256, 0);
+	misEmpRepDist = vector<size_t>(256, 0);
+	EmpCycleDist = vector<size_t>(256, 0);
+	misEmpCycleDist = vector<size_t>(256, 0);
+	InsertSizeDist = vector<size_t>(2048, 0);
+	MaxInsertSizeDist = vector<size_t>(2048, 0);
 }
 StatCollector::StatCollector(const string & OutFile)
 {
@@ -50,24 +51,25 @@ StatCollector::StatCollector(const string & OutFile)
 	total_base = 0;
 	total_region_size = 0;
 	ref_genome_size = 0;
-	DepthDist = vector<int>(256, 0);
-	GCDist = vector<int>(256, 0);
-	EmpRepDist = vector<int>(256, 0);
-	misEmpRepDist = vector<int>(256, 0);
-	EmpCycleDist = vector<int>(256, 0);
-	misEmpCycleDist = vector<int>(256, 0);
-	InsertSizeDist = vector<int>(2048, 0);
-	MaxInsertSizeDist = vector<int>(2048, 0);
+	DepthDist = vector<size_t>(256, 0);
+	CycleDist = vector<size_t>(512, 0);
+	GCDist = vector<size_t>(256, 0);
+	EmpRepDist = vector<size_t>(256, 0);
+	misEmpRepDist = vector<size_t>(256, 0);
+	EmpCycleDist = vector<size_t>(256, 0);
+	misEmpCycleDist = vector<size_t>(256, 0);
+	InsertSizeDist = vector<size_t>(2048, 0);
+	MaxInsertSizeDist = vector<size_t>(2048, 0);
 }
-int flag2=0;
+int flag2 = 0;
 int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
-		const gap_opt_t* opt) //
+	const gap_opt_t* opt) //
 {
 	int seqid(0), j(0);
 
 	if (p->type == BWA_TYPE_NO_MATCH)
 	{
-		//j = 1;
+		j = 1;
 		return false;
 	}
 	else
@@ -76,28 +78,32 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 	}
 	bns_coor_pac2real(bns, p->pos, j, &seqid);
 	if (p->type != BWA_TYPE_NO_MATCH
-			&& p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len)
+		&& p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len)
 	{
+		//if (strcmp(p->name, "ERR018525.33349") == 0)
+		//{
+		//	fprintf(stderr, "ERR018525.33349 died here 2\n");
+		//}
 		return false; //this alignment bridges two adjacent reference sequences
 	}
-//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
-//	{
-//		return false;
-//	}
+	//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
+	//	{
+	//		return false;
+	//	}
 
 	string seq, qual, newSeq, newQual;
 
 	if (p->strand == 0)
 		for (j = 0; j != p->full_len; ++j)
 		{
-			seq += "ACGTN"[(int) (p)->seq[j]];
-			qual += (char) p->qual[j];
+		seq += "ACGTN"[(int)(p)->seq[j]];
+		qual += (char)p->qual[j];
 		}
 	else
 		for (j = 0; j != p->full_len; ++j)
 		{
-			seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
-			qual += (char) p->qual[p->full_len - 1 - j];//33 based
+		seq += "TGCAN"[(int)(p)->seq[p->full_len - 1 - j]];
+		qual += (char)p->qual[p->full_len - 1 - j];//33 based
 		}
 	//if (p->strand) seq_reverse(p->len, p->qual, 0);
 	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
@@ -127,93 +133,93 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 			last = i + 1;
 		}
 
-	//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
+		//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
 
-/*	if(flag2==1&&strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
-	{
-		cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
-		exit(1);
-	}else
-	{
-		if(strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
-		flag2=1;
-	}*/
-	string PosName = string(bns->anns[seqid].name);
-
-	int pos = (int) (p->pos - bns->anns[seqid].offset + 1);
-
-	size_t colonPos = PosName.find(":");
-	size_t atPos = PosName.find("@");
-	string Chrom = PosName.substr(0, colonPos);
-	unsigned int refCoord = atoi(
-			PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
-	//size_t slashPos = PosName.find("/");
-	//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
-	unsigned int realCoord(0);
-	unsigned int RefRealStart(0), RefRealEnd(0);
-	if (PosName[PosName.size() - 1] == 'L')
-	{
-		realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_long_len+100;
-		RefRealEnd = refCoord + opt->flank_long_len-100;
-	}
-	else
-	{
-		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_len+100;
-		RefRealEnd = refCoord + opt->flank_len-100;
-	}
-	//realCoord += 100; //
-	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),//coords on reads
-			tmp_left_to_right_coord(0);//coord on reads
-	char sign[2] =
-	{ 1, -1 };
-	if (p->strand != 0)
-	{
-		tmpCycle = p->len - 1;
-	}
-
-	unsigned int tmp_index = 0;
-	//cerr << p->name << "\t" << PosName<<"\t"<<pos<<"\t"<<Chrom<< "\t" << realCoord << "\t" << MD <<"\t";
-	//cigar string
-	if (p->cigar)
-	{
-		int n_cigar = p->n_cigar;
-		bwa_cigar_t* cigar = p->cigar;
-		for (int k = 0; k < n_cigar; ++k)
-		{
-
-			int cl = __cigar_len(cigar[k]);
-			int cop = "MIDS"[__cigar_op(cigar[k])];
-			switch (cop)
+		/*	if(flag2==1&&strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
 			{
-			case 'M':
-				//cerr<<"M";
-				//cerr<< realCoord<<"-"<< realCoord + cl - 1;
-				/*************************variant site****************************************/
+			cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
+			exit(1);
+			}else
+			{
+			if(strcmp(p->name,"ST-E00114:91:H00NPALXX:2:1109:9323:35749")==0)
+			flag2=1;
+			}*/
+		string PosName = string(bns->anns[seqid].name);
 
-				if (VcfTable.find(Chrom) != VcfTable.end())
+		int pos = (int)(p->pos - bns->anns[seqid].offset + 1);
+
+		size_t colonPos = PosName.find(":");
+		size_t atPos = PosName.find("@");
+		string Chrom = PosName.substr(0, colonPos);
+		unsigned int refCoord = atoi(
+			PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
+		//size_t slashPos = PosName.find("/");
+		//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
+		unsigned int realCoord(0);
+		unsigned int RefRealStart(0), RefRealEnd(0);
+		if (PosName[PosName.size() - 1] == 'L')
+		{
+			realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
+			RefRealStart = refCoord - opt->flank_long_len + 100;
+			RefRealEnd = refCoord + opt->flank_long_len - 100;
+		}
+		else
+		{
+			realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+			RefRealStart = refCoord - opt->flank_len + 100;
+			RefRealEnd = refCoord + opt->flank_len - 100;
+		}
+		//realCoord += 100; //
+		unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),//coords on reads
+			tmp_left_to_right_coord(0);//coord on reads
+		char sign[2] =
+		{ 1, -1 };
+		if (p->strand != 0)
+		{
+			tmpCycle = p->len - 1;
+		}
+
+		unsigned int tmp_index = 0;
+		//cerr << p->name << "\t" << PosName<<"\t"<<pos<<"\t"<<Chrom<< "\t" << realCoord << "\t" << MD <<"\t";
+		//cigar string
+		if (p->cigar)
+		{
+			int n_cigar = p->n_cigar;
+			bwa_cigar_t* cigar = p->cigar;
+			for (int k = 0; k < n_cigar; ++k)
+			{
+
+				int cl = __cigar_len(cigar[k]);
+				int cop = "MIDS"[__cigar_op(cigar[k])];
+				switch (cop)
 				{
-					tmpCycleVcfTable = tmpCycle;
-					tmp_left_to_right_coord = left_to_right_coord;
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
+				case 'M':
+					//cerr<<"M";
+					//cerr<< realCoord<<"-"<< realCoord + cl - 1;
+					/*************************variant site****************************************/
+
+					if (VcfTable.find(Chrom) != VcfTable.end())
 					{
-						if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+						tmpCycleVcfTable = tmpCycle;
+						tmp_left_to_right_coord = left_to_right_coord;
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
 						{
-							tmp_index = VcfTable[Chrom][i];
-							SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-							QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-							CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-							MaqVec[tmp_index].push_back(p->mapQ + 33);
-							StrandVec[tmp_index].push_back(p->strand);
+							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+							{
+								tmp_index = VcfTable[Chrom][i];
+								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+								MaqVec[tmp_index].push_back(p->mapQ + 33);
+								StrandVec[tmp_index].push_back(p->strand);
+							}
 						}
 					}
-				}
 
-				/*****************************************************************************/
-				if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+					/*****************************************************************************/
+					if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
 							++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 					{
 						if (i < RefRealStart)
@@ -223,25 +229,25 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 						//std::pair<unordered_map<int, bool>::iterator, bool> ret =
 						//		PositionTable[Chrom].insert(make_pair(i, 1));
 						if (PositionTable[Chrom].find(i)
-								!= PositionTable[Chrom].end())//!ret.second) //if insert failed, this coord exists
+							!= PositionTable[Chrom].end())//!ret.second) //if insert failed, this coord exists
 						{
 							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
 							tmp_index = PositionTable[Chrom][i];
 							DepthVec[tmp_index]++;
 							if (dbSNPTable[Chrom].find(i)
-									== dbSNPTable[Chrom].end())	//not in dbsnp table
+								== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord] - 33 >= 20)
+								if (qual[left_to_right_coord] >= 20)
 								{
 									Q20DepthVec[tmp_index]++;
-									if (qual[left_to_right_coord] - 33 >= 30)
+									if (qual[left_to_right_coord] >= 30)
 									{
 										Q30DepthVec[tmp_index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
-										!= seq[left_to_right_coord])
+									!= seq[left_to_right_coord])
 								{
 									misEmpRepDist[qual[left_to_right_coord]]++;
 									misEmpCycleDist[tmpCycle]++;
@@ -261,19 +267,19 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							PositionTable[Chrom][i] = index;
 
 							if (dbSNPTable[Chrom].find(i)
-									== dbSNPTable[Chrom].end()) //not in dbsnp table
+								== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord] - 33 >= 20)
+								if (qual[left_to_right_coord]  >= 20)
 								{
 									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord] - 33 >= 30)
+									if (qual[left_to_right_coord]  >= 30)
 									{
 										Q30DepthVec[index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
-										!= seq[left_to_right_coord])
+									!= seq[left_to_right_coord])
 								{
 									misEmpRepDist[qual[left_to_right_coord]]++;
 									misEmpCycleDist[tmpCycle]++;
@@ -284,121 +290,121 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 							index++;
 						}
 					}
-				else // chrom not exists
-				{
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
+					else // chrom not exists
 					{
-						if (i < RefRealStart)
-							continue;
-						if (i > RefRealEnd)
-							break;
-						//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-						DepthVec.push_back(0);
-						Q30DepthVec.push_back(0);
-						Q20DepthVec.push_back(0);
-						DepthVec[index]++;
-						PositionTable[Chrom][i] = index;
-
-						if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 						{
-							EmpRepDist[qual[left_to_right_coord]]++;
-							if (qual[left_to_right_coord] - 33 >= 20)
+							if (i < RefRealStart)
+								continue;
+							if (i > RefRealEnd)
+								break;
+							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+							DepthVec.push_back(0);
+							Q30DepthVec.push_back(0);
+							Q20DepthVec.push_back(0);
+							DepthVec[index]++;
+							PositionTable[Chrom][i] = index;
+
+							if (dbSNPTable[Chrom].find(i)
+								== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
-								Q20DepthVec[index]++;
-								if (qual[left_to_right_coord] - 33 >= 30)
+								EmpRepDist[qual[left_to_right_coord]]++;
+								if (qual[left_to_right_coord]  >= 20)
 								{
-									Q30DepthVec[index]++;
+									Q20DepthVec[index]++;
+									if (qual[left_to_right_coord]  >= 30)
+									{
+										Q30DepthVec[index]++;
+									}
 								}
-							}
-							if (RefSeq[left_to_right_coord]
+								if (RefSeq[left_to_right_coord]
 									!= seq[left_to_right_coord])
-							{
-								misEmpRepDist[qual[left_to_right_coord]]++;
-								misEmpCycleDist[tmpCycle]++;
+								{
+									misEmpRepDist[qual[left_to_right_coord]]++;
+									misEmpCycleDist[tmpCycle]++;
+								}
+								/************EmpCycle**************************************************************/
+								EmpCycleDist[tmpCycle]++;
 							}
-							/************EmpCycle**************************************************************/
-							EmpCycleDist[tmpCycle]++;
+							index++;
 						}
-						index++;
 					}
+					realCoord += cl;
+					break;
+
+					//	 case BAM_CHARD_CLIP:
+					//	      printf("H");
+					//	      /* printf("[%d]", pos);  // No coverage
+					//	      /* pos is not advanced by this operation
+					//	      break;
+
+				case 'S':
+					//	      printf("S");
+					//	      /* printf("[%d]", pos);  // No coverage
+					//	      /* pos is not advanced by this operation
+					tmpCycle += cl * sign[p->strand];
+					left_to_right_coord += cl;
+					break;
+
+				case 'D':
+					//	      printf("D");
+					/* printf("[%d-%d]", pos, pos + cl - 1);  // Spans positions, No Coverage*/
+
+					realCoord += cl;
+
+					break;
+
+					//	 case BAM_CPAD:
+					//	      printf("P");
+					/* printf("[%d-%d]", pos, pos + cl - 1); // Spans positions, No Coverage*/
+					//	      pos+=cl;
+					//	      break;
+				case 'I':
+					//	      printf("I");
+					/* printf("[%d]", pos); // Special case - adds <cl> bp "throughput", but not genomic position "coverage"*/
+					/* How you handle this is application dependent*/
+					/* pos is not advanced by this operation*/
+
+					tmpCycle += cl * sign[p->strand];
+					left_to_right_coord += cl;
+					break;
+
+					//	 case BAM_CREF_SKIP:
+					//	      printf("S");
+					//   printf("[%d-%d]", pos, pos + cl - 1); /* Spans positions, No Coverage*/
+					//	      pos+=cl;
+					//	      break;
+
+				default:
+					warning("Unhandled cigar_op %d:%d\n", cop, cl);
+					printf("?");
 				}
-				realCoord += cl;
-				break;
-
-//	 case BAM_CHARD_CLIP:
-//	      printf("H");
-//	      /* printf("[%d]", pos);  // No coverage
-//	      /* pos is not advanced by this operation
-//	      break;
-
-			case 'S':
-//	      printf("S");
-//	      /* printf("[%d]", pos);  // No coverage
-//	      /* pos is not advanced by this operation
-				tmpCycle += cl * sign[p->strand];
-				left_to_right_coord += cl;
-				break;
-
-			case 'D':
-//	      printf("D");
-				/* printf("[%d-%d]", pos, pos + cl - 1);  // Spans positions, No Coverage*/
-
-				realCoord += cl;
-
-				break;
-
-//	 case BAM_CPAD:
-//	      printf("P");
-				/* printf("[%d-%d]", pos, pos + cl - 1); // Spans positions, No Coverage*/
-//	      pos+=cl;
-//	      break;
-			case 'I':
-//	      printf("I");
-				/* printf("[%d]", pos); // Special case - adds <cl> bp "throughput", but not genomic position "coverage"*/
-				/* How you handle this is application dependent*/
-				/* pos is not advanced by this operation*/
-
-				tmpCycle += cl * sign[p->strand];
-				left_to_right_coord += cl;
-				break;
-
-//	 case BAM_CREF_SKIP:
-//	      printf("S");
-				//   printf("[%d-%d]", pos, pos + cl - 1); /* Spans positions, No Coverage*/
-//	      pos+=cl;
-//	      break;
-
-			default:
-				warning("Unhandled cigar_op %d:%d\n", cop, cl);
-				printf("?");
-			}
-		}			//end for
-	}
-	else
-	{
-		/*************************variant site****************************************/
-
-		if (VcfTable.find(Chrom) != VcfTable.end())
+			}			//end for
+		}
+		else
 		{
-			tmpCycleVcfTable = tmpCycle;
-			tmp_left_to_right_coord = left_to_right_coord;
-			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+			/*************************variant site****************************************/
+
+			if (VcfTable.find(Chrom) != VcfTable.end())
+			{
+				tmpCycleVcfTable = tmpCycle;
+				tmp_left_to_right_coord = left_to_right_coord;
+				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
 					++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
-				if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-				{
+					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+					{
 					tmp_index = VcfTable[Chrom][i];
 					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
 					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
 					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
 					MaqVec[tmp_index].push_back(p->mapQ + 33);
 					StrandVec[tmp_index].push_back(p->strand);
-				}
-		}
-		/************************************************************************************/
-		if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+					}
+			}
+			/************************************************************************************/
+			if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
 					++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 			{
 				if (i < RefRealStart)
@@ -415,16 +421,16 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord] - 33 >= 20)
+						if (qual[left_to_right_coord]  >= 20)
 						{
 							Q20DepthVec[tmp_index]++;
-							if (qual[left_to_right_coord] - 33 >= 30)
+							if (qual[left_to_right_coord]  >= 30)
 							{
 								Q30DepthVec[tmp_index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
-								!= seq[left_to_right_coord])
+							!= seq[left_to_right_coord])
 						{
 							misEmpRepDist[qual[left_to_right_coord]]++;
 							misEmpCycleDist[tmpCycle]++;
@@ -445,16 +451,16 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord] - 33 >= 20)
+						if (qual[left_to_right_coord]  >= 20)
 						{
 							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord] - 33 >= 30)
+							if (qual[left_to_right_coord] >= 30)
 							{
 								Q30DepthVec[index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
-								!= seq[left_to_right_coord])
+							!= seq[left_to_right_coord])
 						{
 							misEmpRepDist[qual[left_to_right_coord]]++;
 							misEmpCycleDist[tmpCycle]++;
@@ -465,47 +471,47 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 					index++;
 				}
 			}
-		else // chrom not exists
-		{
-			for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
-					++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
+			else // chrom not exists
 			{
-				if (i < RefRealStart)
-					continue;
-				if (i > RefRealEnd)
-					break;
-				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-				DepthVec.push_back(0);
-				Q30DepthVec.push_back(0);
-				Q20DepthVec.push_back(0);
-				DepthVec[index]++;
-				PositionTable[Chrom][i] = index;
-
-				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
+				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+					++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord)
 				{
-					EmpRepDist[qual[left_to_right_coord]]++;
-					if (qual[left_to_right_coord] - 33 >= 20)
+					if (i < RefRealStart)
+						continue;
+					if (i > RefRealEnd)
+						break;
+					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+					DepthVec.push_back(0);
+					Q30DepthVec.push_back(0);
+					Q20DepthVec.push_back(0);
+					DepthVec[index]++;
+					PositionTable[Chrom][i] = index;
+
+					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
-						Q20DepthVec[index]++;
-						if (qual[left_to_right_coord] - 33 >= 30)
+						EmpRepDist[qual[left_to_right_coord]]++;
+						if (qual[left_to_right_coord]  >= 20)
 						{
-							Q30DepthVec[index]++;
+							Q20DepthVec[index]++;
+							if (qual[left_to_right_coord] >= 30)
+							{
+								Q30DepthVec[index]++;
+							}
 						}
+						if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
+						{
+							misEmpRepDist[qual[left_to_right_coord]]++;
+							misEmpCycleDist[tmpCycle]++;
+						}
+						/************EmpCycle**************************************************************/
+						EmpCycleDist[tmpCycle]++;
 					}
-					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
-					{
-						misEmpRepDist[qual[left_to_right_coord]]++;
-						misEmpCycleDist[tmpCycle]++;
-					}
-					/************EmpCycle**************************************************************/
-					EmpCycleDist[tmpCycle]++;
+					index++;
 				}
-				index++;
 			}
 		}
-	}
 
-	return true;
+		return true;
 }
 
 int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
@@ -517,25 +523,25 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 		return false;
 	}
 
-//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
-//	{
-//		return false;
-//	}
-//
+	//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
+	//	{
+	//		return false;
+	//	}
+	//
 	string seq(p.getSequence()), qual(p.getQuality()), newSeq, newQual;
 
-//	if (p->strand == 0)
-//		for (j = 0; j != p->full_len; ++j)
-//		{
-//			seq += "ACGTN"[(int) (p)->seq[j]];
-//			qual += (char) p->qual[j];
-//		}
-//	else
-//		for (j = 0; j != p->full_len; ++j)
-//		{
-//			seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
-//			qual += (char) p->qual[p->full_len - 1 - j];
-//		}
+	//	if (p->strand == 0)
+	//		for (j = 0; j != p->full_len; ++j)
+	//		{
+	//			seq += "ACGTN"[(int) (p)->seq[j]];
+	//			qual += (char) p->qual[j];
+	//		}
+	//	else
+	//		for (j = 0; j != p->full_len; ++j)
+	//		{
+	//			seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
+	//			qual += (char) p->qual[p->full_len - 1 - j];
+	//		}
 	//if (p->strand) seq_reverse(p->len, p->qual, 0);
 	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
 
@@ -563,91 +569,91 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 			last = i + 1;
 		}
 
-	//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
+		//cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
 
-	string PosName = p.getReferenceName();
+		string PosName = p.getReferenceName();
 
-	int pos = p.get1BasedPosition();
+		int pos = p.get1BasedPosition();
 
-	size_t colonPos = PosName.find(":");
-	size_t atPos = PosName.find("@");
-	string Chrom = PosName.substr(0, colonPos);
-	unsigned int refCoord = atoi(
+		size_t colonPos = PosName.find(":");
+		size_t atPos = PosName.find("@");
+		string Chrom = PosName.substr(0, colonPos);
+		unsigned int refCoord = atoi(
 			PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
-	//size_t slashPos = PosName.find("/");
-	//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
-	unsigned int realCoord(0);
-	unsigned int RefRealStart(0), RefRealEnd(0);
-	if (PosName[PosName.size() - 1] == 'L')
-	{
-		realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_long_len+100;
-		RefRealEnd = refCoord + opt->flank_long_len-100;
-	}
-	else
-	{
-		realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-		RefRealStart = refCoord - opt->flank_len+100;
-		RefRealEnd = refCoord + opt->flank_len-100;
-	}
-	//realCoord += 100; //
-	unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
-			tmp_left_to_right_coord(0);
-	char sign[2] =
-	{ 1, -1 };
-
-	bool strand = (p.getFlag() & SAM_FSR);
-	int mapQ = p.getMapQuality();
-	if (strand != 0)
-	{
-		tmpCycle = p.getReadLength() - 1;
-	}
-
-	unsigned int tmp_index = 0;
-
-	if (std::string(p.getCigar()).find_first_of( "SID") != std::string::npos)//DONE: change not mapped to only M
-	{
-
-		string cigar = p.getCigar();
-		int n_cigar = cigar.size();
-		int digitNow(0), digitLast(0);
-		//for (int k = 0; k < n_cigar; ++k)
-		while (digitNow != n_cigar)
+		//size_t slashPos = PosName.find("/");
+		//string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
+		unsigned int realCoord(0);
+		unsigned int RefRealStart(0), RefRealEnd(0);
+		if (PosName[PosName.size() - 1] == 'L')
 		{
-			while (isdigit(cigar[digitNow]))
-				digitNow++;
-			int cl = atoi(
-					cigar.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
-			digitLast = digitNow + 1;
-			char cop = cigar[digitNow];
-			digitNow++;
-			//std::cerr<<cigar<<":\t"<<cop<<"\t"<<cl<<std::endl;
-			switch (cop)
-			{
-			case 'M':
-				/*************************variant site****************************************/
+			realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
+			RefRealStart = refCoord - opt->flank_long_len + 100;
+			RefRealEnd = refCoord + opt->flank_long_len - 100;
+		}
+		else
+		{
+			realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+			RefRealStart = refCoord - opt->flank_len + 100;
+			RefRealEnd = refCoord + opt->flank_len - 100;
+		}
+		//realCoord += 100; //
+		unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
+			tmp_left_to_right_coord(0);
+		char sign[2] =
+		{ 1, -1 };
 
-				if (VcfTable.find(Chrom) != VcfTable.end())
+		bool strand = (p.getFlag() & SAM_FSR);
+		int mapQ = p.getMapQuality();
+		if (strand != 0)
+		{
+			tmpCycle = p.getReadLength() - 1;
+		}
+
+		unsigned int tmp_index = 0;
+
+		if (std::string(p.getCigar()).find_first_of("SID") != std::string::npos)//DONE: change not mapped to only M
+		{
+
+			string cigar = p.getCigar();
+			int n_cigar = cigar.size();
+			int digitNow(0), digitLast(0);
+			//for (int k = 0; k < n_cigar; ++k)
+			while (digitNow != n_cigar)
+			{
+				while (isdigit(cigar[digitNow]))
+					digitNow++;
+				int cl = atoi(
+					cigar.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
+				digitLast = digitNow + 1;
+				char cop = cigar[digitNow];
+				digitNow++;
+				//std::cerr<<cigar<<":\t"<<cop<<"\t"<<cl<<std::endl;
+				switch (cop)
 				{
-					tmpCycleVcfTable = tmpCycle;
-					tmp_left_to_right_coord = left_to_right_coord;
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
+				case 'M':
+					/*************************variant site****************************************/
+
+					if (VcfTable.find(Chrom) != VcfTable.end())
 					{
-						if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
+						tmpCycleVcfTable = tmpCycle;
+						tmp_left_to_right_coord = left_to_right_coord;
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
 						{
-							tmp_index = VcfTable[Chrom][i];
-							SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-							QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-							CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-							MaqVec[tmp_index].push_back(mapQ + 33);
-							StrandVec[tmp_index].push_back(strand);
+							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
+							{
+								tmp_index = VcfTable[Chrom][i];
+								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+								MaqVec[tmp_index].push_back(mapQ + 33);
+								StrandVec[tmp_index].push_back(strand);
+							}
 						}
 					}
-				}
-				/*****************************************************************************/
-				if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+					/*****************************************************************************/
+					if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
 							++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord)
 					{
 						if (i < RefRealStart)
@@ -655,24 +661,24 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 						if (i > RefRealEnd)
 							break;
 						if (PositionTable[Chrom].find(i)
-								!= PositionTable[Chrom].end()) //!ret.second) //if insert failed, this coord exists
+							!= PositionTable[Chrom].end()) //!ret.second) //if insert failed, this coord exists
 						{
 							tmp_index = PositionTable[Chrom][i];
 							DepthVec[tmp_index]++;
 							if (dbSNPTable[Chrom].find(i)
-									== dbSNPTable[Chrom].end())	//not in dbsnp table
+								== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord] - 33 >= 20)
+								if (qual[left_to_right_coord]  >= 20)
 								{
 									Q20DepthVec[tmp_index]++;
-									if (qual[left_to_right_coord] - 33 >= 30)
+									if (qual[left_to_right_coord]  >= 30)
 									{
 										Q30DepthVec[tmp_index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
-										!= seq[left_to_right_coord])
+									!= seq[left_to_right_coord])
 								{
 									misEmpRepDist[qual[left_to_right_coord]]++;
 									misEmpCycleDist[tmpCycle]++;
@@ -690,19 +696,19 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 							PositionTable[Chrom][i] = index;
 
 							if (dbSNPTable[Chrom].find(i)
-									== dbSNPTable[Chrom].end()) //not in dbsnp table
+								== dbSNPTable[Chrom].end()) //not in dbsnp table
 							{
 								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord] - 33 >= 20)
+								if (qual[left_to_right_coord]  >= 20)
 								{
 									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord] - 33 >= 30)
+									if (qual[left_to_right_coord]  >= 30)
 									{
 										Q30DepthVec[index]++;
 									}
 								}
 								if (RefSeq[left_to_right_coord]
-										!= seq[left_to_right_coord])
+									!= seq[left_to_right_coord])
 								{
 									misEmpRepDist[qual[left_to_right_coord]]++;
 									misEmpCycleDist[tmpCycle]++;
@@ -713,88 +719,88 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 							index++;
 						}
 					}
-				else // chrom not exists
-				{
-					for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord)
+					else // chrom not exists
 					{
-						if (i < RefRealStart)
-							continue;
-						if (i > RefRealEnd)
-							break;
-						DepthVec.push_back(0);
-						Q30DepthVec.push_back(0);
-						Q20DepthVec.push_back(0);
-						DepthVec[index]++;
-						PositionTable[Chrom][i] = index;
-
-						if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
+						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+							++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord)
 						{
-							EmpRepDist[qual[left_to_right_coord]]++;
-							if (qual[left_to_right_coord] - 33 >= 20)
-							{
-								Q20DepthVec[index]++;
-								if (qual[left_to_right_coord] - 33 >= 30)
-								{
-									Q30DepthVec[index]++;
-								}
-							}
-							if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-							{
-								misEmpRepDist[qual[left_to_right_coord]]++;
-								misEmpCycleDist[tmpCycle]++;
-							}
-							/************EmpCycle**************************************************************/
-							EmpCycleDist[tmpCycle]++;
-						}
-						index++;
-					}
-				}
-				realCoord += cl;
-				break;
-			case 'S':
-				tmpCycle += cl * sign[strand];
-				left_to_right_coord += cl;
-				break;
-			case 'D':
-				realCoord += cl;
-				break;
-			case 'I':
-				tmpCycle += cl * sign[strand];
-				left_to_right_coord += cl;
-				break;
-			default:
-				warning("Unhandled cigar_op %d:%d\n", cop, cl);
-				printf("?");
-			}
-		}			//end for
-	}
-	else
-	{
-		/*************************variant site****************************************/
+							if (i < RefRealStart)
+								continue;
+							if (i > RefRealEnd)
+								break;
+							DepthVec.push_back(0);
+							Q30DepthVec.push_back(0);
+							Q20DepthVec.push_back(0);
+							DepthVec[index]++;
+							PositionTable[Chrom][i] = index;
 
-		if (VcfTable.find(Chrom) != VcfTable.end())
+							if (dbSNPTable[Chrom].find(i)
+								== dbSNPTable[Chrom].end()) //not in dbsnp table
+							{
+								EmpRepDist[qual[left_to_right_coord]]++;
+								if (qual[left_to_right_coord]  >= 20)
+								{
+									Q20DepthVec[index]++;
+									if (qual[left_to_right_coord]  >= 30)
+									{
+										Q30DepthVec[index]++;
+									}
+								}
+								if (RefSeq[left_to_right_coord]
+									!= seq[left_to_right_coord])
+								{
+									misEmpRepDist[qual[left_to_right_coord]]++;
+									misEmpCycleDist[tmpCycle]++;
+								}
+								/************EmpCycle**************************************************************/
+								EmpCycleDist[tmpCycle]++;
+							}
+							index++;
+						}
+					}
+					realCoord += cl;
+					break;
+				case 'S':
+					tmpCycle += cl * sign[strand];
+					left_to_right_coord += cl;
+					break;
+				case 'D':
+					realCoord += cl;
+					break;
+				case 'I':
+					tmpCycle += cl * sign[strand];
+					left_to_right_coord += cl;
+					break;
+				default:
+					warning("Unhandled cigar_op %d:%d\n", cop, cl);
+					printf("?");
+				}
+			}			//end for
+		}
+		else
 		{
-			tmpCycleVcfTable = tmpCycle;
-			tmp_left_to_right_coord = left_to_right_coord;
-			for (uint32_t i = realCoord;
+			/*************************variant site****************************************/
+
+			if (VcfTable.find(Chrom) != VcfTable.end())
+			{
+				tmpCycleVcfTable = tmpCycle;
+				tmp_left_to_right_coord = left_to_right_coord;
+				for (uint32_t i = realCoord;
 					i != realCoord + p.getReadLength() - 1 + 1;
 					++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
-				if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-				{
+					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+					{
 					tmp_index = VcfTable[Chrom][i];
 					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
 					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
 					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
 					MaqVec[tmp_index].push_back(mapQ + 33);
 					StrandVec[tmp_index].push_back(strand);
-				}
-		}
-		/************************************************************************************/
-		if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-			for (uint32_t i = realCoord;
+					}
+			}
+			/************************************************************************************/
+			if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
+				for (uint32_t i = realCoord;
 					i != realCoord + p.getReadLength() - 1 + 1;
 					++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord)
 			{
@@ -812,16 +818,16 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord] - 33 >= 20)
+						if (qual[left_to_right_coord]  >= 20)
 						{
 							Q20DepthVec[tmp_index]++;
-							if (qual[left_to_right_coord] - 33 >= 30)
+							if (qual[left_to_right_coord]  >= 30)
 							{
 								Q30DepthVec[tmp_index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
-								!= seq[left_to_right_coord])
+							!= seq[left_to_right_coord])
 						{
 							misEmpRepDist[qual[left_to_right_coord]]++;
 							misEmpCycleDist[tmpCycle]++;
@@ -842,16 +848,16 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
 						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord] - 33 >= 20)
+						if (qual[left_to_right_coord]  >= 20)
 						{
 							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord] - 33 >= 30)
+							if (qual[left_to_right_coord]  >= 30)
 							{
 								Q30DepthVec[index]++;
 							}
 						}
 						if (RefSeq[left_to_right_coord]
-								!= seq[left_to_right_coord])
+							!= seq[left_to_right_coord])
 						{
 							misEmpRepDist[qual[left_to_right_coord]]++;
 							misEmpCycleDist[tmpCycle]++;
@@ -862,52 +868,52 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 					index++;
 				}
 			}
-		else // chrom not exists
-		{
-			for (uint32_t i = realCoord;
+			else // chrom not exists
+			{
+				for (uint32_t i = realCoord;
 					i != realCoord + p.getReadLength() - 1 + 1;
 					++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord)
-			{
-				if (i < RefRealStart)
-					continue;
-				if (i > RefRealEnd)
-					break;
-				//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-				DepthVec.push_back(0);
-				Q30DepthVec.push_back(0);
-				Q20DepthVec.push_back(0);
-				DepthVec[index]++;
-				PositionTable[Chrom][i] = index;
-
-				if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 				{
-					EmpRepDist[qual[left_to_right_coord]]++;
-					if (qual[left_to_right_coord] - 33 >= 20)
+					if (i < RefRealStart)
+						continue;
+					if (i > RefRealEnd)
+						break;
+					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+					DepthVec.push_back(0);
+					Q30DepthVec.push_back(0);
+					Q20DepthVec.push_back(0);
+					DepthVec[index]++;
+					PositionTable[Chrom][i] = index;
+
+					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
 					{
-						Q20DepthVec[index]++;
-						if (qual[left_to_right_coord] - 33 >= 30)
+						EmpRepDist[qual[left_to_right_coord]]++;
+						if (qual[left_to_right_coord]  >= 20)
 						{
-							Q30DepthVec[index]++;
+							Q20DepthVec[index]++;
+							if (qual[left_to_right_coord]  >= 30)
+							{
+								Q30DepthVec[index]++;
+							}
 						}
+						if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
+						{
+							misEmpRepDist[qual[left_to_right_coord]]++;
+							misEmpCycleDist[tmpCycle]++;
+						}
+						/************EmpCycle**************************************************************/
+						EmpCycleDist[tmpCycle]++;
 					}
-					if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
-					{
-						misEmpRepDist[qual[left_to_right_coord]]++;
-						misEmpCycleDist[tmpCycle]++;
-					}
-					/************EmpCycle**************************************************************/
-					EmpCycleDist[tmpCycle]++;
+					index++;
 				}
-				index++;
 			}
 		}
-	}
 
-	return true;
+		return true;
 }
 
 int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
-		const bwa_seq_t *q, const gap_opt_t* opt, int type, ofstream & fout)
+	const bwa_seq_t *q, const gap_opt_t* opt, int type, ofstream & fout)
 {
 	int MaxInsert(-1), MaxInsert2(-1);
 	;
@@ -920,9 +926,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		MaxInsert = q->pos + j - bns->anns[seqid_q].offset;
 		//cerr<<"Duplicate function exit single q"<<endl;
 		fout << q->name << "\t" << MaxInsert << "\t" << 0 << "\t" << "*" << "\t"
-				<< "*" << "\t" << bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tRevOnly"
-				<< endl;
+			<< "*" << "\t" << bns->anns[seqid_q].name << "\t"
+			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tRevOnly"
+			<< endl;
 		return 0;
 	}
 	else if (type == 3) //p is aligned only
@@ -932,9 +938,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		MaxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
 		//cerr<<"Duplicate function exit single p"<<endl;
 		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< bns->anns[seqid_p].name << "\t"
-				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t" << "*" << "\t"
-				<< "*" << "\tFwdOnly" << endl;
+			<< bns->anns[seqid_p].name << "\t"
+			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t" << "*" << "\t"
+			<< "*" << "\tFwdOnly" << endl;
 		return 0;
 	}
 	else if (type == 2) // both aligned
@@ -947,14 +953,14 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 			j = pos_end(p) - p->pos; //length of read
 			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
 			MaxInsert2 = bns->anns[seqid_p].offset + bns->anns[seqid_p].len
-					- p->pos;
+				- p->pos;
 		}
 		else
 		{
 			j = pos_end(q) - q->pos; //length of read
 			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
 			MaxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len
-					- q->pos;
+				- q->pos;
 			j = pos_end(p) - p->pos; //length of read
 			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
 			MaxInsert2 = p->pos + j - bns->anns[seqid_p].offset;
@@ -978,11 +984,11 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		InsertSizeDist[0]++;
 		//cerr<<"Duplicate function exit from diff chrom"<<endl;
 		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< bns->anns[seqid_p].name << "\t"
-				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tDiffChrom"
-				<< endl;
+			<< bns->anns[seqid_p].name << "\t"
+			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+			<< bns->anns[seqid_q].name << "\t"
+			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tDiffChrom"
+			<< endl;
 		return 0;
 	}
 	if (p->mapQ >= 20 && q->mapQ >= 20)
@@ -1005,15 +1011,15 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		{
 			InsertSizeDist[ActualInsert]++;
 			fout << p->name << "\t" << MaxInsert << "\t" << ActualInsert << "\t"
-					<< bns->anns[seqid_p].name << "\t"
-					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-					<< bns->anns[seqid_q].name << "\t"
-					<< q->pos - bns->anns[seqid_q].offset + 1 << "\tPropPair"
-					<< endl;
+				<< bns->anns[seqid_p].name << "\t"
+				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+				<< bns->anns[seqid_q].name << "\t"
+				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tPropPair"
+				<< endl;
 			char start_end[256];
 			sprintf(start_end, "%d:%d", start, end);
 			pair<unordered_map<string, bool>::iterator, bool> iter =
-					duplicateTable.insert(make_pair(string(start_end), true));
+				duplicateTable.insert(make_pair(string(start_end), true));
 			if (!iter.second) //insert failed, duplicated
 			{
 				//	cerr<<"Duplicate function exit from duplicate"<<endl;
@@ -1024,29 +1030,29 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		{
 			//cerr<<"exit from Inf"<<endl;
 			fout << p->name << "\t" << MaxInsert << "\t" << "-1" << "\t"
-					<< bns->anns[seqid_p].name << "\t"
-					<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-					<< bns->anns[seqid_q].name << "\t"
-					<< q->pos - bns->anns[seqid_q].offset + 1 << "\tAbnormal"
-					<< endl;
+				<< bns->anns[seqid_p].name << "\t"
+				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+				<< bns->anns[seqid_q].name << "\t"
+				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tAbnormal"
+				<< endl;
 		}
 	}
 	else
 	{
 		//cerr<<"exit from LowQualf"<<endl;
 		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< bns->anns[seqid_p].name << "\t"
-				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tLowQual"
-				<< endl;
+			<< bns->anns[seqid_p].name << "\t"
+			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
+			<< bns->anns[seqid_q].name << "\t"
+			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tLowQual"
+			<< endl;
 		return 2; //low quality
 	}
 	return 0;
 }
 //overload of function IsDuplicated for direct bam reading
 int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
-		const gap_opt_t* opt, int type, ofstream & fout)
+	const gap_opt_t* opt, int type, ofstream & fout)
 {
 	int MaxInsert(-1), MaxInsert2(-1);
 
@@ -1054,24 +1060,24 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 	{
 		if (q.getFlag() & SAM_FR1) //if it's read one
 			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
-					- q.get1BasedPosition() + 1;
+			- q.get1BasedPosition() + 1;
 		else
 			MaxInsert = q.get1BasedPosition() + q.getReadLength();
 		fout << q.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t" << "*"
-				<< "\t" << "*" << "\t" << q.getReferenceName() << "\t"
-				<< q.get1BasedPosition() << "\tRevOnly" << endl;
+			<< "\t" << "*" << "\t" << q.getReferenceName() << "\t"
+			<< q.get1BasedPosition() << "\tRevOnly" << endl;
 		return 0;
 	}
 	else if (type == 3) //p is aligned only
 	{
 		if (p.getFlag() & SAM_FR1) //if it's read one
 			MaxInsert = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
-					- p.get1BasedPosition() + 1;
+			- p.get1BasedPosition() + 1;
 		else
 			MaxInsert = p.get1BasedPosition() + p.getReadLength();
 		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-				<< "*" << "\t" << "*" << "\tFwdOnly" << endl;
+			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
+			<< "*" << "\t" << "*" << "\tFwdOnly" << endl;
 		return 0;
 	}
 	else if (type == 2) // both aligned
@@ -1084,7 +1090,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 			//j = pos_end(p) - p->pos; //length of read
 			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
 			MaxInsert2 = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
-					- p.get1BasedPosition() + 1;
+				- p.get1BasedPosition() + 1;
 			;
 		}
 		else
@@ -1092,7 +1098,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 			//j = pos_end(q) - q->pos; //length of read
 			//bns_coor_pac2real(bns, q->pos, j, &seqid_q);
 			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
-					- q.get1BasedPosition() + 1;
+				- q.get1BasedPosition() + 1;
 			//j = pos_end(p) - p->pos; //length of read
 			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
 			MaxInsert2 = p.get1BasedPosition() + p.getReadLength();
@@ -1115,9 +1121,9 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		InsertSizeDist[0]++;
 		//cerr<<"Duplicate function exit from diff chrom"<<endl;
 		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-				<< q.getReferenceName() << "\t" << q.get1BasedPosition()
-				<< "\tDiffChrom" << endl;
+			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
+			<< q.getReferenceName() << "\t" << q.get1BasedPosition()
+			<< "\tDiffChrom" << endl;
 		return 0;
 	}
 	if (p.getMapQuality() >= 20 && q.getMapQuality() >= 20)
@@ -1140,13 +1146,13 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		{
 			InsertSizeDist[ActualInsert]++;
 			fout << p.getReadName() << "\t" << MaxInsert << "\t" << ActualInsert
-					<< "\t" << p.getReferenceName() << "\t"
-					<< p.get1BasedPosition() << "\t" << q.getReferenceName()
-					<< "\t" << q.get1BasedPosition() << "\tPropPair" << endl;
+				<< "\t" << p.getReferenceName() << "\t"
+				<< p.get1BasedPosition() << "\t" << q.getReferenceName()
+				<< "\t" << q.get1BasedPosition() << "\tPropPair" << endl;
 			char start_end[256];
 			sprintf(start_end, "%d:%d", start, end);
 			pair<unordered_map<string, bool>::iterator, bool> iter =
-					duplicateTable.insert(make_pair(string(start_end), true));
+				duplicateTable.insert(make_pair(string(start_end), true));
 			if (!iter.second) //insert failed, duplicated
 			{
 				//	cerr<<"Duplicate function exit from duplicate"<<endl;
@@ -1157,25 +1163,25 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		{
 			//cerr<<"exit from Inf"<<endl;
 			fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-					<< p.getReferenceName() << "\t" << p.get1BasedPosition()
-					<< "\t" << q.getReferenceName() << "\t"
-					<< q.get1BasedPosition() << "\tAbnormal" << endl;
+				<< p.getReferenceName() << "\t" << p.get1BasedPosition()
+				<< "\t" << q.getReferenceName() << "\t"
+				<< q.get1BasedPosition() << "\tAbnormal" << endl;
 		}
 	}
 	else
 	{
 		//cerr<<"exit from LowQualf"<<endl;
 		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-				<< q.getReferenceName() << "\t" << q.get1BasedPosition()
-				<< "\tLowQual" << endl;
+			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
+			<< q.getReferenceName() << "\t" << q.get1BasedPosition()
+			<< "\tLowQual" << endl;
 		return 2; //low quality
 	}
 	return 0;
 }
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
 int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
-		const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
+	const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
 {
 	int seqid(0), seqid2(0), j(0), j2(0);
 	if (p == 0 || p->type == BWA_TYPE_NO_MATCH)
@@ -1185,7 +1191,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 			bns_coor_pac2real(bns, q->pos, j2, &seqid2);
 			string qname(bns->anns[seqid2].name);
 			if (string(qname).find("Y") != string::npos
-					|| string(qname).find("X") != string::npos)
+				|| string(qname).find("X") != string::npos)
 			{
 				if (!isPartialAlign(q))
 				{
@@ -1198,6 +1204,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 			total_add++;
 			return 2;
 		}
+
 		j = 1;
 		return 0;
 	}
@@ -1205,6 +1212,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	{
 		j = pos_end(p) - p->pos; //length of read
 	}
+
 	//until now p is aligned
 	bns_coor_pac2real(bns, p->pos, j, &seqid);
 	string pname(bns->anns[seqid].name);
@@ -1213,7 +1221,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 		if (addSingleAlignment(bns, p, opt)) //adding single via pair interface
 		{
 			if (string(pname).find("Y") != string::npos
-					|| string(pname).find("X") != string::npos)
+				|| string(pname).find("X") != string::npos)
 			{
 				if (!isPartialAlign(p))
 				{
@@ -1235,11 +1243,11 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	}
 	bns_coor_pac2real(bns, q->pos, j2, &seqid2);
 	string qname(bns->anns[seqid2].name);
-//until now both reads are aligned
+	//until now both reads are aligned
 	if (isPartialAlign(p)) //p is partially aligned
 	{
 		if (string(qname).find("Y") != string::npos
-				|| string(qname).find("X") != string::npos)
+			|| string(qname).find("X") != string::npos)
 		{
 			if (isPartialAlign(q))
 			{
@@ -1257,7 +1265,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 			contigStatusTable[pname].addNumOverlappedReads();
 		}
 
-		if ( IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)
+		if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
 		{
 			if (addSingleAlignment(bns, p, opt))
 			{
@@ -1289,7 +1297,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	{
 		// p and q are both aligned
 		if (string(qname).find("Y") != string::npos
-				|| string(qname).find("X") != string::npos)
+			|| string(qname).find("X") != string::npos)
 		{
 			if (isPartialAlign(q)) //q is partially aligned
 			{
@@ -1312,7 +1320,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 			contigStatusTable[pname].addNumOverlappedReads();
 			contigStatusTable[pname].addNumFullyIncludedReads();
 		}
-		if ( IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)
+		if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup)
 		{
 			if (addSingleAlignment(bns, p, opt))
 			{
@@ -1339,7 +1347,9 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 			}
 		}
 		else
+		{
 			return 0;
+		}
 	}
 	//cerr << "currently added reads " << total_add << endl;
 	return 1;
@@ -1347,10 +1357,11 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 //overload of addAlignment function for direct bam reading
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
 int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
-		SamRecord* q, const gap_opt_t* opt, ofstream & fout, int &total_add)
+	SamRecord* q, const gap_opt_t* opt, ofstream & fout, int &total_add)
 {
-
-//	if (p->type == BWA_TYPE_NO_MATCH)
+	//CycleDist[p->getReadLength()]++;
+	//CycleDist[q->getReadLength()]++;
+	//	if (p->type == BWA_TYPE_NO_MATCH)
 	if (p == 0 || (p->getFlag() & SAM_FSU))
 	{
 		if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
@@ -1359,7 +1370,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string qname(q->getReferenceName());
 			if (string(qname).find("Y") != string::npos
-					|| string(qname).find("X") != string::npos)
+				|| string(qname).find("X") != string::npos)
 			{
 				contigStatusTable[qname].addNumOverlappedReads();
 			}
@@ -1374,7 +1385,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string qname(q->getReferenceName());
 			if (string(qname).find("Y") != string::npos
-					|| string(qname).find("X") != string::npos)
+				|| string(qname).find("X") != string::npos)
 			{
 				contigStatusTable[qname].addNumOverlappedReads();
 				contigStatusTable[qname].addNumFullyIncludedReads();
@@ -1394,7 +1405,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string pname(p->getReferenceName());
 			if (string(pname).find("Y") != string::npos
-					|| string(pname).find("X") != string::npos)
+				|| string(pname).find("X") != string::npos)
 			{
 				contigStatusTable[pname].addNumOverlappedReads();
 			}
@@ -1409,7 +1420,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string pname(p->getReferenceName()), qname(q->getReferenceName());
 			if (string(qname).find("Y") != string::npos
-					|| string(qname).find("X") != string::npos)
+				|| string(qname).find("X") != string::npos)
 			{
 				if (isPartialAlign(*q))
 				{
@@ -1427,7 +1438,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 				contigStatusTable[pname].addNumOverlappedReads();
 			}
 
-			if ( IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup)
+			if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup)
 			{
 				if (addSingleAlignment(*p, opt))
 				{
@@ -1462,7 +1473,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string pname(p->getReferenceName());
 			if (string(pname).find("Y") != string::npos
-					|| string(pname).find("X") != string::npos)
+				|| string(pname).find("X") != string::npos)
 			{
 				contigStatusTable[pname].addNumOverlappedReads();
 				contigStatusTable[pname].addNumFullyIncludedReads();
@@ -1479,7 +1490,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 		{
 			string pname(p->getReferenceName()), qname(q->getReferenceName());
 			if (string(qname).find("Y") != string::npos
-					|| string(qname).find("X") != string::npos)
+				|| string(qname).find("X") != string::npos)
 			{
 				if (isPartialAlign(*q)) //q is partially aligned
 				{
@@ -1503,7 +1514,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 				contigStatusTable[pname].addNumFullyIncludedReads();
 			}
 
-			if ( IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup)
+			if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup)
 			{
 				if (addSingleAlignment(*p, opt))
 				{
@@ -1538,7 +1549,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 }
 
 int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
-		const char * BamFile, std::ofstream & fout, int & total_add)
+	const char * BamFile, std::ofstream & fout, int & total_add)
 {
 	SamFileHeader SFH;
 	SamFile SFIO;
@@ -1566,7 +1577,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 		string readName;
 		if (SR->getReadName()[SR->getReadNameLength() - 2] == '\\')
 			readName = string(SR->getReadName()).substr(0,
-					SR->getReadNameLength() - 3);
+			SR->getReadNameLength() - 3);
 		else
 			readName = string(SR->getReadName());
 		if (!(SR->getFlag() & SAM_FPP)) // read is not mapped in pair
@@ -1590,7 +1601,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t* opt,
 	} //end of while
 	addFSC(FSC);
 	for (unordered_map<string, SamRecord*>::iterator iter = pairBuffer.begin();
-			iter != pairBuffer.end(); ++iter)
+		iter != pairBuffer.end(); ++iter)
 	{
 		addAlignment(SFH, iter->second, 0, opt, fout, total_add);
 		delete iter->second;
@@ -1659,8 +1670,8 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	//string line, Chrom, PosStr, GCStr;
 	//_GCstruct * GCstruct = new _GCstruct [opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
 	//FGC.read((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
-//	for(uint32_t i=0;i!=VcfRecVec.size();++i)
-//	{
+	//	for(uint32_t i=0;i!=VcfRecVec.size();++i)
+	//	{
 	//	GC[string(GCstruct[i].chrom)][GCstruct[i].pos] = GCstruct[i].GC;
 	//cerr<<GCstruct[i].chrom<<"\t"<<GCstruct[i].pos<<"\t"<<(int)GCstruct[i].GC<<endl;
 	//}
@@ -1691,12 +1702,22 @@ int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 		max_XorYmarker = 300;
 	else
 		max_XorYmarker = 100;
-	int sum = std::accumulate(DepthDist.begin(), DepthDist.end(), 0);
-	total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
-			+ ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
-			+ (501-100) * max_XorYmarker;
-	fout << 0 << "\t" << total_region_size - sum << endl;
-	DepthDist[0] = total_region_size - sum;
+
+	for (size_t i = 1; i != DepthDist.size(); ++i)
+	{
+		NumPositionCovered += DepthDist[i];
+		if (i >= 2)
+			NumPositionCovered2 += DepthDist[i];
+		if (i >= 5)
+			NumPositionCovered5 += DepthDist[i];
+		if (i >= 10)
+			NumPositionCovered10 += DepthDist[i];
+	}
+	total_region_size = ((opt->flank_len - 100) * 2 + 1) * opt->num_variant_short
+		+ ((opt->flank_long_len - 100) * 2 + 1) * opt->num_variant_long
+		+ (501 - 100) * max_XorYmarker;
+	fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
+	DepthDist[0] = total_region_size - NumPositionCovered;
 	for (uint32_t i = 1; i != DepthDist.size(); ++i)
 	{
 		fout << i << "\t" << DepthDist[i] << endl;
@@ -1706,9 +1727,10 @@ int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 }
 
 int StatCollector::getGCDist(const string & outputPath,
-		const vector<int> & PosNum)
+	const vector<int> & PosNum)
 {
 	ofstream fout(outputPath + ".GCDist");
+	double MeanDepth = NumBaseMapped / (double)NumPositionCovered;
 	for (uint32_t i = 0; i != GCDist.size(); ++i)
 	{
 		fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
@@ -1718,7 +1740,7 @@ int StatCollector::getGCDist(const string & outputPath,
 		}
 		else
 		{
-			fout << double(GCDist[i]) / PosNum[i];
+			fout << (double(GCDist[i]) / PosNum[i])/MeanDepth;
 		}
 		fout << endl;
 	}
@@ -1730,12 +1752,12 @@ int StatCollector::getGCDist(const string & outputPath,
 int StatCollector::getEmpRepDist(const string & outputPath)
 {
 	ofstream fout(outputPath + ".EmpRepDist");
-	for (uint32_t i = 33; i != EmpRepDist.size(); ++i)
+	for (uint32_t i = 0; i != EmpRepDist.size(); ++i)
 	{
 		fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
-				<< "\t"
-				<< PHRED((double )(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 2))
-				<< endl;
+			<< "\t"
+			<< PHRED((double)(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 2))
+			<< endl;
 	}
 	fout.close();
 	return 0;
@@ -1746,10 +1768,10 @@ int StatCollector::getEmpCycleDist(const string & outputPath)
 	for (uint32_t i = 0; i != EmpCycleDist.size(); ++i)
 	{
 		fout << i << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
-				<< "\t"
-				<< PHRED(
-						(double )(misEmpCycleDist[i] + 1)
-								/ (EmpCycleDist[i] + 2)) << endl;
+			<< "\t"
+			<< PHRED(
+			(double)(misEmpCycleDist[i] + 1)
+			/ (EmpCycleDist[i] + 2)) << "\t"<<CycleDist[i]<<endl;
 	}
 	fout.close();
 	return 0;
@@ -1768,12 +1790,12 @@ int StatCollector::getSexChromInfo(const string & outputPath)
 {
 	ofstream fout(outputPath + ".SexChromInfo");
 	for (unordered_map<string, ContigStatus>::iterator iter =
-			contigStatusTable.begin(); iter != contigStatusTable.end(); ++iter)
+		contigStatusTable.begin(); iter != contigStatusTable.end(); ++iter)
 	{
 		fout << iter->first << "\t" << iter->second.getNumOverlappedReads()
-				<< "\t" << iter->second.getNumFullyIncludedReads() << "\t"
-				<< iter->second.getNumPairOverlappedReads() << "\t"
-				<< iter->second.getNumFullyIncludedPairedReads() << endl;
+			<< "\t" << iter->second.getNumFullyIncludedReads() << "\t"
+			<< iter->second.getNumPairOverlappedReads() << "\t"
+			<< iter->second.getNumFullyIncludedPairedReads() << endl;
 	}
 	fout.close();
 	return 0;
@@ -1783,13 +1805,14 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	vector<int> PosNum(256, 0);
 	//int total(0);
 	for (unsort_map::iterator i = PositionTable.begin();
-			i != PositionTable.end(); ++i) //each chr
+		i != PositionTable.end(); ++i) //each chr
 	{
 		for (std::unordered_map<int, unsigned int>::iterator j =
-				i->second.begin(); j != i->second.end(); ++j) //each site
+			i->second.begin(); j != i->second.end(); ++j) //each site
 		{
 			/************DepthDist**************************************************************/
 			{
+				NumBaseMapped += DepthVec[j->second];
 				if (DepthVec[j->second] > 255)
 					DepthDist[255]++;
 				else
@@ -1805,30 +1828,35 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpCycleDist(statPrefix);
 	getInsertSizeDist(statPrefix);
 	getSexChromInfo(statPrefix);
-	outputPileup(statPrefix);
+	outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
 	return 0;
 }
-int StatCollector::outputPileup(const string & outputPath)
+int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
 {
 	ofstream fout(outputPath + ".Pileup");
+	int qualoffset = 0;
+	if (opt->mode|BWA_MODE_IL13) qualoffset = 31;
 	for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
 	{
 		for (std::map<int, unsigned int>::iterator j = i->second.begin();
-				j != i->second.end(); ++j) //each site
+			j != i->second.end(); ++j) //each site
 		{
 			if (SeqVec[j->second].size() == 0)
 				continue;
 			fout << i->first << "\t" << j->first << "\t.\t"
-					<< StrandVec[j->second].size() << "\t";
+				<< StrandVec[j->second].size() << "\t";
 			for (uint32_t k = 0; k != StrandVec[j->second].size(); ++k)
 			{
 				if (StrandVec[j->second][k])
-					fout << (char) toupper(SeqVec[j->second][k]);
+					fout << (char)toupper(SeqVec[j->second][k]);
 				else
-					fout << (char) tolower(SeqVec[j->second][k]);
+					fout << (char)tolower(SeqVec[j->second][k]);
 			}
-			fout << "\t" << QualVec[j->second] << "\t";
+			fout << "\t";
+			for (uint32_t k = 0; k != QualVec[j->second].size(); ++k)
+			fout << char(QualVec[j->second][k]+qualoffset);
+			fout << "\t";
 			for (uint32_t k = 0; k != MaqVec[j->second].size(); ++k)
 			{
 				fout << MaqVec[j->second][k];
@@ -1901,20 +1929,20 @@ int countAllele(size_t*a, const string & seq)
 }
 #define REV_PHRED(x)	pow(10.0,x/(-10))
 double calLikelihood(const string & seq, const string & qual, const char& maj,
-		const char& min)
+	const char& min)
 {
 	double lik(0);
 	if (maj == min)
 		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
-			if (seq[i] == maj)
-			{
-				lik += log10(1 - REV_PHRED(qual[i]));
-			}
-			else
-			{
-				lik += log10(REV_PHRED(qual[i]) / 3);
-			}
+		if (seq[i] == maj)
+		{
+			lik += log10(1 - REV_PHRED(qual[i]));
+		}
+		else
+		{
+			lik += log10(REV_PHRED(qual[i]) / 3);
+		}
 		}
 	else
 	{
@@ -1940,10 +1968,10 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 	char majAllele, minAllele;
 	int maxIndex = 0;
 	for (unsort_map::iterator i = PositionTable.begin();
-			i != PositionTable.end(); ++i) //each chr
+		i != PositionTable.end(); ++i) //each chr
 	{
 		for (std::unordered_map<int, unsigned int>::iterator j =
-				i->second.begin(); j != i->second.end(); ++j) //each site
+			i->second.begin(); j != i->second.end(); ++j) //each site
 		{
 			countAllele(numAllele, SeqVec[j->second]);
 			maxIndex = findMaxAllele(numAllele, 4);
@@ -1952,8 +1980,8 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 			maxIndex = findMaxAllele(numAllele, 4);
 			minAllele = "ACGT"[maxIndex];
 			fout << i->first << "\t" << j->first << "\t"
-					<< calLikelihood(SeqVec[j->second], QualVec[j->second],
-							majAllele, minAllele);
+				<< calLikelihood(SeqVec[j->second], QualVec[j->second],
+				majAllele, minAllele);
 			fout << endl;
 		}
 	}
@@ -1985,67 +2013,87 @@ int StatCollector::getGenomeSize(std::string RefPath)
 	return 0;
 }
 int StatCollector::SummaryOutput(const string & outputPath,
-		const gap_opt_t* opt)
+	const gap_opt_t* opt)
 {
 	ofstream fout(outputPath + ".summary");
-/*	int max_XorYmarker(0);
-	if (opt->num_variant_short >= 100000)
+	/*	int max_XorYmarker(0);
+		if (opt->num_variant_short >= 100000)
 		max_XorYmarker = 3000;
-	else if (opt->num_variant_short >= 10000)
+		else if (opt->num_variant_short >= 10000)
 		max_XorYmarker = 300;
-	else
+		else
 		max_XorYmarker = 100;
-	total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
-			+ ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
-			+ (501-100) * max_XorYmarker;*/
+		total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
+		+ ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
+		+ (501-100) * max_XorYmarker;*/
 	long total_base(0);
 	long total_reads(0);
-
+	//output content for file HG00858.summary
 	fout << "FILE 1|FILE 2|# Reads|Average Length" << endl;
 	fout << "---|---|---|---" << endl;
-	for (int i = 0; i != FSCVec.size(); ++i)
+	for (size_t i = 0; i != FSCVec.size(); ++i)
 	{
 		fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
-				<< FSCVec[i].NumRead << "|"
-				<< FSCVec[i].NumBase / FSCVec[i].NumRead << endl;
+			<< FSCVec[i].NumRead << "|"
+			<< FSCVec[i].NumBase / FSCVec[i].NumRead << endl;
 		total_base += FSCVec[i].NumBase;
 		total_reads += FSCVec[i].NumRead;
 	}
 	fout << "All" << "|-|" << total_reads << "|" << total_base / total_reads
-			<< endl;
+		<< endl;
 	fout << endl;
-	fout << "Expected Read Depth = " << (double) total_base / ref_genome_size
-			<< " [" << total_base << "/" << ref_genome_size << "]" << endl;
-	auto AvgDepth =
-			[&]()->double
-			{	long long tmp(0);for(int i=0;i!=DepthDist.size();++i) tmp+=i*DepthDist[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth = " << AvgDepth() << endl;
-	fout << "Estimated percentage of accessible genome covered = "
-			<< (1 - (double) DepthDist[0] / total_region_size) * 100 << "/100"
-			<< endl;
+	fout << "Expected Read Depth : " << (double)total_base / ref_genome_size
+		<< " [" << total_base << "/" << ref_genome_size << "]" << endl;
+	/*auto AvgDepth =
+		[&]()->double
+	{	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp += i*DepthDist[i]; return double(tmp) / total_region_size; };*/
+	fout << "Estimated AvgDepth : " << NumBaseMapped/(double)NumPositionCovered << endl;
+	fout << "Estimated percentage of accessible genome covered : "
+		<< (1 - (double)DepthDist[0] / total_region_size) * 100 << "/100"
+		<< endl;
 	auto Q20AvgDepth =
-			[&]()->double
-			{	long long tmp(0);for(int i=0;i!=Q20DepthVec.size();++i) tmp+=Q20DepthVec[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth for Q20 bases = " << Q20AvgDepth() << endl;
+		[&]()->double
+	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; };
+	fout << "Estimated AvgDepth for Q20 bases : " << Q20AvgDepth() << endl;
 	auto Q30AvgDepth =
-			[&]()->double
-			{	long long tmp(0);for(int i=0;i!=Q30DepthVec.size();++i) tmp+=Q30DepthVec[i]; return double(tmp)/total_region_size;};
-	fout << "Estimated AvgDepth for Q30 bases = " << Q30AvgDepth() << endl;
+		[&]()->double
+	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / total_region_size; };
+	fout << "Estimated AvgDepth for Q30 bases : " << Q30AvgDepth() << endl;
 	auto MIS500 =
-			[&]()->double
-			{	long long tmp(0),total(0);for(int i=500;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=500;i!=InsertSizeDist.size();++i)
-				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
-	fout << "Median Insert Size(>=500bp) = " << MIS500() << endl;
+		[&]()->double
+	{	long long tmp(0), total(0); for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; for (size_t i = 500; i != InsertSizeDist.size(); ++i)
+	{
+		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
+	}};
+	fout << "Median Insert Size(>=500bp) : " << MIS500() << endl;
 	auto MIS300 =
-			[&]()->double
-			{	long long tmp(0),total(0);for(int i=300;i!=InsertSizeDist.size();++i) total+=InsertSizeDist[i]; for(int i=300;i!=InsertSizeDist.size();++i)
-				{	tmp+=InsertSizeDist[i];if(tmp>total/2) return i;}};
-	fout << "Median Insert Size(>=300bp) = " << MIS300() << endl;
+		[&]()->double
+	{	long long tmp(0), total(0); for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; for (size_t i = 300; i != InsertSizeDist.size(); ++i)
+	{
+		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
+	}};
+	fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
+	//output for fraction figure
+	auto Q20BaseFraction = [&]()->double
+	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / NumBaseMapped; };
+	auto Q30BaseFraction = [&]()->double
+	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / NumBaseMapped; };
+	double DP1fraction = NumPositionCovered / (double)total_region_size;
+	double DP2fraction = NumPositionCovered2 / (double)total_region_size;
+	double DP5fraction = NumPositionCovered5 / (double)total_region_size;
+	double DP10fraction = NumPositionCovered10 / (double)total_region_size;
+	fout << "Q20 Base Fraction :" << Q20BaseFraction() << endl;
+	fout << "Q30 Base Fraction :" << Q30BaseFraction() << endl;
+	fout << "Depth 1 or above position fraction :" << DP1fraction << endl;
+	fout << "Depth 2 or above position fraction :" << DP2fraction << endl;
+	fout << "Depth 5 or above position fraction :" << DP5fraction << endl;
+	fout << "Depth 10 or above position fraction :" << DP10fraction << endl;
+
 	return 0;
 }
 StatCollector::~StatCollector()
 {
-// TODO Auto-generated destructor stub
+	// TODO Auto-generated destructor stub
 	for (uint32_t i = 0; i != VcfRecVec.size(); ++i)
 		delete VcfRecVec[i];
 

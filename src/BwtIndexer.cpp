@@ -130,36 +130,154 @@ BwtIndexer::BwtIndexer(string & prefix) :RefPath(prefix),
 
 /******************************/
 //hash related functions
-bool BwtIndexer::IsKmerInHash(uint64_t kmer)const
+inline bool BwtIndexer::IsKmerInHash(uint64_t kmer)const
 {
 	int counter(0);
-	//uint32_t shrinked(0);
-	for (int iter = 0; iter != 6; ++iter)
-	{
-		//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",kmer,KmerShrinkage(kmer, mask[iter]),roll_hash_table[iter][KmerShrinkage(kmer, mask[iter])], mask[iter]);
-		uint32_t shrinked = KmerShrinkage(kmer, mask[iter]);
-		if (roll_hash_table[iter][shrinked / 8] & (1 << (shrinked % 8)))
-			counter++;
-	}
+	uint64_t shrinked(0);
+	//for (int iter = 0; iter != 6; ++iter)
+	//{
+	//	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",kmer,KmerShrinkage(kmer, iter),roll_hash_table[iter][KmerShrinkage(kmer, iter)], iter);
+	//	uint32_t shrinked = KmerShrinkage(kmer, iter);
+	//	if (roll_hash_table[iter][shrinked / 8] & (1 << (shrinked % 8)))
+	//		counter++;
+	//}
+
+	/*0xffffffff00000000*/
+	shrinked |= (kmer & 0xffffffff00000000) >> 32;
+	//fprintf(stderr, "After the mask 0xffffffff00000000 of %016llx \n", shrinked);
+	if (roll_hash_table[0][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	/*0xffffffff*/
+	shrinked = 0;
+	shrinked |= kmer & 0xffffffff;
+	//fprintf(stderr, "After the mask 0xffffffff of %016llx \n", shrinked);
+	if (roll_hash_table[1][shrinked / 8] & (1 << (shrinked % 8))) { counter++;}
+	/*0xffff00000000ffff*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff000000000000) >> 32;
+	shrinked |= (kmer & 0xffff);
+	//fprintf(stderr, "After the mask 0xffff00000000ffff of %016llx \n", shrinked);
+	if (roll_hash_table[2][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	/*0xffffffff0000*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffffffff0000)>>16;
+	//fprintf(stderr, "After the mask 0xffffffff0000 of %016llx \n", shrinked);
+	if (roll_hash_table[3][shrinked / 8] & (1 << (shrinked % 8))) { counter++;  }
+	/*0xffff0000ffff0000*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff000000000000) >> 32;
+	shrinked |= (kmer & 0xffff0000)>>16;
+	//fprintf(stderr, "After the mask 0xffff0000ffff0000 of %016llx \n", shrinked);
+	if (roll_hash_table[4][shrinked / 8] & (1 << (shrinked % 8))) { counter++;  }
+	/*0xffff0000ffff*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff00000000) >> 16;
+	shrinked |= (kmer & 0xffff);
+	//fprintf(stderr, "After the mask 0xffff0000ffff of %016llx \n", shrinked);
+	if (roll_hash_table[5][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	//fprintf(stderr,"The counter of %016llx is %d\n",kmer,counter);
 	if (counter > RollParam.thresh)
 		return true;
 	else
 		return false;
 }
-bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
+uint64_t swap_uint64(uint64_t val)
 {
-	uint64_t kmer1(0), kmer2(0), kmer3(0);
+	val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
+	val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
+	return (val << 32) | (val >> 32);
+}
+typedef uint8_t v16qi __attribute__((vector_size(16)));
+//typedef uint64_t v2li __attribute__((vector_size(16)));
+bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
+{	
+	//for (int i = 0; i != len;++i)
+	//fprintf(stderr, "%c\t", "ACGT"[S[i]]);
+	//fprintf(stderr, "\n");
+	//double enter_time=realtime();
 
-	for (int i = 0; i != 32; ++i)
+	//uint64_t kmer[3] = { 0, 0, 0 };
+	//for (int i = 0; i != 32; ++i)
+	//{
+	//	kmer[0] = ((kmer[0] << 2) | S[0 + i]);
+	//	kmer[1] = ((kmer[1] << 2) | S[32 + i]);
+	//	kmer[2] = ((kmer[2] << 2) | S[64 + i]);
+	//}
+	//if (IsKmerInHash(kmer[0]) || IsKmerInHash(kmer[1])||IsKmerInHash(kmer[2]))
+	//{
+	//	//fprintf(stderr, "Real time: %.3f sec; CPU: %.3f sec\n",
+	//	//	realtime() - enter_time, cputime());
+	//	return true;
+	//}
+	//else
+	//{
+	//		return false;
+	//}
+
+	uint64_t kmer3[2];
+	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
+	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
+	v16qi mmx3 = { S[2], S[6], S[10], S[14], S[18], S[22], S[26], S[30], S[34], S[38], S[42], S[46], S[50], S[54], S[58], S[62] };
+	v16qi mmx4 = { S[3], S[7], S[11], S[15], S[19], S[23], S[27], S[31], S[35], S[39], S[43], S[47], S[51], S[55], S[59], S[63] };
+	v16qi mmx5 = { S[64], S[68], S[72], S[76], S[80], S[84], S[88], S[92], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx6 = { S[65], S[69], S[73], S[77], S[81], S[85], S[89], S[93], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx7 = { S[66], S[70], S[74], S[78], S[82], S[86], S[90], S[94], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx8 = { S[67], S[71], S[75], S[79], S[83], S[87], S[91], S[95], 0, 0, 0, 0, 0, 0, 0, 0 };
+	mmx1 = mmx1 << 6;
+	mmx1 = mmx1 | (mmx2 << 4);
+	mmx1 = mmx1 | (mmx3 << 2);
+	mmx1 = mmx1 | mmx4;
+	mmx5 = mmx5 << 6;
+	mmx5 = mmx5 | (mmx6 << 4);
+	mmx5 = mmx5 | (mmx7 << 2);
+	mmx5 = mmx5 | mmx8;
+	memcpy(&kmer3,&mmx1,16);
+
+
+
+	//for (int i = 0; i != 32; ++i)
+	//	fprintf(stderr, "%c\t", "ACGT"[(swap_uint64(kmer3[0])>> ((31 - i) * 2)) & 3]);
+	////fprintf(stderr, "\n");
+	//for (int i = 0; i != 32; ++i)
+	//	fprintf(stderr, "%c\t", "ACGT"[(swap_uint64(kmer3[1]) >> ((31 - i) * 2)) & 3]);
+	//memcpy(&kmer3, &mmx5, 16);
+	//for (int i = 0; i != 32; ++i)
+	//	fprintf(stderr, "%c\t", "ACGT"[(swap_uint64(kmer3[0]) >> ((31 - i) * 2)) & 3]);
+	//fprintf(stderr, "\n");
+	//memcpy(&kmer3, &mmx1, 16);
+	//fprintf(stderr, "0-31: %016llx\t", swap_uint64(kmer3[0]));
+	//fprintf(stderr, "32-63: %016llx\n", swap_uint64(kmer3[1]));
+		//fprintf(stderr, "%d\t", (mmx1[0] >> 2) & 3);
+	//	//fprintf(stderr, "%d\t", mmx1[0]  & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[1] >> 6) & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[1] >> 4) & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[1] >> 2) & 3);
+	//	//fprintf(stderr, "%d\t", mmx1[1] & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[2] >> 6) & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[2] >> 4) & 3);
+	//	//fprintf(stderr, "%d\t", (mmx1[2] >> 2) & 3);
+	//	//fprintf(stderr, "%d\t", mmx1[2] & 3);
+	////for (int i = 0; i != 32; ++i)
+	////	fprintf(stderr, "%d\t", (kmer[0][1] >> ((31 - i) * 2)) & 3);
+	////for (int i = 0; i != 32; ++i)
+	//////	fprintf(stderr, "%d\t", (kmer[1][0] >> ((31 - i) * 2)) & 3);
+	////fprintf(stderr, "\n");
+	////exit(EXIT_FAILURE);
+	if (IsKmerInHash(swap_uint64(kmer3[0])) || IsKmerInHash(swap_uint64(kmer3[1])))
 	{
-		kmer1 = ((kmer1 << 2) | S[0 + i]);
-		kmer2 = ((kmer2 << 2) | S[32 + i]);
-		kmer3 = ((kmer3 << 2) | S[64 + i]);
-	}
-	if (IsKmerInHash(kmer1) || IsKmerInHash(kmer2) || IsKmerInHash(kmer3))
+	//fprintf(stderr, "Real time: %.3f sec; CPU: %.3f sec\n",
+	//	realtime() - enter_time, cputime());
 		return true;
+	}
 	else
-		return false;
+	{
+		memcpy(&kmer3, &mmx5, 16);
+		if (IsKmerInHash(swap_uint64(kmer3[0])))
+		{
+			return true;
+		}
+		else
+			return false;
+	}
 
 }
 bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const
@@ -169,6 +287,7 @@ bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)co
 		warning("Read with empty sequence.");
 		return true;
 	}*/
+	//fprintf(stderr, "enter IsReadFiltered\n");
 	if (IsReadHighQ(Q, len)) //pass error
 	{
 		if (IsReadInHash(S, len))
@@ -195,24 +314,7 @@ std::string BwtIndexer::ReverseComplement(const std::string & a)
 	}
 	return b;
 }
-uint32_t BwtIndexer::KmerShrinkage(uint64_t a, unsigned int mask)const
-{
-	uint32_t tmp(0), i(1);
-	//printf("the incoming kmer:%016llx\t",a);
-	while (mask) //32 circle
-	{
-		if (mask & 1)
-		{
-			tmp |= ((a & 3) << (2 * i - 2));
-			++i;
-		}
 
-		mask >>= 1;
-		a >>= 2;
-	}
-	//printf("the resulted i is :%d\n",i);
-	return tmp;
-}
 void BwtIndexer::InitializeRollHashTable()
 {
 	RollParam.kmer_size = KMER_SIZE;
@@ -271,27 +373,46 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	unsigned int i = 0;
 	uint32_t shrinked(0);
 	//std::string tmp=Seq.substr(0,KMER_SIZE);
-
+	//uint32_t test = 0x00000000903b7458;
 	for (; i != 32; ++i)
 	{
 		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)); */ // N not considered
 	}
-	shrinked = KmerShrinkage(datum, mask[iter]);
+	shrinked = KmerShrinkage(datum, iter);
 	roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
-
+	//if (debug_flag)
+	//{
+	//	fprintf(stderr, "I found it!!!!!\t"); 
+	//	for (int k = 0; k != 32;++k)
+	//		fprintf(stderr, "%c","ACGT"[(datum>>((31-k)*2))&3]);
+	//	fprintf(stderr, "\t");
+	//	for (int k = 0; k != 16; ++k)
+	//		fprintf(stderr, "%c", "ACGT"[(shrinked >> ((15 - k) * 2)) & 3]);
+	//	fprintf(stderr, "\t%llx\n", mask[iter]);
+	//}
 	for (; i != Seq.length() / 2/*last one considered*/; ++i)
 	{
 		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
 		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
-		//roll_hash_table[iter][KmerShrinkage(datum, mask[iter])]++;
-		shrinked = KmerShrinkage(datum, mask[iter]);
+		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
+		shrinked = KmerShrinkage(datum, iter);
+		//if (debug_flag)
+		//{
+		//	fprintf(stderr, "I found it!!!!!\t");
+		//	for (int k = 0; k != 32; ++k)
+		//		fprintf(stderr, "%c", "ACGT"[(datum >> ((31 - k) * 2)) & 3]);
+		//	fprintf(stderr, "\t");
+		//	for (int k = 0; k != 16; ++k)
+		//		fprintf(stderr, "%c", "ACGT"[(shrinked >> ((15 - k) * 2)) & 3]);
+		//	fprintf(stderr, "\t%llx\n", mask[iter]);
+		//}
 		roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
 	}
-	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",datum,KmerShrinkage(datum, mask[iter]),roll_hash_table[iter][KmerShrinkage(datum, mask[iter])/8]&(1<<(shrinked%8)), mask[iter]);
+	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",datum,KmerShrinkage(datum, iter),roll_hash_table[iter][KmerShrinkage(datum, iter)/8]&(1<<(shrinked%8)), iter);
 
 	uint64_t tmp = datum;
 	for (unsigned int j = i, let = 0; let != 4; ++let, j = i)
@@ -299,8 +420,21 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 		tmp = datum;
 		for (; j != Seq.length() / 2 + 32; ++j)
 		{
+			if (j==Seq.length()/2)
 			tmp = ((tmp << 2) | nst_nt4_table["ACGT"[(char) let]]);
-			shrinked = KmerShrinkage(tmp, mask[iter]);
+			else
+			tmp = ((tmp << 2) | nst_nt4_table[Seq[j]]);
+			shrinked = KmerShrinkage(tmp, iter);
+			//if (debug_flag)
+			//{
+			//	fprintf(stderr, "I found it!!!!!\t%c\t", nst_nt4_table["ACGT"[(char)let]]);
+			//	for (int k = 0; k != 32; ++k)
+			//		fprintf(stderr, "%c", "ACGT"[(datum >> ((31 - k) * 2)) & 3]);
+			//	fprintf(stderr, "\t");
+			//	for (int k = 0; k != 16; ++k)
+			//		fprintf(stderr, "%c", "ACGT"[(shrinked >> ((15 - k) * 2)) & 3]);
+			//	fprintf(stderr, "\t%llx\n", mask[iter]);
+			//}
 			roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
 		}
 	}
@@ -312,8 +446,18 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
-		//roll_hash_table[iter][KmerShrinkage(datum, mask[iter])]++;
-		shrinked = KmerShrinkage(datum, mask[iter]);
+		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
+		shrinked = KmerShrinkage(datum, iter);
+		//if (debug_flag)
+		//{
+		//	fprintf(stderr, "I found it!!!!!\t");
+		//	for (int k = 0; k != 32; ++k)
+		//		fprintf(stderr, "%c", "ACGT"[(datum >> ((31 - k) * 2)) & 3]);
+		//	fprintf(stderr, "\t");
+		//	for (int k = 0; k != 16; ++k)
+		//		fprintf(stderr, "%c", "ACGT"[(shrinked >> ((15 - k) * 2)) & 3]);
+		//	fprintf(stderr, "\t%llx\n", mask[iter]);
+		//}
 		roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
 	}
 	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
@@ -430,16 +574,20 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	{
 
 		string CurrentSeqName(iter->first.c_str());
+		//if (CurrentSeqName == "8:32617714@G/A") debug_flag = true;
 		//if(ArtiRef.longRefTable[CurrentSeqName]==true) continue;// long ref seq would not be indexed
 		string CurrentSeq = ArtiRef.SeqVec[iter->second];
-
+		if (debug_flag) std::cerr << CurrentSeq << endl;
 		AddSeq2Hash(CurrentSeq, opt);
+		if (debug_flag) std::cerr << string(CurrentSeq.rbegin(), CurrentSeq.rend()) << endl;
 		AddSeq2Hash(string(CurrentSeq.rbegin(), CurrentSeq.rend()), opt);
 		string tmp_rev_cmp = ReverseComplement(CurrentSeq);
+		if (debug_flag) std::cerr << tmp_rev_cmp << endl;
 		AddSeq2Hash(tmp_rev_cmp, opt);
+		if (debug_flag) std::cerr << string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()) << endl;
 		AddSeq2Hash(string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()), opt);
 		Fout << ">" << CurrentSeqName << "\n" << CurrentSeq << "\n";
-
+		//if (debug_flag) exit(EXIT_FAILURE);
 		//DBG(fprintf(stderr,"Come into outer loop...%s\n%s\n",CurrentSeqName.c_str(),CurrentSeq.c_str());)
 		//DBG(fprintf(stderr,"We got in seqs : %d ...\n%s\n", vec_iter,CurrentSeq.c_str());)
 		bntann1_t *p; // tmp ann object
