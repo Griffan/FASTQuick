@@ -44,6 +44,19 @@ public:
 class StatCollector
 {
 private:
+
+	/*Expected Info*/
+	uint64_t total_base;
+	uint64_t total_region_size;
+	uint64_t ref_genome_size;
+
+	/*Actual Statistics*/
+	uint64_t NumBaseMapped;
+	uint64_t NumPositionCovered;//position with depth larger than 0
+	//uint64_t NumPositionCovered1;
+	uint64_t NumPositionCovered2;//larger than 1
+	uint64_t NumPositionCovered5;//larger than 4
+	uint64_t NumPositionCovered10;// larger than 9
 	unsort_map PositionTable;
 	unsigned int index;
 	//nsigned int vcf_index;
@@ -60,26 +73,21 @@ private:
 	sort_map VcfTable;
 	unsort_map dbSNPTable;
 	//string_map VcfObTable;//actually covered by reads
-	std::vector<std::vector<unsigned char> > QualDist;//40*40
-	std::vector<std::vector<unsigned char> > CycleDist;//100*40
+	std::vector<size_t> QualDist;//40*40
+	std::vector<size_t> CycleDist;//100*40
 
 
-	std::vector<int> DepthDist;
-	std::vector<int> EmpRepDist;
-	std::vector<int> misEmpRepDist;
-	std::vector<int> EmpCycleDist;
-	std::vector<int> misEmpCycleDist;
-	std::vector<int> GCDist;
-	std::vector<int> InsertSizeDist;
-	std::vector<int> MaxInsertSizeDist;
+	std::vector<size_t> DepthDist;
+	std::vector<size_t> EmpRepDist;
+	std::vector<size_t> misEmpRepDist;
+	std::vector<size_t> EmpCycleDist;
+	std::vector<size_t> misEmpCycleDist;
+	std::vector<size_t> GCDist;
+	std::vector<size_t> InsertSizeDist;
+	std::vector<size_t> MaxInsertSizeDist;
 	unsort_map GC;
 
 	bool_table VariantProxyTable;
-
-
-	uint64_t total_base;
-	uint64_t total_region_size;
-	uint64_t ref_genome_size;
 
 	std::unordered_map<std::string,bool> duplicateTable;
 
@@ -109,7 +117,7 @@ public:
 	int getEmpCycleDist(const std::string & outputPath);
 	int getInsertSizeDist(const std::string & outputPath);
 	int getSexChromInfo(const std::string & outputPath);
-	int outputPileup(const std::string & statPrefix);
+	int outputPileup(const std::string & statPrefix, const gap_opt_t* opt);
 
 	int processCore(const std::string & statPrefix, const gap_opt_t*opt);
 	int getGenoLikelihood(const std::string & statPrefix);
