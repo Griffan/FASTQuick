@@ -438,6 +438,7 @@ static int64_t pos_5(const bwa_seq_t *p)
 void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, int mode, int max_top2)
 {
 	int j;
+	int is_64 = mode&BWA_MODE_IL13;
 	if (p->type != BWA_TYPE_NO_MATCH || (mate && mate->type != BWA_TYPE_NO_MATCH)) {
 		int seqid, nn, am = 0, flag = p->extra_flag;
 		char XT;
@@ -491,6 +492,10 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 		else for (j = 0; j != p->full_len; ++j) putchar("TGCAN"[p->seq[p->full_len - 1 - j]]);
 		putchar('\t');
 		if (p->qual) {
+			if (is_64)
+			{
+				for (int i = 0; i < p->len; ++i) p->qual[i] += 31;
+			}
 			if (p->strand) seq_reverse(p->len, p->qual, 0); // reverse quality
 			printf("%s", p->qual);
 		} else printf("*");

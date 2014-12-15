@@ -193,6 +193,7 @@ bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int tri
 		}
 		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
 		memcpy(p->rseq, p->seq, p->len);
+		//fprintf(stderr, "I have been here: %d times!\n",i);
 		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
 		seq_reverse(p->len, p->rseq, is_comp);
 		p->name = strdup((const char*)seq->name.s);
