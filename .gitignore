@@ -1,0 +1,25 @@
+#Some of these are related to eclipse. So i keep them out of my repo
+.cproject
+.dep/
+.project
+.settings/
+FastPopCon*
+
+#files being edited
+*~
+
+# make and build files
+*.lst
+*.o
+*.a
+*.so
+*.eep
+*.lss
+*.map
+*.sym
+*.bk
+# I keep these, since I prefer having the reference of the final build
+# *.elf
+# *.hex
+tabix
+FastqA
