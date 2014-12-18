@@ -1,6 +1,6 @@
 #Some of these are related to eclipse. So i keep them out of my repo
 .cproject
-.dep/
+.deps/
 .project
 .settings/
 FastPopCon*
@@ -21,5 +21,6 @@ FastPopCon*
 # I keep these, since I prefer having the reference of the final build
 # *.elf
 # *.hex
+*.Po
 tabix
 FastqA
