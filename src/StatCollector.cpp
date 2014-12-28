@@ -1830,6 +1830,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
+	getGenoLikelihood(statPrefix);
 	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
@@ -1928,33 +1929,50 @@ int countAllele(size_t*a, const string & seq)
 	return 0;
 }
 #define REV_PHRED(x)	pow(10.0,x/(-10))
-double calLikelihood(const string & seq, const string & qual, const char& maj,
-	const char& min)
+double  calLikelihood(const string & seq, const string & qual, const char& maj, const char& min)//maj:ref, min:alt
 {
-	double lik(0);
-	if (maj == min)
-		for (uint32_t i = 0; i != seq.size(); ++i)
-		{
-		if (seq[i] == maj)
-		{
-			lik += log10(1 - REV_PHRED(qual[i]));
-		}
-		else
-		{
-			lik += log10(REV_PHRED(qual[i]) / 3);
-		}
-		}
-	else
+	double lik(0),GL0(0),GL1(0),GL2(0);
+	//if (maj == min)
+	//	for (uint32_t i = 0; i != seq.size(); ++i)
+	//	{
+	//	if (seq[i] == maj)
+	//	{
+	//		lik += log10(1 - REV_PHRED(qual[i]));
+	//	}
+	//	else
+	//	{
+	//		lik += log10(REV_PHRED(qual[i]) / 3);
+	//	}
+	//	}
+	//else
 	{
 		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
-			if (seq[i] == maj || seq[i] == min)
+			//if (seq[i] == maj || seq[i] == min)
+			//{
+			//	lik += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
+			//}
+			//else
+			//{
+			//	lik += log10(REV_PHRED(qual[i]) / 3);
+			//}
+			if (seq[i] == maj)
 			{
-				lik += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
+				GL0 += log10(1 - REV_PHRED(qual[i]));
+				GL1 += log10(1 / 2);
+				GL2 += log10(REV_PHRED(qual[i]));
+			}
+			else if (seq[i] == min)
+			{
+				GL0 += log10( REV_PHRED(qual[i]));
+				GL1 += log10(1 / 2);
+				GL2 += log10(1-REV_PHRED(qual[i]));
 			}
 			else
 			{
-				lik += log10(REV_PHRED(qual[i]) / 3);
+				GL0 += log10(REV_PHRED(qual[i]));
+				GL1 += log10(REV_PHRED(qual[i]));
+				GL2 += log10(REV_PHRED(qual[i]));
 			}
 		}
 	}
@@ -1973,6 +1991,11 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 		for (std::unordered_map<int, unsigned int>::iterator j =
 			i->second.begin(); j != i->second.end(); ++j) //each site
 		{
+			string chrom_t = i->first;
+			int pos_t = j->first;
+			VcfRecord* VcfLine = VcfRecVec[VcfTable[chrom_t][pos_t]];
+			string RefStr( VcfLine->getRefStr()),AltStr(VcfLine->getAltStr());
+
 			countAllele(numAllele, SeqVec[j->second]);
 			maxIndex = findMaxAllele(numAllele, 4);
 			majAllele = "ACGT"[maxIndex];
@@ -1981,7 +2004,8 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 			minAllele = "ACGT"[maxIndex];
 			fout << i->first << "\t" << j->first << "\t"
 				<< calLikelihood(SeqVec[j->second], QualVec[j->second],
-				majAllele, minAllele);
+				//majAllele, minAllele);
+				RefStr[0], AltStr[0]);
 			fout << endl;
 		}
 	}
