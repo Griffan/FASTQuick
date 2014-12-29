@@ -5,7 +5,7 @@
 using namespace arma;
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
-GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, std::vector<std::string>& subsetInds, double minAF, double minCallRate)
+GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, std::vector<std::string>& subsetInds, double minAF, double minCallRate) 
 {
 	// open a VCF file
 
@@ -79,46 +79,68 @@ float GenotypeMatrix::getGenotype(int indIndex, int markerIndex)
 {
 	return genotypes[markerIndex][indIndex];
 }
-double GenotypeMatrix::computeAlleleFrequency(int markerIndex)
-{
 
-}
 void GenotypeMatrix::printVCF(std::string path)
 {
 	std::ofstream fout(path);
-	if (!fout.is_open()) { notice("Open file %s failed!\n",path.c_str()); }
-	for (size_t i; i != tvcf.headers.size(); ++i)
+	if (!fout.is_open()) { warning("Open file %s failed!\n",path.c_str()); }
+	for (size_t i=0; i != tvcf.headers.size(); ++i)
 	{
 		fout << tvcf.headers[i] << std::endl;
 	}
 
-	for (size_t i; i != tvcf.chroms.size(); ++i)
+	for (size_t i=0; i != tvcf.chroms.size(); ++i)
 	{
-		for (size_t j; j != tvcf.markers.size(); ++j)
+		for (size_t j=0; j != tvcf.markers.size(); ++j)
 		{
 			fout << tvcf.chroms[i] << "\t" << tvcf.pos1s[j] << "\t" << tvcf.markers[j] <<"\t"<<tvcf.refs[j]<<"\t"<<tvcf.alts[j]<<"\tPASS\tAF="<<tvcf.AFs[j]<<std::endl;
 		}
 	}
+	fout.close();
 }
 GenotypeMatrix::~GenotypeMatrix(){}
 /*Functions for fullLLKFunc*/
-fullLLKFunc::fullLLKFunc(){}
-fullLLKFunc::~fullLLKFunc(){}
+PopulationIdentifier::fullLLKFunc::fullLLKFunc(){}
+PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
 /*Functions for PopulationIdentifier*/
 PopulationIdentifier::PopulationIdentifier()
 {
 }
-PopulationIdentifier::PopulationIdentifier(std::string& VCF) :fn(this)
-{
-
+PopulationIdentifier::PopulationIdentifier(std::string& VCF) :GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest, std::vector<std::string>()/*subsetInds*/, pArgs->minAF, pArgs->minCallRate), fn(this)
+{//using selected sites from union
+	PopArgs* pArgs =new PopArgs;
+	NumMarker = GenoMatrix.tvcf.nMarkers;
+	NumIndividual= GenoMatrix.tvcf.nInds;
+	//fullLLKFunc fn;
+	std::vector<PCtype> tmpPC(2, 0);
+	std::vector<double> tmpGL(3, 0);
+	std::vector<std::vector<PCtype> > UD(NumMarker,tmpPC);
+	std::vector<std::vector<PCtype> > PC(NumIndividual,tmpPC);
+	std::vector<std::vector<double> > GL(NumMarker,tmpGL);
+	std::vector<double> means(NumMarker, 0);
+	std::vector<double> AFs(NumMarker,0);
 }
-int PopulationIdentifier::ReadingGL(const std::string& path)
+int PopulationIdentifier::ReadingGL(const std::string& path)//Reading GL information for individual need to be classified
 {
-
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin,line))
+	{
+		std::stringstream ss(line);
+		std::string chr;
+		int pos;
+		ss >> chr >> pos;
+		MarkerIndex[chr][pos] = index;
+		ss >> GL[index][0] >> GL[index][1] >> GL[index][2];
+	}
+	fin.close();
+	return 0;
 }
 int PopulationIdentifier::ImputeMissing()
 {
-	means = std::vector<float>(NumMarker, 0);//mean genotype for each marker
+	
 	auto mean = [&](std::vector<float>& vec){float sum = 0; int num(0); std::for_each(vec.begin(), vec.end(), [&](float a){if (!isnan(a)) { sum += a; num++; }}); return sum / num; };
 	for (size_t i = 0; i != NumMarker; ++i)
 	{
@@ -129,6 +151,7 @@ int PopulationIdentifier::ImputeMissing()
 				GenoMatrix.genotypes[i][j] = means[i];
 		}
 	}
+	return 0;
 }
 int PopulationIdentifier::RunSVD()
 {
@@ -156,7 +179,7 @@ int PopulationIdentifier::RunSVD()
 		PC[j][0] = tV(j,0);
 		PC[j][1] = tV(j,1);
 	}
-
+	return 0;
 }
 int PopulationIdentifier::OptimizeLLK()
 {
@@ -172,15 +195,18 @@ int PopulationIdentifier::OptimizeLLK()
 	myMinimizer.Minimize(1e-6);
 	double optimalPC1 = fullLLKFunc::invLogit(myMinimizer.point[0]);
 	double optimalPC2 = fullLLKFunc::invLogit(myMinimizer.point[1]);
-
+	return 0;
 }
 int PopulationIdentifier::RunMapping()
 {
-
+	return 0;
 }
-int PopulationIdentifier::PrintVcf()
+int PopulationIdentifier::PrintVcf(const std::string & path)
 {
-
+	GenoMatrix.printVCF(path);
+	std::cout << "Population PCs for this individuals:" << std::endl;
+	std::cout << "PC1:" << fn.PC1 << "\tPC2:" << fn.PC2 << endl;
+	return 0;
 }
 
 PopulationIdentifier::~PopulationIdentifier()
