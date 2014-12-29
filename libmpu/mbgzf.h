@@ -25,6 +25,11 @@
 #ifndef _M_BGZF_H
 #define _M_BGZF_H
 //#define _mpu_bgzf _mpu__mpu_bgzf
+#ifdef _WIN32
+#include <windows.h>
+#define	ftello	_ftelli64
+#define	fseeko	_fseeki64
+#endif	//	#ifdef _WIN32
 
 #include <stdint.h>
 #include <stdio.h>
