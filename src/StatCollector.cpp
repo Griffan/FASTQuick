@@ -13,7 +13,7 @@
 #include <sstream>
 #include <algorithm>
 using namespace std;
-extern string Prefix;
+//extern string Prefix;
 extern void notice(const char*, ...);
 extern void warning(const char*, ...);
 extern void error(const char*, ...);
@@ -30,6 +30,7 @@ StatCollector::StatCollector()
 	total_base = 0;
 	total_region_size = 0;
 	ref_genome_size = 0;
+	NumPCRDup = 0;
 	DepthDist = vector<size_t>(256, 0);
 	CycleDist = vector<size_t>(512, 0);
 	GCDist = vector<size_t>(256, 0);
@@ -51,6 +52,7 @@ StatCollector::StatCollector(const string & OutFile)
 	total_base = 0;
 	total_region_size = 0;
 	ref_genome_size = 0;
+	NumPCRDup = 0;
 	DepthDist = vector<size_t>(256, 0);
 	CycleDist = vector<size_t>(512, 0);
 	GCDist = vector<size_t>(256, 0);
@@ -1023,6 +1025,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 			if (!iter.second) //insert failed, duplicated
 			{
 				//	cerr<<"Duplicate function exit from duplicate"<<endl;
+				NumPCRDup++;
 				return 1;
 			}
 		}
@@ -1156,6 +1159,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 			if (!iter.second) //insert failed, duplicated
 			{
 				//	cerr<<"Duplicate function exit from duplicate"<<endl;
+				NumPCRDup++;
 				return 1;
 			}
 		}
@@ -1181,7 +1185,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 }
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
 int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
-	const gap_opt_t* opt, ofstream & fout, int &total_add) //TODO: resolve duplicate output option
+	const gap_opt_t* opt, ofstream & fout, int &total_add) 
 {
 	int seqid(0), seqid2(0), j(0), j2(0);
 	if (p == 0 || p->type == BWA_TYPE_NO_MATCH)
@@ -1929,9 +1933,9 @@ int countAllele(size_t*a, const string & seq)
 	return 0;
 }
 #define REV_PHRED(x)	pow(10.0,x/(-10))
-double  calLikelihood(const string & seq, const string & qual, const char& maj, const char& min)//maj:ref, min:alt
+vector<double>  calLikelihood(const string & seq, const string & qual, const char& maj, const char& min)//maj:ref, min:alt
 {
-	double lik(0),GL0(0),GL1(0),GL2(0);
+	double lik(0),GL0(log10(0.999)),GL1(log10(0.00066)),GL2(log10(0.00034));
 	//if (maj == min)
 	//	for (uint32_t i = 0; i != seq.size(); ++i)
 	//	{
@@ -1976,7 +1980,9 @@ double  calLikelihood(const string & seq, const string & qual, const char& maj, 
 			}
 		}
 	}
-	return lik;
+	vector<double> tmp(3, 0);
+	tmp[0] = GL0<(-255)?(-255):GL0; tmp[1] = GL1<(-255)?(-255):GL1; tmp[2] = GL2<(-255)?(-255):GL2;
+	return tmp;
 }
 int StatCollector::getGenoLikelihood(const string & outputPath)
 {
@@ -1985,27 +1991,30 @@ int StatCollector::getGenoLikelihood(const string & outputPath)
 	{ 0 };
 	char majAllele, minAllele;
 	int maxIndex = 0;
-	for (unsort_map::iterator i = PositionTable.begin();
-		i != PositionTable.end(); ++i) //each chr
+	//for (unsort_map::iterator i = PositionTable.begin();
+	//	i != PositionTable.end(); ++i) //each chr
+	//{
+	//	for (std::unordered_map<int, unsigned int>::iterator j =
+	//		i->second.begin(); j != i->second.end(); ++j) //each site
+	//	{
+	for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end();++i)
 	{
-		for (std::unordered_map<int, unsigned int>::iterator j =
-			i->second.begin(); j != i->second.end(); ++j) //each site
+		for (map<int, unsigned int>::iterator j = i->second.begin(); j != i->second.end();++j)
 		{
-			string chrom_t = i->first;
-			int pos_t = j->first;
-			VcfRecord* VcfLine = VcfRecVec[VcfTable[chrom_t][pos_t]];
+			uint32_t markerIndex = j->second;
+			VcfRecord* VcfLine = VcfRecVec[markerIndex];
 			string RefStr( VcfLine->getRefStr()),AltStr(VcfLine->getAltStr());
 
-			countAllele(numAllele, SeqVec[j->second]);
+			countAllele(numAllele, SeqVec[markerIndex]);
 			maxIndex = findMaxAllele(numAllele, 4);
 			majAllele = "ACGT"[maxIndex];
 			numAllele[maxIndex] = 0;
 			maxIndex = findMaxAllele(numAllele, 4);
 			minAllele = "ACGT"[maxIndex];
-			fout << i->first << "\t" << j->first << "\t"
-				<< calLikelihood(SeqVec[j->second], QualVec[j->second],
-				//majAllele, minAllele);
+			vector<double> tmpGL = calLikelihood(SeqVec[markerIndex], QualVec[markerIndex],				//majAllele, minAllele);
 				RefStr[0], AltStr[0]);
+			fout << i->first << "\t" << j->first << "\t"
+				<< tmpGL[0] << "\t" << tmpGL[1] << "\t" << tmpGL[2];
 			fout << endl;
 		}
 	}
