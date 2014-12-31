@@ -17,7 +17,7 @@
 
 #include "params.h"
 #include "Constant.h"
-#include "Error.h"
+#include "../libmpu/Error.h"
 
 #include <cstdio>
 #include <cstdlib>
