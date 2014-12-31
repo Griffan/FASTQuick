@@ -5,10 +5,10 @@
 using namespace arma;
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
-GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, std::vector<std::string>& subsetInds, double minAF, double minCallRate) 
+GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, /*std::vector<std::string>& subsetInds,*/ double minAF, double minCallRate) 
 {
 	// open a VCF file
-
+	std::vector<std::string> subsetInds;
 	tvcf.infoAF = (siteOnly || ((subsetInds.size() <= 1) && !findBest));
 
 	int i = 0, m = 0, M = 0;
@@ -106,9 +106,9 @@ PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
 PopulationIdentifier::PopulationIdentifier()
 {
 }
-PopulationIdentifier::PopulationIdentifier(std::string& VCF) :GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest, std::vector<std::string>()/*subsetInds*/, pArgs->minAF, pArgs->minCallRate), fn(this)
+PopulationIdentifier::PopulationIdentifier(std::string& VCF,PopArgs *p) :pArgs(p),GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate), fn(this)
 {//using selected sites from union
-	PopArgs* pArgs =new PopArgs;
+	/*PopArgs* pArgs =new PopArgs;*/
 	NumMarker = GenoMatrix.tvcf.nMarkers;
 	NumIndividual= GenoMatrix.tvcf.nInds;
 	//fullLLKFunc fn;
@@ -195,6 +195,8 @@ int PopulationIdentifier::OptimizeLLK()
 	myMinimizer.Minimize(1e-6);
 	double optimalPC1 = fullLLKFunc::invLogit(myMinimizer.point[0]);
 	double optimalPC2 = fullLLKFunc::invLogit(myMinimizer.point[1]);
+	std::cout << "PCs in OptimizaLLK():" << std::endl;
+	std::cout << "PC1:" << optimalPC1 << "\tPC2:" << optimalPC2 << std::endl;
 	return 0;
 }
 int PopulationIdentifier::RunMapping()
@@ -205,7 +207,7 @@ int PopulationIdentifier::PrintVcf(const std::string & path)
 {
 	GenoMatrix.printVCF(path);
 	std::cout << "Population PCs for this individuals:" << std::endl;
-	std::cout << "PC1:" << fn.PC1 << "\tPC2:" << fn.PC2 << endl;
+	std::cout << "PC1:" << fn.PC1 << "\tPC2:" << fn.PC2 << std::endl;
 	return 0;
 }
 

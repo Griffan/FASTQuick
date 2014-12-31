@@ -2,9 +2,9 @@
 #define POPULATIONIDENTIFIER_H_
 #include <string>
 #include <unordered_map>
-#include "../libmpu/fVcf.h"
-#include "../libmpu/MathVector.h"
-#include "../libmpu/MathGenMin.h"
+#include "fVcf.h"
+#include "MathVector.h"
+#include "MathGenMin.h"
 class GenotypeMatrix{
 public:
 	fVcf tvcf;
@@ -22,7 +22,7 @@ public:
 	//uint32_t numMarker;
 	int bytesPerMarker;
 	GenotypeMatrix();
-	GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, std::vector<std::string>& subsetInds, double minAF, double minCallRate);
+	GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, double minAF, double minCallRate);
 	int addMarker(const char* chrom, int position, char refBase, char altBase, double alleleFreq,int numIndividuals);
 	void setGenotype(float genotype, int indIndex, int markerIndex);
 	float getGenotype(int indIndex, int markerIndex);
@@ -130,14 +130,14 @@ public:
 		double PC1, PC2;
 		fullLLKFunc();
 		~fullLLKFunc();
-		inline static double fullLLKFunc::invLogit(double & x){ double e = exp(x); return e / (1. + e); };
-		inline double computeMixLLKs(double PC1, double PC2)
+		inline static double invLogit(double & x){ double e = exp(x); return e / (1. + e); };
+		inline double computeMixLLKs(double tPC1, double tPC2)
 		{
 			double min_af(0.5 / ptr->NumIndividual), max_af((ptr->NumIndividual - 0.5) / ptr->NumIndividual);
 			double sumLLK(0), GF0(0), GF1(0), GF2(0);
 			for (size_t i = 0; i != ptr->NumMarker; ++i)
 			{
-				ptr->AFs[i] = ((ptr->UD[i][0] * PC1 + ptr->UD[i][1] * PC2) + ptr->means[i]) / 2;
+				ptr->AFs[i] = ((ptr->UD[i][0] * tPC1 + ptr->UD[i][1] * tPC2) + ptr->means[i]) / 2;
 				if (ptr->AFs[i] < min_af) ptr->AFs[i] = min_af;
 				if (ptr->AFs[i] > max_af) ptr->AFs[i] = max_af;
 				GF0 = (1 - ptr->AFs[i])*(1 - ptr->AFs[i]);
@@ -187,7 +187,7 @@ public:
 	std::vector<double> AFs;
 
 	PopulationIdentifier();
-	PopulationIdentifier(std::string& VCF);
+	PopulationIdentifier(std::string& VCF,PopArgs* p);
 	int ReadingGL(const std::string& path);
 	int ImputeMissing();
 	int RunSVD();
@@ -198,4 +198,4 @@ public:
 };
 
 
-#endif POPULATIONIDENTIFIER_H_
+#endif

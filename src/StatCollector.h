@@ -51,6 +51,7 @@ private:
 	uint64_t ref_genome_size;
 
 	/*Actual Statistics*/
+	uint64_t NumPCRDup;
 	uint64_t NumBaseMapped;
 	uint64_t NumPositionCovered;//position with depth larger than 0
 	//uint64_t NumPositionCovered1;
