@@ -8,7 +8,7 @@
 #include "RefBuilder.h"
 #include "Utility.h"
 #include "../misc/faidx.h"
-#include "../misc/Error.h"
+#include "../libmpu/Error.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
 #include "VcfRecord.h"
@@ -16,7 +16,7 @@
 using namespace std;
 
 #define DEBUG 0
-extern string Prefix;
+//extern string Prefix;
 extern void notice(const char*,...);
 extern void warning(const char*,...);
 extern void error(const char*,...);
@@ -26,7 +26,7 @@ RefBuilder::RefBuilder()
 
 }
 
-RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string MaskPath, const gap_opt_t* opt)//, unordered_map<string,bool>& longRefTable)
+RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const string& DBsnpPath, const string& MaskPath, const gap_opt_t* opt)//, unordered_map<string,bool>& longRefTable)
 {
   notice("Initialization of RefBwt...\n");
   //read in ref.fa and ref.fai
@@ -46,11 +46,11 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
   VcfHeader header;
   VcfFileReader reader;
 
-  string SelectedSite=VcfPath+".SelectedSite.vcf";
+  string SelectedSite = RefPath + ".SelectedSite.vcf";
   InputFile FoutSelectedSite(SelectedSite.c_str(),"w");
-  string GCpath=VcfPath+".gc";
+  string GCpath = RefPath + ".gc";
   ofstream FGC(GCpath,ios_base::binary);
-  string BedPath=VcfPath+".bed";
+  string BedPath = RefPath + ".bed";
   ofstream BedFile(BedPath);
   //FGC.write((char*)opt->num_variant_short,sizeof(int));
   //_GCstruct * GCstruct=new _GCstruct [opt->num_variant_long+opt->num_variant_short];
@@ -336,7 +336,7 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
   FGC.close();
   BedFile.close();
   char cmdline[2048];
-  sprintf(cmdline,"tabix  -h -B %s %s  > %s.dpSNP.subset.vcf",DBsnpPath.c_str(),BedPath.c_str(),VcfPath.c_str());
+  sprintf(cmdline, "tabix  -h -B %s %s  > %s.dpSNP.subset.vcf", DBsnpPath.c_str(), BedPath.c_str(), RefPath.c_str());
   int ret=system(cmdline);
   if(ret!=0)
     {
@@ -345,25 +345,29 @@ RefBuilder::RefBuilder(string VcfPath,string RefPath, string DBsnpPath,string Ma
     }
   FoutSelectedSite.ifclose();
 
-  sprintf(cmdline,"(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp",VcfPath.c_str(),VcfPath.c_str(),VcfPath.c_str());
+  sprintf(cmdline, "(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp", RefPath.c_str(), RefPath.c_str(), RefPath.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
+	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline,"mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf",VcfPath.c_str(),VcfPath.c_str());
+  sprintf(cmdline, "mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf", RefPath.c_str(), RefPath.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
+	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline,"bgzip -f %s.SelectedSite.vcf",VcfPath.c_str());
+  sprintf(cmdline, "bgzip -f %s.SelectedSite.vcf", RefPath.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
+	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline,"tabix -pvcf %s.SelectedSite.vcf.gz",VcfPath.c_str());
+  sprintf(cmdline, "tabix -pvcf %s.SelectedSite.vcf.gz", RefPath.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
+	  exit(EXIT_FAILURE);
     }
   reader.close();
 
