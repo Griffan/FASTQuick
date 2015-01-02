@@ -949,9 +949,13 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
         {
           for (i = 0; i < n_seqs; ++i)
             {
+			  bwa_seq_t* p = seqs + i;
+			  if ((p == 0 || p->type == BWA_TYPE_NO_MATCH)) continue;
               //collector.addAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
-              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)==0)
-                continue; //failed
+              //if (
+			  collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+				  //==0)
+                //continue; //failed
               bwa_print_sam1(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2);
               //exit(1);
             }
@@ -960,8 +964,12 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
         {
           for (i = 0; i < n_seqs; ++i)
             {
-              if (collector.addAlignment(BwtIndex.bns, seqs + i,0, opt, fout, total_add)==0)
-                continue; //failed
+			  bwa_seq_t* p = seqs + i;
+			  if ((p == 0 || p->type == BWA_TYPE_NO_MATCH)) continue;
+			  //if (
+				  collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+				//  ==0)
+                //continue; //failed
               SamRecord SR;
               SetSamRecord(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2, SFH,SR);
               //std::cerr<<"\nPassed Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1, [](bwa_seq_t* s, int j ){return  "ACGTN"[(int) *s+j];})<<endl;
@@ -1186,6 +1194,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
+			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
         	  FSC.NumBase+=p[0]->full_len;
         	  FSC.NumBase+=p[1]->full_len;
               if (p[0]->bc[0] || p[1]->bc[0])
@@ -1210,6 +1219,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
+			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
         	  FSC.NumBase+=p[0]->full_len;
         	  FSC.NumBase+=p[1]->full_len;
               if (p[0]->bc[0] || p[1]->bc[0])
@@ -1224,7 +1234,6 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 			 // == 0)// means no successfully added reads
 				  //   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 			  //continue;
-
               SamRecord SR[2];
               SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1]+i, opt->mode, opt->max_top2, SFH,SR[0]);
               BamIO.writeRecord(BamFile,SFH,SR[0],SamRecord::SequenceTranslation::NONE);
