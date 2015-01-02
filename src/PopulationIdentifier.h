@@ -121,6 +121,7 @@ class PopulationIdentifier
 public:
 
 #define PCtype float
+#define PHRED(x)	pow(10,x/(-10))
 	class fullLLKFunc : public VectorFunc {
 	public:
 
@@ -135,16 +136,21 @@ public:
 		{
 			double min_af(0.5 / ptr->NumIndividual), max_af((ptr->NumIndividual - 0.5) / ptr->NumIndividual);
 			double sumLLK(0), GF0(0), GF1(0), GF2(0);
+
 			for (size_t i = 0; i != ptr->NumMarker; ++i)
 			{
+				//std::cerr << "Number " << i << "th marker out of " << ptr->NumMarker << " markers and " << ptr->NumIndividual << " individuals"<<std::endl;
+				//std::cerr << "AF:" << ptr->AFs[i] << "\tUD:" << ptr->UD[i][0] << "\t" << ptr->UD[i][1] << "\tmeans:" << ptr->means[i] << std::endl;
 				ptr->AFs[i] = ((ptr->UD[i][0] * tPC1 + ptr->UD[i][1] * tPC2) + ptr->means[i]) / 2;
 				if (ptr->AFs[i] < min_af) ptr->AFs[i] = min_af;
 				if (ptr->AFs[i] > max_af) ptr->AFs[i] = max_af;
 				GF0 = (1 - ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF1 = 2 * (ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF2 = (ptr->AFs[i])*(ptr->AFs[i]);
-				sumLLK += log(ptr->GL[i][0] * GF0 + ptr->GL[i][1] * GF1 + ptr->GL[i][2] * GF2);
+				sumLLK += log(PHRED(ptr->GL[i][0]) * GF0 + PHRED(ptr->GL[i][1]) * GF1 + PHRED(ptr->GL[i][2]) * GF2);
+				//std::cerr << "GL:" << ptr->GL[i][0] << "\t" << ptr->GL[i][1] << "\t" << ptr->GL[i][2] << std::endl;
 			}
+			//std::cerr << "sumLLK:" << sumLLK << std::endl;
 			return sumLLK;
 		}
 		fullLLKFunc(PopulationIdentifier* inPtr){
@@ -179,18 +185,30 @@ public:
 	fullLLKFunc fn;
 
 	std::unordered_map<std::string, std::unordered_map<uint32_t, uint32_t> > MarkerIndex;
+	//std::unordered_map<std::string, uint32_t> IndividualIndex;
 
 	std::vector<std::vector<PCtype> > UD;
 	std::vector<std::vector<PCtype> > PC;
-	std::vector<std::vector<PCtype> > GL;
+	std::vector<std::vector<double> > GL;
 	std::vector<PCtype> means;
 	std::vector<double> AFs;
 
 	PopulationIdentifier();
-	PopulationIdentifier(std::string& VCF,PopArgs* p);
-	int ReadingGL(const std::string& path);
+	/*Initialize from VCF*/
+	/*This assumes the markers are from new VCF files which is different from the index vcf file*/
+	PopulationIdentifier(const std::string& VCF,PopArgs* p, const std::string & GLpath);
 	int ImputeMissing();
 	int RunSVD();
+	/*Initialize from existed UD*/
+	/*This assumes the markers are the same as the selected vcf*/
+	PopulationIdentifier(const std::string& UD, const std::string &PC, const std::string & GL);
+	int ReadMatrixUD(const std::string &path);
+	int ReadMatrixPC(const std::string &path);
+	/*Intersect marker sites*/
+	int ReadMatrixGL(const std::string& path);
+	int CheckMarkerSetConsistency();
+	int FormatMarkerIntersection();
+	/*Optimize*/
 	int OptimizeLLK();
 	int RunMapping();
 	int PrintVcf(const std::string & path);
