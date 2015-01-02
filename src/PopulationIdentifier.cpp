@@ -106,41 +106,24 @@ PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
 PopulationIdentifier::PopulationIdentifier()
 {
 }
-PopulationIdentifier::PopulationIdentifier(std::string& VCF,PopArgs *p) :pArgs(p),GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate), fn(this)
+PopulationIdentifier::PopulationIdentifier(const std::string& VCF,PopArgs *p,const std::string & GLpath) :pArgs(p),GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate)
 {//using selected sites from union
 	/*PopArgs* pArgs =new PopArgs;*/
 	NumMarker = GenoMatrix.tvcf.nMarkers;
 	NumIndividual= GenoMatrix.tvcf.nInds;
 	//fullLLKFunc fn;
 	std::vector<PCtype> tmpPC(2, 0);
-	std::vector<double> tmpGL(3, 0);
-	std::vector<std::vector<PCtype> > UD(NumMarker,tmpPC);
-	std::vector<std::vector<PCtype> > PC(NumIndividual,tmpPC);
-	std::vector<std::vector<double> > GL(NumMarker,tmpGL);
-	std::vector<double> means(NumMarker, 0);
-	std::vector<double> AFs(NumMarker,0);
-}
-int PopulationIdentifier::ReadingGL(const std::string& path)//Reading GL information for individual need to be classified
-{
-	std::ifstream fin(path);
-	std::string line;
-	uint32_t index(0);
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
-	while (std::getline(fin,line))
-	{
-		std::stringstream ss(line);
-		std::string chr;
-		int pos;
-		ss >> chr >> pos;
-		MarkerIndex[chr][pos] = index;
-		ss >> GL[index][0] >> GL[index][1] >> GL[index][2];
-	}
-	fin.close();
-	return 0;
+	UD=std::vector<std::vector<PCtype> >(NumMarker, tmpPC);
+	PC=std::vector<std::vector<PCtype> >(NumIndividual,tmpPC);
+	ReadMatrixGL(GLpath);
+	FormatMarkerIntersection();
+	ImputeMissing();
+	RunSVD();
+	fn = PopulationIdentifier::fullLLKFunc(this);
 }
 int PopulationIdentifier::ImputeMissing()
 {
-	
+
 	auto mean = [&](std::vector<float>& vec){float sum = 0; int num(0); std::for_each(vec.begin(), vec.end(), [&](float a){if (!isnan(a)) { sum += a; num++; }}); return sum / num; };
 	for (size_t i = 0; i != NumMarker; ++i)
 	{
@@ -176,11 +159,98 @@ int PopulationIdentifier::RunSVD()
 	}
 	for (size_t j = 0; j != NumIndividual; ++j)
 	{
-		PC[j][0] = tV(j,0);
-		PC[j][1] = tV(j,1);
+		PC[j][0] = tV(j, 0);
+		PC[j][1] = tV(j, 1);
 	}
 	return 0;
 }
+
+PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & GLpath)
+{
+	NumMarker=ReadMatrixUD(UDpath);
+	NumIndividual=ReadMatrixPC(PCpath);
+	ReadMatrixGL(GLpath);
+	FormatMarkerIntersection();
+	fn = PopulationIdentifier::fullLLKFunc(this);
+}
+int PopulationIdentifier::ReadMatrixUD(const std::string &path)
+{
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	std::vector<PCtype> tmpUD(2, 0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin, line))
+	{
+		std::stringstream ss(line);
+		//std::string chr;
+		//int pos;
+		//ss >> chr >> pos;
+		ss >> tmpUD[0] >> tmpUD[1];
+		UD.push_back(tmpUD);
+	}
+	fin.close();
+	return UD.size();
+}
+int PopulationIdentifier::ReadMatrixPC(const std::string &path)
+{
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	std::vector<PCtype> tmpPC(2, 0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin, line))
+	{
+		std::stringstream ss(line);
+		std::string dummy;
+		//std::string chr;
+		//int pos;
+		//ss >> chr >> pos;
+		//MarkerIndex[chr][pos] = index;
+		ss >> dummy>>tmpPC[0] >> tmpPC[1];
+		PC.push_back(tmpPC);
+	}
+	fin.close();
+	return PC.size();
+}
+int PopulationIdentifier::CheckMarkerSetConsistency()
+{
+	return UD.size() == GL.size();
+}
+int PopulationIdentifier::FormatMarkerIntersection()
+{
+	if (CheckMarkerSetConsistency())
+	{
+		means = std::vector<PCtype>(NumMarker, 0.5);
+		AFs=std::vector<double>(NumMarker, 0);
+	}
+	else//implement intersection behavior if needed
+	{
+		std::cerr << "[Waring] - Marker Sets are not consistent" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+}
+int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL information for individual need to be classified
+{
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	std::vector<double> tmpGL(3, 0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin,line))
+	{
+		std::stringstream ss(line);
+		std::string chr;
+		int pos;
+		ss >> chr >> pos;
+		MarkerIndex[chr][pos] = index;
+		ss >> tmpGL[0] >> tmpGL[1] >> tmpGL[2];
+		GL.push_back(tmpGL);
+	}
+	fin.close();
+	return 0;
+}
+
 int PopulationIdentifier::OptimizeLLK()
 {
 	//fullLLKFunc myFunc(UD,PC, GL);
@@ -192,7 +262,7 @@ int PopulationIdentifier::OptimizeLLK()
 	myMinimizer.func = &fn;
 	myMinimizer.Reset(2);
 	myMinimizer.point = startingPoint;
-	myMinimizer.Minimize(1e-6);
+	myMinimizer.Minimize(1e-3);
 	double optimalPC1 = fullLLKFunc::invLogit(myMinimizer.point[0]);
 	double optimalPC2 = fullLLKFunc::invLogit(myMinimizer.point[1]);
 	std::cout << "PCs in OptimizaLLK():" << std::endl;
