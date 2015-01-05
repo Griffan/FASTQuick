@@ -68,12 +68,13 @@ typedef struct// if((seqs[0] = bwa_read_seq(ks[0], 10000000, &n_seqs, opt->mode,
 	int* n_seqs;
 	int mode;
 	int trim_qual;
+	double frac;
 }
 thread_IO_t;
 static void *IOworker(void *data)
 {
 	thread_IO_t *d = (thread_IO_t*)data;
-	d->seqAddress=bwa_read_seq(d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual);
+	d->seqAddress=bwa_read_seq(d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual,d->frac);
 	return 0;
 }
 #endif
@@ -140,7 +141,7 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
 	  //{
 		 // fprintf(stderr, "ERR018525.148353	is coming\n");
 	  //}
-	  if ( /*drand48() >opt->frac ||*/Indexer->IsReadFiltered(p->seq, p->qual, p->len))
+	  if (/* drand48() >opt->frac ||*/Indexer->IsReadFiltered(p->seq, p->qual, p->len))
 	  {
 		  //if(strcmp(p->name,"ERR018525.148353") ==0)
 		  //{
@@ -868,7 +869,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
   ubyte_t *pacseq = 0;
   t = clock();
   FileStatCollector FSC(fn_fa);
-  while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt->mode, opt->trim_qual))
+  while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt->mode, opt->trim_qual, opt->frac))
          != 0)
     {
       tot_seqs += n_seqs;
@@ -1028,7 +1029,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
     { // opt should be different for two fa files theoretically
 	  if (ReadIsGood == 2)
 	  {
-		  if ((seqs[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual)) != 0) ReadIsGood = 1;
+		  if ((seqs[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac)) != 0) ReadIsGood = 1;
 		  else ReadIsGood = 0;
 		  FSC.NumRead += n_seqs;
 	  }
@@ -1048,13 +1049,13 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
           if (opt->n_threads <= 1)
             { // no multi-threading at all
-			  seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual);
+			  seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac);
 			  FSC.NumRead+=n_seqs;
 			  for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 			  {
 				  bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx], opt, &BwtIndex);
 			  }
-			if ((seqs_buff[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual)) != 0) 
+			if ((seqs_buff[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac)) != 0) 
 			{
 				  ReadIsGood = 1;
 				  FSC.NumRead+=n_seqs;
@@ -1100,6 +1101,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 					  IO_param->n_seqs = &n_seqs_buff;
 					  IO_param->mode = opt->mode;
 					  IO_param->trim_qual = opt->trim_qual;
+					  IO_param->frac=opt->frac;
 					  pthread_create(&tid[opt->n_threads-1],&attr,IOworker,IO_param);
 				  }
 		
@@ -1125,7 +1127,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 #else
 
 
-	  seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual);
+	  seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac);
 	  FSC.NumRead += n_seqs;
 	  for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 	  {
@@ -1134,7 +1136,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 		  //DBG(fprintf(stderr,"After come into cal sa reg gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 	  }
 
-		  if ((seqs[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual)) != 0) ReadIsGood = 1;
+		  if ((seqs[0] = bwa_read_seq(ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac)) != 0) ReadIsGood = 1;
 		  else ReadIsGood = 0;
 	  
 	  FSC.NumRead += n_seqs;
@@ -1194,9 +1196,10 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
-			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
+			 
         	  FSC.NumBase+=p[0]->full_len;
         	  FSC.NumBase+=p[1]->full_len;
+			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
               if (p[0]->bc[0] || p[1]->bc[0])
                 {
                   strcat(p[0]->bc, p[1]->bc);
@@ -1219,9 +1222,10 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
               bwa_seq_t *p[2];
               p[0] = seqs[0] + i;
               p[1] = seqs[1] + i;
-			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
+			
         	  FSC.NumBase+=p[0]->full_len;
         	  FSC.NumBase+=p[1]->full_len;
+			  if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
               if (p[0]->bc[0] || p[1]->bc[0])
                 {
                   strcat(p[0]->bc, p[1]->bc);

@@ -31,6 +31,11 @@ StatCollector::StatCollector()
 	total_region_size = 0;
 	ref_genome_size = 0;
 	NumPCRDup = 0;
+	NumBaseMapped = 0;
+	NumPositionCovered =0;//position with depth larger than 0
+	NumPositionCovered2=0;//larger than 1
+	NumPositionCovered5=0;//larger than 4
+	NumPositionCovered10=0;// larger than 9
 	DepthDist = vector<size_t>(256, 0);
 	CycleDist = vector<size_t>(512, 0);
 	GCDist = vector<size_t>(256, 0);
@@ -53,6 +58,11 @@ StatCollector::StatCollector(const string & OutFile)
 	total_region_size = 0;
 	ref_genome_size = 0;
 	NumPCRDup = 0;
+	NumBaseMapped = 0;
+	NumPositionCovered = 0;//position with depth larger than 0
+	NumPositionCovered2 = 0;//larger than 1
+	NumPositionCovered5 = 0;//larger than 4
+	NumPositionCovered10 = 0;// larger than 9
 	DepthDist = vector<size_t>(256, 0);
 	CycleDist = vector<size_t>(512, 0);
 	GCDist = vector<size_t>(256, 0);
