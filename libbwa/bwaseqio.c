@@ -142,7 +142,7 @@ static bwa_seq_t *bwa_read_bam(bwa_seqio_t *bs, int n_needed, int *n, int is_com
 
 #define BARCODE_LOW_QUAL 13
 
-bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, const gap_opt_t* opt)
+bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac)
 {
 	bwa_seq_t *seqs, *p;
 	kseq_t *seq = bs->ks;
@@ -161,7 +161,7 @@ bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int tri
 			for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
 		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
 		p = &seqs[n_seqs++];
-		if (drand48() >opt->frac) continue;// downsampling
+
 		if (l_bc) { // then trim barcode
 			for (i = 0; i < l_bc; ++i)
 				p->bc[i] = (seq->qual.l && seq->qual.s[i]-33 < BARCODE_LOW_QUAL)? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
@@ -181,6 +181,7 @@ bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int tri
 		p->count=0;
 		p->full_len = p->clip_len = p->len = l;
 		n_tot += p->full_len;
+		if (drand48() >frac) continue;// downsampling
 		p->seq = (ubyte_t*)calloc(p->len, 1);
 		/*
 		p->original_seq =(char*)calloc(p->len, 1);
