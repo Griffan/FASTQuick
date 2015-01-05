@@ -642,7 +642,7 @@ void bwa_sai2sam_se_core(const char *prefix, const char *fn_sa, const char *fn_f
 	// set ks
 	ks = bwa_open_reads(opt.mode, fn_fa);
 	// core loop
-	while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt.mode, opt.trim_qual)) != 0) {
+	while ((seqs = bwa_read_seq(ks, 0x40000, &n_seqs, opt.mode, opt.trim_qual, opt.frac)) != 0) {
 		tot_seqs += n_seqs;
 		t = clock();
 
