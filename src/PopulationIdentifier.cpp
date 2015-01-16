@@ -5,7 +5,7 @@
 using namespace arma;
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
-GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, /*std::vector<std::string>& subsetInds,*/ double minAF, double minCallRate) 
+GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, /*std::vector<std::string>& subsetInds,*/ double minAF, double minCallRate)
 {
 	// open a VCF file
 	std::vector<std::string> subsetInds;
@@ -45,7 +45,7 @@ GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest
 			maf = af > 0.5 ? 1 - af : af;
 			if ((maf >= minAF) &&
 				(tvcf.callRate(i) >= minCallRate)) {
-				addMarker(tvcf.chroms[i].c_str(), tvcf.pos1s[i], tvcf.refs[i][0], tvcf.alts[i][0], af,tvcf.nInds);
+				addMarker(tvcf.chroms[i].c_str(), tvcf.pos1s[i], tvcf.refs[i][0], tvcf.alts[i][0], af, tvcf.nInds);
 				for (int j = 0; j < tvcf.nInds; ++j) {
 					setGenotype(tvcf.genos[i*tvcf.nInds + j], j, m);
 				}
@@ -73,7 +73,7 @@ int GenotypeMatrix::addMarker(const char* chrom, int position, char refBase, cha
 void GenotypeMatrix::setGenotype(float geno, int indIndex, int markerIndex = -1)
 {
 	float ngeno = isnan(geno) ? 0 : geno;
-	genotypes[markerIndex][indIndex]= ngeno;
+	genotypes[markerIndex][indIndex] = ngeno;
 }
 float GenotypeMatrix::getGenotype(int indIndex, int markerIndex)
 {
@@ -83,17 +83,17 @@ float GenotypeMatrix::getGenotype(int indIndex, int markerIndex)
 void GenotypeMatrix::printVCF(std::string path)
 {
 	std::ofstream fout(path);
-	if (!fout.is_open()) { warning("Open file %s failed!\n",path.c_str()); }
-	for (size_t i=0; i != tvcf.headers.size(); ++i)
+	if (!fout.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	for (size_t i = 0; i != tvcf.headers.size(); ++i)
 	{
 		fout << tvcf.headers[i] << std::endl;
 	}
 
-	for (size_t i=0; i != tvcf.chroms.size(); ++i)
+	for (size_t i = 0; i != tvcf.chroms.size(); ++i)
 	{
-		for (size_t j=0; j != tvcf.markers.size(); ++j)
+		for (size_t j = 0; j != tvcf.markers.size(); ++j)
 		{
-			fout << tvcf.chroms[i] << "\t" << tvcf.pos1s[j] << "\t" << tvcf.markers[j] <<"\t"<<tvcf.refs[j]<<"\t"<<tvcf.alts[j]<<"\tPASS\tAF="<<tvcf.AFs[j]<<std::endl;
+			fout << tvcf.chroms[i] << "\t" << tvcf.pos1s[j] << "\t" << tvcf.markers[j] << "\t" << tvcf.refs[j] << "\t" << tvcf.alts[j] << "\tPASS\tAF=" << tvcf.AFs[j] << std::endl;
 		}
 	}
 	fout.close();
@@ -106,15 +106,15 @@ PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
 PopulationIdentifier::PopulationIdentifier()
 {
 }
-PopulationIdentifier::PopulationIdentifier(const std::string& VCF,PopArgs *p,const std::string & GLpath) :pArgs(p),GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate)
+PopulationIdentifier::PopulationIdentifier(const std::string& VCF, PopArgs *p, const std::string & GLpath) :pArgs(p), GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate)
 {//using selected sites from union
 	/*PopArgs* pArgs =new PopArgs;*/
 	NumMarker = GenoMatrix.tvcf.nMarkers;
-	NumIndividual= GenoMatrix.tvcf.nInds;
+	NumIndividual = GenoMatrix.tvcf.nInds;
 	//fullLLKFunc fn;
 	std::vector<PCtype> tmpPC(2, 0);
-	UD=std::vector<std::vector<PCtype> >(NumMarker, tmpPC);
-	PC=std::vector<std::vector<PCtype> >(NumIndividual,tmpPC);
+	UD = std::vector<std::vector<PCtype> >(NumMarker, tmpPC);
+	PC = std::vector<std::vector<PCtype> >(NumIndividual, tmpPC);
 	ReadMatrixGL(GLpath);
 	FormatMarkerIntersection();
 	ImputeMissing();
@@ -167,8 +167,8 @@ int PopulationIdentifier::RunSVD()
 
 PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & GLpath)
 {
-	NumMarker=ReadMatrixUD(UDpath);
-	NumIndividual=ReadMatrixPC(PCpath);
+	NumMarker = ReadMatrixUD(UDpath);
+	NumIndividual = ReadMatrixPC(PCpath);
 	ReadMatrixGL(GLpath);
 	FormatMarkerIntersection();
 	fn = PopulationIdentifier::fullLLKFunc(this);
@@ -207,7 +207,7 @@ int PopulationIdentifier::ReadMatrixPC(const std::string &path)
 		//int pos;
 		//ss >> chr >> pos;
 		//MarkerIndex[chr][pos] = index;
-		ss >> dummy>>tmpPC[0] >> tmpPC[1];
+		ss >> dummy >> tmpPC[0] >> tmpPC[1];
 		PC.push_back(tmpPC);
 	}
 	fin.close();
@@ -222,7 +222,7 @@ int PopulationIdentifier::FormatMarkerIntersection()
 	if (CheckMarkerSetConsistency())
 	{
 		means = std::vector<PCtype>(NumMarker, 0.5);
-		AFs=std::vector<double>(NumMarker, 0);
+		AFs = std::vector<double>(NumMarker, 0);
 	}
 	else//implement intersection behavior if needed
 	{
@@ -237,7 +237,7 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 	uint32_t index(0);
 	std::vector<double> tmpGL(3, 0);
 	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
-	while (std::getline(fin,line))
+	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
 		std::string chr;
@@ -258,7 +258,7 @@ int PopulationIdentifier::OptimizeLLK()
 	Vector startingPoint(2);
 	startingPoint[0] = PC[0][0];  // start with fMix = 0.01
 	startingPoint[1] = PC[0][1];       // pRefHet = 0.5
-	
+
 	myMinimizer.func = &fn;
 	myMinimizer.Reset(2);
 	myMinimizer.point = startingPoint;
