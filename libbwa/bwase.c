@@ -40,7 +40,7 @@ void bwa_aln2seq_core(int n_aln, const bwt_aln1_t *aln, bwa_seq_t *s, int set_ma
 		s->c1 = cnt;
 		for (; i < n_aln; ++i) cnt += aln[i].l - aln[i].k + 1;
 		s->c2 = cnt - s->c1;
-		s->type = s->c1 > 1? BWA_TYPE_REPEAT : BWA_TYPE_UNIQUE;
+		s->type = s->c1 > 1 ? BWA_TYPE_REPEAT : BWA_TYPE_UNIQUE;
 	}
 
 	if (n_multi) {
@@ -58,7 +58,7 @@ void bwa_aln2seq_core(int n_aln, const bwt_aln1_t *aln, bwa_seq_t *s, int set_ma
 		 * here. In principle, due to the requirement above, we can
 		 * simply output all hits, but the following samples "rest"
 		 * number of random hits. */
-		rest = n_occ > n_multi + 1? n_multi + 1 : n_occ; // find one additional for ->sa
+		rest = n_occ > n_multi + 1 ? n_multi + 1 : n_occ; // find one additional for ->sa
 		s->multi = calloc(rest, sizeof(bwt_multi1_t));
 		for (k = 0; k < n_aln; ++k) {
 			const bwt_aln1_t *q = aln + k;
@@ -71,7 +71,8 @@ void bwa_aln2seq_core(int n_aln, const bwt_aln1_t *aln, bwa_seq_t *s, int set_ma
 					s->multi[z++].strand = q->a;
 				}
 				rest -= q->l - q->k + 1;
-			} else { // Random sampling (http://code.activestate.com/recipes/272884/). In fact, we never come here. 
+			}
+			else { // Random sampling (http://code.activestate.com/recipes/272884/). In fact, we never come here. 
 				int j, i, k;
 				for (j = rest, i = q->l - q->k + 1, k = 0; j > 0; --j) {
 					double p = 1.0, x = drand48();
@@ -89,7 +90,7 @@ void bwa_aln2seq_core(int n_aln, const bwt_aln1_t *aln, bwa_seq_t *s, int set_ma
 		for (k = z = 0; k < s->n_multi; ++k)
 			if (s->multi[k].pos != s->sa)
 				s->multi[z++] = s->multi[k];
-		s->n_multi = z < n_multi? z : n_multi;
+		s->n_multi = z < n_multi ? z : n_multi;
 	}
 }
 
@@ -105,8 +106,8 @@ int bwa_approx_mapQ(const bwa_seq_t *p, int mm)
 	if (p->c1 > 1) return 0;
 	if (p->n_mm == mm) return 25;
 	if (p->c2 == 0) return 37;
-	n = (p->c2 >= 255)? 255 : p->c2;
-	return (23 < g_log_n[n])? 0 : 23 - g_log_n[n];
+	n = (p->c2 >= 255) ? 255 : p->c2;
+	return (23 < g_log_n[n]) ? 0 : 23 - g_log_n[n];
 }
 
 /**
@@ -119,11 +120,12 @@ void bwa_cal_pac_pos_core(const bwt_t *forward_bwt, const bwt_t *reverse_bwt, bw
 {
 	int max_diff;
 	if (seq->type != BWA_TYPE_UNIQUE && seq->type != BWA_TYPE_REPEAT) return;
-	max_diff = fnr > 0.0? bwa_cal_maxdiff(seq->len, BWA_AVG_ERR, fnr) : max_mm;
+	max_diff = fnr > 0.0 ? bwa_cal_maxdiff(seq->len, BWA_AVG_ERR, fnr) : max_mm;
 	if (seq->strand) { // reverse strand only
 		seq->pos = bwt_sa(forward_bwt, seq->sa);
 		seq->seQ = seq->mapQ = bwa_approx_mapQ(seq, max_diff);
-	} else { // forward strand only
+	}
+	else { // forward strand only
 		/* NB: For gapped alignment, p->pos may not be correct, which
 		 *     will be fixed in refine_gapped_core(). This line also
 		 *     determines the way "x" is calculated in
@@ -132,17 +134,17 @@ void bwa_cal_pac_pos_core(const bwt_t *forward_bwt, const bwt_t *reverse_bwt, bw
 		seq->seQ = seq->mapQ = bwa_approx_mapQ(seq, max_diff);
 	}
 
-/*
-	if(strcmp(seq->name,"ERR013170.1716") ==0)
-	{
-	fprintf(stderr,"score:%d\n",seq->score);
-	fprintf(stderr,"test\n");
-	fprintf(stderr,"sa:%d\n",seq->sa);
-	fprintf(stderr,"pos:%d\n",seq->pos);
-	fprintf(stderr,"strand:%d\n",seq->strand);
-	fprintf(stderr,"type:%d\n",seq->type);
-	exit(1);
-	}*/
+	/*
+		if(strcmp(seq->name,"ERR013170.1716") ==0)
+		{
+		fprintf(stderr,"score:%d\n",seq->score);
+		fprintf(stderr,"test\n");
+		fprintf(stderr,"sa:%d\n",seq->sa);
+		fprintf(stderr,"pos:%d\n",seq->pos);
+		fprintf(stderr,"strand:%d\n",seq->strand);
+		fprintf(stderr,"type:%d\n",seq->type);
+		exit(1);
+		}*/
 }
 
 void bwa_cal_pac_pos(const char *prefix, int n_seqs, bwa_seq_t *seqs, int max_mm, float fnr)
@@ -179,31 +181,32 @@ void bwa_cal_pac_pos(const char *prefix, int n_seqs, bwa_seq_t *seqs, int max_mm
  * bwa_cal_pac_pos(). is_end_correct==0 if (*pos) gives the correct
  * coordinate. This happens only for color-converted alignment. */
 static bwa_cigar_t *refine_gapped_core(bwtint_t l_pac, const ubyte_t *pacseq, int len, const ubyte_t *seq, bwtint_t *_pos,
-									int ext, int *n_cigar, int is_end_correct)
+	int ext, int *n_cigar, int is_end_correct)
 {
 	bwa_cigar_t *cigar = 0;
 	ubyte_t *ref_seq;
 	int l = 0, path_len, ref_len;
 	AlnParam ap = aln_param_bwa;
 	path_t *path;
-	int64_t k, __pos = *_pos > l_pac? (int64_t)((int32_t)*_pos) : *_pos;
+	int64_t k, __pos = *_pos > l_pac ? (int64_t)((int32_t)*_pos) : *_pos;
 
 	ref_len = len + abs(ext);
 	if (ext > 0) {
 		ref_seq = (ubyte_t*)calloc(ref_len, 1);
 		for (k = __pos; k < __pos + ref_len && k < l_pac; ++k)
-			ref_seq[l++] = pacseq[k>>2] >> ((~k&3)<<1) & 3;
-	} else {
-		int64_t x = __pos + (is_end_correct? len : ref_len);
-		ref_seq = (ubyte_t*)calloc(ref_len, 1);
-		for (l = 0, k = x - ref_len > 0? x - ref_len : 0; k < x && k < l_pac; ++k)
-			ref_seq[l++] = pacseq[k>>2] >> ((~k&3)<<1) & 3;
+			ref_seq[l++] = pacseq[k >> 2] >> ((~k & 3) << 1) & 3;
 	}
-	path = (path_t*)calloc(l+len, sizeof(path_t));
+	else {
+		int64_t x = __pos + (is_end_correct ? len : ref_len);
+		ref_seq = (ubyte_t*)calloc(ref_len, 1);
+		for (l = 0, k = x - ref_len > 0 ? x - ref_len : 0; k < x && k < l_pac; ++k)
+			ref_seq[l++] = pacseq[k >> 2] >> ((~k & 3) << 1) & 3;
+	}
+	path = (path_t*)calloc(l + len, sizeof(path_t));
 
 	aln_global_core(ref_seq, l, (ubyte_t*)seq, len, &ap, path, &path_len);
 	cigar = bwa_aln_path2cigar(path, path_len, n_cigar);
-	
+
 	if (ext < 0 && is_end_correct) { // fix coordinate for reads mapped on the forward strand
 		for (l = k = 0; k < *n_cigar; ++k) {
 			if (__cigar_op(cigar[k]) == FROM_D) l -= __cigar_len(cigar[k]);
@@ -214,13 +217,13 @@ static bwa_cigar_t *refine_gapped_core(bwtint_t l_pac, const ubyte_t *pacseq, in
 
 	if (__cigar_op(cigar[0]) == FROM_D) { // deletion at the 5'-end
 		__pos += __cigar_len(cigar[0]);
-		for (k = 0; k < *n_cigar - 1; ++k) cigar[k] = cigar[k+1];
+		for (k = 0; k < *n_cigar - 1; ++k) cigar[k] = cigar[k + 1];
 		--(*n_cigar);
 	}
-	if (__cigar_op(cigar[*n_cigar-1]) == FROM_D) --(*n_cigar); // deletion at the 3'-end
+	if (__cigar_op(cigar[*n_cigar - 1]) == FROM_D) --(*n_cigar); // deletion at the 3'-end
 
 	// change "I" at either end of the read to S. just in case. This should rarely happen...
-	if (__cigar_op(cigar[*n_cigar-1]) == FROM_I) cigar[*n_cigar-1] = __cigar_create(3, (__cigar_len(cigar[*n_cigar-1])));
+	if (__cigar_op(cigar[*n_cigar - 1]) == FROM_I) cigar[*n_cigar - 1] = __cigar_create(3, (__cigar_len(cigar[*n_cigar - 1])));
 	if (__cigar_op(cigar[0]) == FROM_I) cigar[0] = __cigar_create(3, (__cigar_len(cigar[0])));
 
 	*_pos = (bwtint_t)__pos;
@@ -228,11 +231,11 @@ static bwa_cigar_t *refine_gapped_core(bwtint_t l_pac, const ubyte_t *pacseq, in
 	return cigar;
 }
 
-char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_t *seq, ubyte_t* qual, int* count,
-				  bwtint_t l_pac, ubyte_t *pacseq, kstring_t *str, int *_nm)
+char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_t *seq, ubyte_t* qual, //int* count,
+	bwtint_t l_pac, ubyte_t *pacseq, kstring_t *str, int *_nm)
 {
 	bwtint_t x, y;
-	int z, u, c, nm = 0,tmp=0;
+	int z, u, c, nm = 0, tmp = 0;
 	str->l = 0; // reset
 	x = pos; y = 0;
 	if (cigar) {
@@ -240,45 +243,50 @@ char *bwa_cal_md1(int n_cigar, bwa_cigar_t *cigar, int len, bwtint_t pos, ubyte_
 		for (k = u = 0; k < n_cigar; ++k) {
 			l = __cigar_len(cigar[k]);
 			if (__cigar_op(cigar[k]) == FROM_M) {
-				for (z = 0; z < l && x+z < l_pac; ++z) {
-					c = pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3;
-					if (c > 3 || seq[y+z] > 3 || c != seq[y+z]) {
-						*count+=qual[y+z];
+				for (z = 0; z < l && x + z < l_pac; ++z) {
+					c = pacseq[(x + z) >> 2] >> ((~(x + z) & 3) << 1) & 3;
+					if (c > 3 || seq[y + z] > 3 || c != seq[y + z]) {
+						//*count+=qual[y+z];
 						ksprintf(str, "%d", u);
 						kputc("ACGTN"[c], str);
 						++nm;
 						u = 0;
-					} else ++u;
+					}
+					else ++u;
 				}
 				x += l; y += l;
-/*		        } else if (cigar[k]>>14 == FROM_I || cigar[k]>>14 == 3) { */
-                        } else if (__cigar_op(cigar[k]) == FROM_I || __cigar_op(cigar[k]) == FROM_S) {
+				/*		        } else if (cigar[k]>>14 == FROM_I || cigar[k]>>14 == 3) { */
+			}
+			else if (__cigar_op(cigar[k]) == FROM_I || __cigar_op(cigar[k]) == FROM_S) {
 				y += l;
 				if (__cigar_op(cigar[k]) == FROM_I)
 				{
 					nm += l;
-					*count-=30;
+					//*count-=30;
 				}
-			} else if (__cigar_op(cigar[k]) == FROM_D) {
+			}
+			else if (__cigar_op(cigar[k]) == FROM_D) {
 				ksprintf(str, "%d", u);
 				kputc('^', str);
-				for (z = 0; z < l && x+z < l_pac; ++z)
-					kputc("ACGT"[pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3], str);
+				for (z = 0; z < l && x + z < l_pac; ++z)
+					kputc("ACGT"[pacseq[(x + z) >> 2] >> ((~(x + z) & 3) << 1) & 3], str);
 				u = 0;
 				x += l; nm += l;
-				*count-=30;
+				//*count-=30;
 			}
 		}
-	} else { // no gaps
+	}
+	else { // no gaps
 		for (z = u = 0; z < (bwtint_t)len; ++z) {
-			c = pacseq[(x+z)>>2] >> ((~(x+z)&3)<<1) & 3;
-			if (c > 3 || seq[y+z] > 3 || c != seq[y+z]) {
-				*count+=qual[y+z];
+			c = pacseq[(x + z) >> 2] >> ((~(x + z) & 3) << 1) & 3;
+			if (c > 3 || seq[y + z] > 3 || c != seq[y + z]) {
+				//*count+=qual[y+z];
 				ksprintf(str, "%d", u);
 				kputc("ACGTN"[c], str);
 				++nm;
 				u = 0;
-			} else ++u;
+			}
+			else ++u;
 		}
 	}
 	ksprintf(str, "%d", u);
@@ -291,31 +299,36 @@ void bwa_correct_trimmed(bwa_seq_t *s)
 {
 	if (s->len == s->full_len) return;
 	if (s->strand == 0) { // forward
-		if (s->cigar && __cigar_op(s->cigar[s->n_cigar-1]) == FROM_S) { // the last is S
-			s->cigar[s->n_cigar-1] += s->full_len - s->len;
-		} else {
+		if (s->cigar && __cigar_op(s->cigar[s->n_cigar - 1]) == FROM_S) { // the last is S
+			s->cigar[s->n_cigar - 1] += s->full_len - s->len;
+		}
+		else {
 			if (s->cigar == 0) {
 				s->n_cigar = 2;
 				s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
 				s->cigar[0] = __cigar_create(0, s->len);
-			} else {
+			}
+			else {
 				++s->n_cigar;
 				s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
 			}
-			s->cigar[s->n_cigar-1] = __cigar_create(3, (s->full_len - s->len));
+			s->cigar[s->n_cigar - 1] = __cigar_create(3, (s->full_len - s->len));
 		}
-	} else { // reverse
+	}
+	else { // reverse
 		if (s->cigar && __cigar_op(s->cigar[0]) == FROM_S) { // the first is S
 			s->cigar[0] += s->full_len - s->len;
-		} else {
+		}
+		else {
 			if (s->cigar == 0) {
 				s->n_cigar = 2;
 				s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
 				s->cigar[1] = __cigar_create(0, s->len);
-			} else {
+			}
+			else {
 				++s->n_cigar;
 				s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
-				memmove(s->cigar + 1, s->cigar, (s->n_cigar-1) * sizeof(bwa_cigar_t));
+				memmove(s->cigar + 1, s->cigar, (s->n_cigar - 1) * sizeof(bwa_cigar_t));
 			}
 			s->cigar[0] = __cigar_create(3, (s->full_len - s->len));
 		}
@@ -330,30 +343,32 @@ ubyte_t * bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ub
 	kstring_t *str;
 
 	if (ntbns) { // in color space
-		ntpac = (ubyte_t*)calloc(ntbns->l_pac/4+1, 1);
+		ntpac = (ubyte_t*)calloc(ntbns->l_pac / 4 + 1, 1);
 		rewind(ntbns->fp_pac);
-		fread(ntpac, 1, ntbns->l_pac/4 + 1, ntbns->fp_pac);
+		fread(ntpac, 1, ntbns->l_pac / 4 + 1, ntbns->fp_pac);
 	}
 
 	if (!_pacseq) {
-		pacseq = (ubyte_t*)calloc(bns->l_pac/4+1, 1);
+		pacseq = (ubyte_t*)calloc(bns->l_pac / 4 + 1, 1);
 		rewind(bns->fp_pac);
-		fread(pacseq, 1, bns->l_pac/4+1, bns->fp_pac);
-	} else pacseq = _pacseq;
+		fread(pacseq, 1, bns->l_pac / 4 + 1, bns->fp_pac);
+	}
+	else pacseq = _pacseq;
 	for (i = 0; i != n_seqs; ++i) {
 		bwa_seq_t *s = seqs + i;
+		if (s->filtered) continue;
 		seq_reverse(s->len, s->seq, 0); // IMPORTANT: s->seq is reversed here!!!
 		for (j = 0; j < s->n_multi; ++j) {
 			bwt_multi1_t *q = s->multi + j;
 			int n_cigar;
 			if (q->gap == 0) continue;
-			q->cigar = refine_gapped_core(bns->l_pac, pacseq, s->len, q->strand? s->rseq : s->seq, &q->pos,
-										  (q->strand? 1 : -1) * q->gap, &n_cigar, 1);
+			q->cigar = refine_gapped_core(bns->l_pac, pacseq, s->len, q->strand ? s->rseq : s->seq, &q->pos,
+				(q->strand ? 1 : -1) * q->gap, &n_cigar, 1);
 			q->n_cigar = n_cigar;
 		}
 		if (s->type == BWA_TYPE_NO_MATCH || s->type == BWA_TYPE_MATESW || s->n_gapo == 0) continue;
-		s->cigar = refine_gapped_core(bns->l_pac, pacseq, s->len, s->strand? s->rseq : s->seq, &s->pos,
-									  (s->strand? 1 : -1) * (s->n_gapo + s->n_gape), &s->n_cigar, 1);
+		s->cigar = refine_gapped_core(bns->l_pac, pacseq, s->len, s->strand ? s->rseq : s->seq, &s->pos,
+			(s->strand ? 1 : -1) * (s->n_gapo + s->n_gape), &s->n_cigar, 1);
 	}
 
 	if (ntbns) { // in color space
@@ -365,14 +380,14 @@ ubyte_t * bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ub
 				int n_cigar;
 				if (q->gap == 0) continue;
 				free(q->cigar);
-				q->cigar = refine_gapped_core(bns->l_pac, ntpac, s->len, q->strand? s->rseq : s->seq, &q->pos,
-											  (q->strand? 1 : -1) * q->gap, &n_cigar, 0);
+				q->cigar = refine_gapped_core(bns->l_pac, ntpac, s->len, q->strand ? s->rseq : s->seq, &q->pos,
+					(q->strand ? 1 : -1) * q->gap, &n_cigar, 0);
 				q->n_cigar = n_cigar;
 			}
 			if (s->type != BWA_TYPE_NO_MATCH && s->cigar) { // update cigar again
 				free(s->cigar);
-				s->cigar = refine_gapped_core(bns->l_pac, ntpac, s->len, s->strand? s->rseq : s->seq, &s->pos,
-											  (s->strand? 1 : -1) * (s->n_gapo + s->n_gape), &s->n_cigar, 0);
+				s->cigar = refine_gapped_core(bns->l_pac, ntpac, s->len, s->strand ? s->rseq : s->seq, &s->pos,
+					(s->strand ? 1 : -1) * (s->n_gapo + s->n_gape), &s->n_cigar, 0);
 			}
 		}
 	}
@@ -383,10 +398,10 @@ ubyte_t * bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ub
 		bwa_seq_t *s = seqs + i;
 		if (s->type != BWA_TYPE_NO_MATCH) {
 			int nm;
-			char* tmp_qual=strdup(s->qual);
-			if( s->strand)  seq_reverse(s->len, tmp_qual, 0);
-			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand? s->rseq : s->seq, (ubyte_t*)tmp_qual, &(s->count),
-								bns->l_pac, ntbns? ntpac : pacseq, str, &nm);
+			char* tmp_qual = strdup(s->qual);
+			if (s->strand)  seq_reverse(s->len, tmp_qual, 0);
+			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand ? s->rseq : s->seq, (ubyte_t*)tmp_qual,// &(s->count),
+				bns->l_pac, ntbns ? ntpac : pacseq, str, &nm);
 			s->nm = nm;
 			free(tmp_qual);
 		}
@@ -412,7 +427,8 @@ int64_t pos_end(const bwa_seq_t *p)
 			if (op == 0 || op == 2) x += __cigar_len(p->cigar[j]);
 		}
 		return x;
-	} else return p->pos + p->len;
+	}
+	else return p->pos + p->len;
 }
 
 int64_t pos_end_multi(const bwt_multi1_t *p, int len) // analogy to pos_end()
@@ -425,13 +441,14 @@ int64_t pos_end_multi(const bwt_multi1_t *p, int len) // analogy to pos_end()
 			if (op == 0 || op == 2) x += __cigar_len(p->cigar[j]);
 		}
 		return x;
-	} else return p->pos + len;
+	}
+	else return p->pos + len;
 }
 
 static int64_t pos_5(const bwa_seq_t *p)
 {
 	if (p->type != BWA_TYPE_NO_MATCH)
-		return p->strand? pos_end(p) : p->pos;
+		return p->strand ? pos_end(p) : p->pos;
 	return -1;
 }
 
@@ -448,7 +465,8 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 			p->strand = mate->strand;
 			flag |= SAM_FSU;
 			j = 1;
-		} else j = pos_end(p) - p->pos; // j is the length of the reference in the alignment
+		}
+		else j = pos_end(p) - p->pos; // j is the length of the reference in the alignment
 
 		// get seqid
 		nn = bns_coor_pac2real(bns, p->pos, j, &seqid);
@@ -460,7 +478,8 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 		if (mate) {
 			if (mate->type != BWA_TYPE_NO_MATCH) {
 				if (mate->strand) flag |= SAM_FMR;
-			} else flag |= SAM_FMU;
+			}
+			else flag |= SAM_FMU;
 		}
 		printf("%s\t%d\t%s\t", p->name, flag, bns->anns[seqid].name);
 		printf("%d\t%d\t", (int)(p->pos - bns->anns[seqid].offset + 1), p->mapQ);
@@ -469,21 +488,23 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 		if (p->cigar) {
 			for (j = 0; j != p->n_cigar; ++j)
 				printf("%d%c", __cigar_len(p->cigar[j]), "MIDS"[__cigar_op(p->cigar[j])]);
-		} else if (p->type == BWA_TYPE_NO_MATCH) printf("*");
+		}
+		else if (p->type == BWA_TYPE_NO_MATCH) printf("*");
 		else printf("%dM", p->len);
 
 		// print mate coordinate
 		if (mate && mate->type != BWA_TYPE_NO_MATCH) {
 			int m_seqid, m_is_N;
 			long long isize;
-			am = mate->seQ < p->seQ? mate->seQ : p->seQ; // smaller single-end mapping quality
+			am = mate->seQ < p->seQ ? mate->seQ : p->seQ; // smaller single-end mapping quality
 			// redundant calculation here, but should not matter too much
 			m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
-			printf("\t%s\t", (seqid == m_seqid)? "=" : bns->anns[m_seqid].name);
-			isize = (seqid == m_seqid)? pos_5(mate) - pos_5(p) : 0;
+			printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
+			isize = (seqid == m_seqid) ? pos_5(mate) - pos_5(p) : 0;
 			if (p->type == BWA_TYPE_NO_MATCH) isize = 0;
 			printf("%d\t%lld\t", (int)(mate->pos - bns->anns[m_seqid].offset + 1), isize);
-		} else if (mate) printf("\t=\t%d\t0\t", (int)(p->pos - bns->anns[seqid].offset + 1));
+		}
+		else if (mate) printf("\t=\t%d\t0\t", (int)(p->pos - bns->anns[seqid].offset + 1));
 		else printf("\t*\t0\t0\t");
 
 		// print sequence and quality
@@ -498,7 +519,8 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 			}
 			if (p->strand) seq_reverse(p->len, p->qual, 0); // reverse quality
 			printf("%s", p->qual);
-		} else printf("*");
+		}
+		else printf("*");
 
 		if (bwa_rg_id) printf("\tRG:Z:%s", bwa_rg_id);
 		if (p->bc[0]) printf("\tBC:Z:%s", p->bc);
@@ -509,14 +531,14 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 			XT = "NURM"[p->type];
 			if (nn > 10) XT = 'N';
 			// print tags
-			printf("\tXT:A:%c\t%s:i:%d", XT, (mode & BWA_MODE_COMPREAD)? "NM" : "CM", p->nm);
+			printf("\tXT:A:%c\t%s:i:%d", XT, (mode & BWA_MODE_COMPREAD) ? "NM" : "CM", p->nm);
 			if (nn) printf("\tXN:i:%d", nn);
 			if (mate) printf("\tSM:i:%d\tAM:i:%d", p->seQ, am);
 			if (p->type != BWA_TYPE_MATESW) { // X0 and X1 are not available for this type of alignment
 				printf("\tX0:i:%d", p->c1);
 				if (p->c1 <= max_top2) printf("\tX1:i:%d", p->c2);
 			}
-			printf("\tXM:i:%d\tXO:i:%d\tXG:i:%d", p->n_mm, p->n_gapo, p->n_gapo+p->n_gape);
+			printf("\tXM:i:%d\tXO:i:%d\tXG:i:%d", p->n_mm, p->n_gapo, p->n_gapo + p->n_gape);
 			if (p->md) printf("\tMD:Z:%s", p->md);
 			// print multiple hits
 			if (p->n_multi) {
@@ -526,19 +548,21 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 					int k;
 					j = pos_end_multi(q, p->len) - q->pos;
 					nn = bns_coor_pac2real(bns, q->pos, j, &seqid);
-					printf("%s,%c%d,", bns->anns[seqid].name, q->strand? '-' : '+',
-						   (int)(q->pos - bns->anns[seqid].offset + 1));
+					printf("%s,%c%d,", bns->anns[seqid].name, q->strand ? '-' : '+',
+						(int)(q->pos - bns->anns[seqid].offset + 1));
 					if (q->cigar) {
 						for (k = 0; k < q->n_cigar; ++k)
 							printf("%d%c", __cigar_len(q->cigar[k]), "MIDS"[__cigar_op(q->cigar[k])]);
-					} else printf("%dM", p->len);
+					}
+					else printf("%dM", p->len);
 					printf(",%d;", q->gap + q->mm);
 				}
 			}
 		}
 		putchar('\n');
-	} else { // this read has no match
-		ubyte_t *s = p->strand? p->rseq : p->seq;
+	}
+	else { // this read has no match
+		ubyte_t *s = p->strand ? p->rseq : p->seq;
 		int flag = p->extra_flag | SAM_FSU;
 		if (mate && mate->type == BWA_TYPE_NO_MATCH) flag |= SAM_FMU;
 		printf("%s\t%d\t*\t0\t0\t*\t*\t0\t0\t", p->name, flag);
@@ -547,7 +571,8 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 		if (p->qual) {
 			if (p->strand) seq_reverse(p->len, p->qual, 0); // reverse quality
 			printf("%s", p->qual);
-		} else printf("*");
+		}
+		else printf("*");
 		if (bwa_rg_id) printf("\tRG:Z:%s", bwa_rg_id);
 		if (p->bc[0]) printf("\tBC:Z:%s", p->bc);
 		if (p->clip_len < p->full_len) printf("\tXC:i:%d", p->clip_len);
@@ -574,7 +599,7 @@ void bwa_print_sam_SQ(const bntseq_t *bns)
 	if (bwa_rg_line) printf("%s\n", bwa_rg_line);
 }
 
-void bwase_initialize() 
+void bwase_initialize()
 {
 	int i;
 	for (i = 1; i != 256; ++i) g_log_n[i] = (int)(4.343 * log(i) + 0.5);
@@ -590,7 +615,8 @@ char *bwa_escape(char *s)
 			else if (*p == 'n') *q++ = '\n';
 			else if (*p == 'r') *q++ = '\r';
 			else if (*p == '\\') *q++ = '\\';
-		} else *q++ = *p;
+		}
+		else *q++ = *p;
 	}
 	*q = '\0';
 	return s;
@@ -706,7 +732,7 @@ int bwa_sai2sam_se(int argc, char *argv[])
 		fprintf(stderr, "Usage: bwa samse [-n max_occ] [-f out.sam] [-r RG_line] <prefix> <in.sai> <in.fq>\n");
 		return 1;
 	}
-	bwa_sai2sam_se_core(argv[optind], argv[optind+1], argv[optind+2], n_occ);
+	bwa_sai2sam_se_core(argv[optind], argv[optind + 1], argv[optind + 2], n_occ);
 	free(bwa_rg_line); free(bwa_rg_id);
 	return 0;
 }
