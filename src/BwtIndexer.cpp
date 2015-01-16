@@ -288,7 +288,6 @@ bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)co
 		return true;
 	}*/
 	//fprintf(stderr, "enter IsReadFiltered\n");
-	if (S == 0) return true;
 	if (IsReadHighQ(Q, len)) //pass error
 	{
 		if (IsReadInHash(S, len))

@@ -32,7 +32,7 @@ typedef struct {
 } bwt_width_t;
 
 typedef struct {
-	uint32_t n_mm:8, n_gapo:8, n_gape:8, a:1;
+	uint32_t n_mm : 8, n_gapo : 8, n_gape : 8, a : 1;
 	bwtint_t k, l;
 	int score;
 } bwt_aln1_t;
@@ -50,7 +50,7 @@ typedef uint16_t bwa_cigar_t;
 
 typedef struct {
 	uint32_t pos;
-	uint32_t n_cigar:15, gap:8, mm:8, strand:1;
+	uint32_t n_cigar : 15, gap : 8, mm : 8, strand : 1;
 	bwa_cigar_t *cigar;
 } bwt_multi1_t;
 
@@ -58,8 +58,8 @@ typedef struct {
 	char *name;
 	ubyte_t *seq, *rseq, *qual;
 	//char* original_seq;
-	uint32_t len:20, strand:1, type:2, dummy:1, extra_flag:8;
-	uint32_t n_mm:8, n_gapo:8, n_gape:8, mapQ:8;
+	uint32_t len : 20, strand : 1, type : 2, filtered : 1, extra_flag : 8;//change dummy bit into filtered bit
+	uint32_t n_mm : 8, n_gapo : 8, n_gape : 8, mapQ : 8;
 	int score;
 	int clip_len;
 	// alignments in SA coordinates
@@ -70,7 +70,7 @@ typedef struct {
 	bwt_multi1_t *multi;
 	// alignment information
 	bwtint_t sa, pos;
-	uint64_t c1:28, c2:28, seQ:8; // number of top1 and top2 hits; single-end mapQ
+	uint64_t c1 : 28, c2 : 28, seQ : 8; // number of top1 and top2 hits; single-end mapQ
 	int n_cigar;
 	bwa_cigar_t *cigar;
 	// for multi-threading only
@@ -78,9 +78,9 @@ typedef struct {
 	// barcode
 	char bc[16]; // null terminated; up to 15 bases
 	// NM and MD tags
-	uint32_t full_len:20, nm:12;
+	uint32_t full_len : 20, nm : 12;
 	char *md;
-	int  count;
+	//int  count;
 } bwa_seq_t;
 
 #define BWA_MODE_GAPE       0x01
@@ -139,9 +139,12 @@ extern "C" {
 
 	bwa_seqio_t *bwa_seq_open(const char *fn);
 	bwa_seqio_t *bwa_bam_open(const char *fn, int which);
+	bwa_seq_t *bwa_read_bam(bwa_seqio_t *bs, int n_needed, int *n, int is_comp, int trim_qual);
+	int bwa_trim_read(int trim_qual, bwa_seq_t *p);
 	void bwa_seq_close(bwa_seqio_t *bs);
 	void seq_reverse(int len, ubyte_t *seq, int is_comp);
 	bwa_seq_t *bwa_read_seq(bwa_seqio_t *seq, int n_needed, int *n, int mode, int trim_qual, double frac);
+	bwa_seq_t *bwa_read_seq2(bwa_seqio_t *seq, int n_needed, int *n, int mode, int trim_qual, bwa_seq_t* first_mate);
 	void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs);
 
 	int bwa_cal_maxdiff(int l, double err, double thres);
