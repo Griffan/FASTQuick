@@ -1842,7 +1842,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpCycleDist(statPrefix);
 	getInsertSizeDist(statPrefix);
 	getSexChromInfo(statPrefix);
-	outputPileup(statPrefix,opt);
+	//outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
 	getGenoLikelihood(statPrefix);
 	return 0;
