@@ -2077,12 +2077,12 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	for (size_t i = 0; i != FSCVec.size(); ++i)
 	{
 		fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
-			<< FSCVec[i].NumRead << "|"
-			<< FSCVec[i].NumBase / FSCVec[i].NumRead << endl;
+			<< FSCVec[i].NumRead << "|";
+			fout<< ((FSCVec[i].NumRead == 0)?0:(FSCVec[i].NumBase / FSCVec[i].NumRead)) << endl;
 		total_base += FSCVec[i].NumBase;
 		total_reads += FSCVec[i].NumRead;
 	}
-	fout << "All" << "|-|" << total_reads << "|" << total_base / total_reads
+	fout << "All" << "|-|" << total_reads << "|";fout << ((total_reads==0)?0:total_base / total_reads)
 		<< endl;
 	fout << endl;
 	fout << "Expected Read Depth : " << (double)total_base / ref_genome_size
@@ -2090,7 +2090,7 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	/*auto AvgDepth =
 		[&]()->double
 	{	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp += i*DepthDist[i]; return double(tmp) / total_region_size; };*/
-	fout << "Estimated AvgDepth : " << NumBaseMapped/(double)NumPositionCovered << endl;
+	fout << "Estimated AvgDepth : "; fout << ((NumPositionCovered==0)?0:NumBaseMapped / (double)NumPositionCovered) << endl;
 	fout << "Estimated percentage of accessible genome covered : "
 		<< (1 - (double)DepthDist[0] / total_region_size) * 100 << "/100"
 		<< endl;
@@ -2118,9 +2118,9 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
 	//output for fraction figure
 	auto Q20BaseFraction = [&]()->double
-	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / NumBaseMapped; };
+	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return NumBaseMapped==0?0:double(tmp) / NumBaseMapped; };
 	auto Q30BaseFraction = [&]()->double
-	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / NumBaseMapped; };
+	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; };
 	double DP1fraction = NumPositionCovered / (double)total_region_size;
 	double DP2fraction = NumPositionCovered2 / (double)total_region_size;
 	double DP5fraction = NumPositionCovered5 / (double)total_region_size;

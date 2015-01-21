@@ -120,8 +120,8 @@ class PopulationIdentifier
 {
 public:
 
-#define PCtype float
-#define PHRED(x)	pow(10,x/(-10))
+#define PCtype double
+//#define PHRED(x)	pow(10,x/*/(-10)*/)
 	class fullLLKFunc : public VectorFunc {
 	public:
 
@@ -147,7 +147,7 @@ public:
 				GF0 = (1 - ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF1 = 2 * (ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF2 = (ptr->AFs[i])*(ptr->AFs[i]);
-				sumLLK += log(PHRED(ptr->GL[i][0]) * GF0 + PHRED(ptr->GL[i][1]) * GF1 + PHRED(ptr->GL[i][2]) * GF2);
+				sumLLK += log(pow(10,ptr->GL[i][0]) * GF0 + pow(10,ptr->GL[i][1]) * GF1 + pow(10,ptr->GL[i][2]) * GF2);
 				//std::cerr << "GL:" << ptr->GL[i][0] << "\t" << ptr->GL[i][1] << "\t" << ptr->GL[i][2] << std::endl;
 			}
 			//std::cerr << "sumLLK:" << sumLLK << std::endl;
@@ -155,15 +155,15 @@ public:
 		}
 		fullLLKFunc(PopulationIdentifier* inPtr){
 			ptr = inPtr;
-			llk1 = llk0 = (0 - computeMixLLKs(static_cast<double>(ptr->PC[0][0]), static_cast<double>(ptr->PC[0][1])));
+			llk1 = llk0 = (0 - computeMixLLKs(ptr->PC[0][0], ptr->PC[0][1]));
 		}
 
 		virtual double Evaluate(Vector& v) {
 			if (v.Length() != 2)
-				error("fullMixLLKFunc(): Input vector must be length of 3");
+				error("fullMixLLKFunc(): Input vector must be length of 2");
 
-			double tmpPC1 = invLogit(v[0]);
-			double tmpPC2 = invLogit(v[1]);
+			double tmpPC1 = v[0];// invLogit(v[0]);
+			double tmpPC2 = v[1];// invLogit(v[1]);
 
 			double smLLK = 0 - computeMixLLKs(tmpPC1, tmpPC2);
 
@@ -201,9 +201,10 @@ public:
 	int RunSVD();
 	/*Initialize from existed UD*/
 	/*This assumes the markers are the same as the selected vcf*/
-	PopulationIdentifier(const std::string& UD, const std::string &PC, const std::string & GL);
+	PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & MeanPath, std::string & GLpath);
 	int ReadMatrixUD(const std::string &path);
 	int ReadMatrixPC(const std::string &path);
+	int ReadVectorMean(const std::string &path);
 	/*Intersect marker sites*/
 	int ReadMatrixGL(const std::string& path);
 	int CheckMarkerSetConsistency();

@@ -45,6 +45,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>D:\cygwin64\usr\include;E:\CPlusPlusLibrary\LibraryZ\zlib-master</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;HAVE_PTHREAD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -284,6 +285,7 @@
     <ClInclude Include="libbwa\bwtaln.h" />
     <ClInclude Include="libbwa\bwtgap.h" />
     <ClInclude Include="libbwa\khash.h" />
+    <ClInclude Include="libbwa\kseq.h" />
     <ClInclude Include="libbwa\ksort.h" />
     <ClInclude Include="libbwa\kstring.h" />
     <ClInclude Include="libbwa\kvec.h" />
