@@ -2,6 +2,8 @@
 #include <fstream>
 #include <algorithm>
 #include <armadillo>
+#include "../libmpu/Error.h"
+#include <chrono>
 using namespace arma;
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
@@ -165,10 +167,12 @@ int PopulationIdentifier::RunSVD()
 	return 0;
 }
 
-PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & GLpath)
+PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & MeanPath, std::string & GLpath)
 {
+	notice("Initializing Population Identifier from existed UD PC matrix\n");
 	NumMarker = ReadMatrixUD(UDpath);
 	NumIndividual = ReadMatrixPC(PCpath);
+	ReadVectorMean(MeanPath);
 	ReadMatrixGL(GLpath);
 	FormatMarkerIntersection();
 	fn = PopulationIdentifier::fullLLKFunc(this);
@@ -213,6 +217,26 @@ int PopulationIdentifier::ReadMatrixPC(const std::string &path)
 	fin.close();
 	return PC.size();
 }
+int PopulationIdentifier::ReadVectorMean(const std::string &path)
+{
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin, line))
+	{
+		std::stringstream ss(line);
+		PCtype dummy;
+		//std::string chr;
+		//int pos;
+		//ss >> chr >> pos;
+		//MarkerIndex[chr][pos] = index;
+		ss >> dummy;
+		means.push_back(dummy);
+	}
+	fin.close();
+	return PC.size();
+}
 int PopulationIdentifier::CheckMarkerSetConsistency()
 {
 	return UD.size() == GL.size();
@@ -221,8 +245,8 @@ int PopulationIdentifier::FormatMarkerIntersection()
 {
 	if (CheckMarkerSetConsistency())
 	{
-		means = std::vector<PCtype>(NumMarker, 0.5);
-		AFs = std::vector<double>(NumMarker, 0);
+		//means = std::vector<PCtype>(NumMarker, 0.5);
+		AFs = std::vector<double>(NumMarker, 0.5);
 	}
 	else//implement intersection behavior if needed
 	{
@@ -256,15 +280,16 @@ int PopulationIdentifier::OptimizeLLK()
 	//fullLLKFunc myFunc(UD,PC, GL);
 	AmoebaMinimizer myMinimizer;
 	Vector startingPoint(2);
-	startingPoint[0] = PC[0][0];  // start with fMix = 0.01
-	startingPoint[1] = PC[0][1];       // pRefHet = 0.5
+	int idx = rand()%PC.size();
+	startingPoint[0] = PC[idx][0];  // start with fMix = 0.01
+	startingPoint[1] = PC[idx][1];       // pRefHet = 0.5
 
 	myMinimizer.func = &fn;
 	myMinimizer.Reset(2);
 	myMinimizer.point = startingPoint;
-	myMinimizer.Minimize(1e-3);
-	double optimalPC1 = fullLLKFunc::invLogit(myMinimizer.point[0]);
-	double optimalPC2 = fullLLKFunc::invLogit(myMinimizer.point[1]);
+	myMinimizer.Minimize(1e-6);
+	double optimalPC1 = myMinimizer.point[0];// fullLLKFunc::invLogit(myMinimizer.point[0]);
+	double optimalPC2 = myMinimizer.point[1];// fullLLKFunc::invLogit(myMinimizer.point[1]);
 	std::cout << "PCs in OptimizaLLK():" << std::endl;
 	std::cout << "PC1:" << optimalPC1 << "\tPC2:" << optimalPC2 << std::endl;
 	return 0;

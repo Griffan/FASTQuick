@@ -17,6 +17,7 @@
 #include "../misc/params.h"
 #include "../libmpu/mpuTool.h"
 #include "../libmpu/Error.h"
+#include <gperftools/profiler.h>
 using namespace std;
 
 #define USE_BWT 1
@@ -309,8 +310,8 @@ int runIndex(int argc, char ** argv)
 }
 int runAlign(int argc, char ** argv)
 {
-
-	double t_real;
+	//ProfilerStart("FastPopCon.prof");
+	double t_real,t_tmp(0);
 	t_real = realtime();
 	int /*c,*/ opte = -1;
 	gap_opt_t *opt;
@@ -449,8 +450,10 @@ int runAlign(int argc, char ** argv)
 	}
 	else //load ref index
 	{
-		notice("Index file exists, loading...\n");
+		t_tmp = realtime();
 		Indexer.LoadIndex(RefPath);
+		notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
+		t_tmp = realtime();
 		if (FaList != "Empty")
 		{
 			BwtMapper Mapper(Indexer, FaList, Prefix, RefPath, popt, opt);
@@ -459,11 +462,13 @@ int runAlign(int argc, char ** argv)
 		{
 			BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, RefPath, popt, opt);
 		}
+		notice("[main]Mapping...%f sec\n", realtime() - t_tmp);
 	}
 	notice("Version: %s\n", PACKAGE_VERSION);
-	notice("Real time: %.3f sec; CPU: %.3f sec\n",realtime() - t_real, cputime());
+	notice("[main]Real time: %.3f sec; CPU: %.3f sec\n",realtime() - t_real, cputime());
 	gap_free_opt(opt);
 	free(popt);
+	//ProfilerStop();
 	return 0;
 }
 int runPop(int argc, char ** argv)
