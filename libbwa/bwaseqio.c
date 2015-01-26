@@ -311,6 +311,45 @@ bwa_seq_t *bwa_read_seq(bwa_seqio_t *bs, int n_needed, int *n, int mode, int tri
 //	}
 //	return seqs;
 //}
+void bwa_init_read_seq(int n_seqs, bwa_seq_t * seqs, const gap_opt_t * opt)
+{
+	bwa_seq_t* p;
+	int i = 0;
+	for (i = 0; i != n_seqs; ++i)
+	{
+		p = &seqs[i];
+		p->name =(char*) calloc(opt->read_len * 2,1);
+		p->seq = (ubyte_t*)calloc(opt->read_len, 1);
+		p->rseq = (ubyte_t*)calloc(opt->read_len, 1);
+		p->qual = (ubyte_t*)calloc(opt->read_len, 1);
+		p->len = 0;
+		p->strand = 0;
+		p->type = 0;
+		p->filtered = 0;
+		p->extra_flag = 0;
+		p->n_mm = 0;
+		p->n_gape = 0;
+		p->n_gapo = 0;
+		p->mapQ = 0;
+		p->score = 0;
+		p->clip_len = 0;
+		p->n_aln = 0;
+		p->aln = 0;
+		p->n_multi = 0;
+		p->multi = 0;
+		p->sa = 0;
+		p->pos = 0;
+		p->c1 = 0;
+		p->c2 = 0;
+		p->seQ = 0;
+		p->n_cigar = 0;
+		p->cigar = 0;
+		p->tid = -1;
+		p->full_len = 0;
+		p->nm = 0;
+		p->md = 0;
+	}
+}
 
 void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs)
 {
@@ -320,8 +359,11 @@ void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs)
 		for (j = 0; j < p->n_multi; ++j)
 			if (p->multi[j].cigar) free(p->multi[j].cigar);
 		free(p->name);
-		free(p->seq); free(p->rseq); free(p->qual); free(p->aln); free(p->md); free(p->multi);
+		free(p->seq); free(p->qual); 
+		//if (p->rseq&&p->filtered) { fprintf(stderr, "%s\n%s\n%x\n%s\nstrange thing happend!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (char*)p->seq,(char*)p->qual, p->rseq, p->rseq); }
+		free(p->rseq);
+		free(p->aln); free(p->md); free(p->multi);
 		free(p->cigar);
 	}
-	free(seqs);
+	//free(seqs);
 }
