@@ -780,7 +780,7 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 			p[j] = seqs[j] + i;
 			p[j]->n_multi = 0;
 			p[j]->extra_flag |= SAM_FPD | (j == 0 ? SAM_FR1 : SAM_FR2);
-			if (p[j]->filtered) continue;
+			if ((seqs[0]+i)->filtered&&(seqs[1]+i)->filtered) continue;
 			//read(&n_aln, 4, 1, fp_sa[j]);// read in total number of aln
 			n_aln = p[j]->n_aln;
 			if (n_aln > kv_max(d->aln[j]))
@@ -825,7 +825,7 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 		for (j = 0; j < 2; ++j)
 		{
 			p[j] = seqs[j] + i;
-			if (p[j]->filtered) continue;
+			if ((seqs[0] + i)->filtered && (seqs[1] + i)->filtered) continue;
 			kv_copy(bwt_aln1_t, d->aln[j], buf[j][i].aln); //copy aln back to d
 		}
 		if ((p[0]->type == BWA_TYPE_UNIQUE || p[0]->type == BWA_TYPE_REPEAT)
@@ -1683,7 +1683,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 				FSC.NumBase += p[0]->full_len;
 				FSC.NumBase += p[1]->full_len;
-				//if (p[0]->filtered || p[1]->filtered) continue;
+				if (p[0]->filtered || p[1]->filtered) continue;
 				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
 				if (p[0]->bc[0] || p[1]->bc[0])
 				{
@@ -1710,7 +1710,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 				FSC.NumBase += p[0]->full_len;
 				FSC.NumBase += p[1]->full_len;
-				//if (p[0]->filtered || p[1]->filtered) continue;
+				if (p[0]->filtered || p[1]->filtered) continue;
 				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
 				if (p[0]->bc[0] || p[1]->bc[0])
 				{
@@ -1991,7 +1991,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 					FSC.NumBase += p[0]->full_len;
 					FSC.NumBase += p[1]->full_len;
-					//if (p[0]->filtered || p[1]->filtered) continue;
+					if (p[0]->filtered || p[1]->filtered) continue;
 					if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
 					if (p[0]->bc[0] || p[1]->bc[0])
 					{
@@ -2018,7 +2018,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 					FSC.NumBase += p[0]->full_len;
 					FSC.NumBase += p[1]->full_len;
-					//if (p[0]->filtered || p[1]->filtered) continue;
+					if (p[0]->filtered || p[1]->filtered) continue;
 					if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) && (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
 					if (p[0]->bc[0] || p[1]->bc[0])
 					{
