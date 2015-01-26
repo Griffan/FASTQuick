@@ -1844,7 +1844,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getSexChromInfo(statPrefix);
 	//outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
-	getGenoLikelihood(statPrefix);
+	//getGenoLikelihood(statPrefix);
 	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
@@ -1888,11 +1888,13 @@ int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
 	}
 	fout.close();
 	char cmdline[2048];
-	sprintf(cmdline, "bgzip -f %s.Pileup", outputPath.c_str());
+	sprintf(cmdline, "bgzip -f %s.Pileup&", outputPath.c_str());
+	//fprintf(stderr, "[debug] before hanging\n%s\n",cmdline);
 	if (system(cmdline) != 0)
 	{
 		warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install bgzip!\n", cmdline);
 	}
+	//fprintf(stderr, "[debug] after hanging\n");
 	sprintf(cmdline, "tabix  -s 1 -b 2 -e 2 %s.Pileup.gz", outputPath.c_str());
 	if (system(cmdline) != 0)
 	{

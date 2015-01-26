@@ -13,7 +13,77 @@
 #include  <unordered_map>
 #include <vector>
 #include <fstream>
-
+//#define SEQ_INIT_Len 128
+//class FPC_seq_t{
+//public:
+//	char *name;
+//	ubyte_t *seq, *rseq, *qual;
+//	//char* original_seq;
+//	uint32_t len : 20, strand : 1, type : 2, filtered : 1, extra_flag : 8;//change dummy bit into filtered bit
+//	uint32_t n_mm : 8, n_gapo : 8, n_gape : 8, mapQ : 8;
+//	int score;
+//	int clip_len;
+//	// alignments in SA coordinates
+//	int n_aln;
+//	bwt_aln1_t *aln;
+//	// multiple hits
+//	int n_multi;
+//	bwt_multi1_t *multi;
+//	// alignment information
+//	bwtint_t sa, pos;
+//	uint64_t c1 : 28, c2 : 28, seQ : 8; // number of top1 and top2 hits; single-end mapQ
+//	int n_cigar;
+//	bwa_cigar_t *cigar;
+//	// for multi-threading only
+//	int tid;
+//	// barcode
+//	char bc[16]; // null terminated; up to 15 bases
+//	// NM and MD tags
+//	uint32_t full_len : 20, nm : 12;
+//	char *md;
+//	//int  count;
+//
+//	FPC_seq_t()
+//	{
+//		name = new char[SEQ_INIT_Len * 2];
+//		seq = new ubyte_t[SEQ_INIT_Len];
+//		qual = new ubyte_t[SEQ_INIT_Len];
+//		//rseq = new ubyte_t[SEQ_INIT_Len];
+//		len = 0;
+//		strand = 0;
+//		type = 0;
+//		filtered = 0;
+//		extra_flag = 0;
+//		n_mm = 0;
+//		n_gape = 0;
+//		n_gapo = 0;
+//		mapQ = 0;
+//		score = 0;
+//		clip_len = 0;
+//		n_aln = 0;
+//		aln = 0;
+//		n_multi = 0;
+//		multi = 0;
+//		sa = 0;
+//		pos = 0;
+//		c1 = 0;
+//		c2 = 0;
+//		seQ = 0;
+//		n_cigar = 0;
+//		cigar = 0;
+//		tid = -1;
+//		full_len = 0;
+//		nm = 0;
+//		md = 0;
+//	}
+//	~FPC_seq_t()
+//	{
+//		delete[] name;
+//		delete[] seq;
+//		delete[] qual;
+//		//delete[] rseq;
+//	}
+//};
 //static std::unordered_map<std::string, bool> VariantLongTable;
 class _GCstruct
 {
