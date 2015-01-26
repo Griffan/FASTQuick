@@ -351,19 +351,51 @@ void bwa_init_read_seq(int n_seqs, bwa_seq_t * seqs, const gap_opt_t * opt)
 	}
 }
 
-void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs)
+void bwa_clean_read_seq(int n_seqs, bwa_seq_t *seqs)
 {
 	int i, j;
 	for (i = 0; i != n_seqs; ++i) {
 		bwa_seq_t *p = seqs + i;
 		for (j = 0; j < p->n_multi; ++j)
 			if (p->multi[j].cigar) free(p->multi[j].cigar);
+		//free(p->name);
+		//free(p->seq); free(p->qual);
+		//if (p->rseq&&p->filtered) { fprintf(stderr, "%s\n%s\n%x\n%s\nstrange thing happend!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (char*)p->seq,(char*)p->qual, p->rseq, p->rseq); }
+		//free(p->rseq);
+		if (!p->filtered)
+		{
+			if (p->aln)
+			free(p->aln);
+			p->aln = 0;
+			//fprintf(stderr, "md:%x\n%s\ndelete 3\n",p->md,p->md);
+			if (p->md)
+			free(p->md);
+			p->md = 0;
+			//fprintf(stderr, "delete 4\n");
+			if (p->multi)
+			free(p->multi);
+			p->multi = 0;
+			//fprintf(stderr, "delete 5\n");
+			if (p->cigar)
+			free(p->cigar);
+			p->cigar = 0;
+		}
+	}
+	//free(seqs);
+}
+void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs)
+{
+	int i, j;
+	for (i = 0; i != n_seqs; ++i) {
+		bwa_seq_t *p = seqs + i;
+		/*for (j = 0; j < p->n_multi; ++j)
+			if (p->multi[j].cigar) free(p->multi[j].cigar);*/
 		free(p->name);
 		free(p->seq); free(p->qual); 
 		//if (p->rseq&&p->filtered) { fprintf(stderr, "%s\n%s\n%x\n%s\nstrange thing happend!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (char*)p->seq,(char*)p->qual, p->rseq, p->rseq); }
 		free(p->rseq);
-		free(p->aln); free(p->md); free(p->multi);
-		free(p->cigar);
+		//free(p->aln); free(p->md); free(p->multi);
+		//free(p->cigar);
 	}
 	//free(seqs);
 }
