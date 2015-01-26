@@ -443,8 +443,23 @@ bwa_cigar_t *bwa_sw_core(bwtint_t l_pac, const ubyte_t *pacseq, int len, const u
 	free(ref_seq); free(path);
 	return cigar;
 }
-
-ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, bwa_seq_t *seqs[2], const pe_opt_t *popt, const isize_info_t *ii)
+static int expand_seq(bwa_seq_t* p, bwa_seq_t* q,int mode)
+{
+	int is_comp = mode&BWA_MODE_COMPREAD;
+	//p->rseq = (ubyte_t*)calloc(p->full_len, 1);
+	memcpy(p->rseq, p->seq, p->len);
+	//fprintf(stderr, "I have been here: %d times!\n",i);
+	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
+	seq_reverse(p->len, p->rseq, is_comp);
+	//p->name = strdup(q->name);
+	strncpy(p->name, q->name, strlen(q->name));
+	p->filtered = 0;//change it back to unfiltered because of its mate
+	{ // trim /[12]$
+		int t = strlen(p->name);
+		if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+	}
+}
+ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, bwa_seq_t *seqs[2], const pe_opt_t *popt, const isize_info_t *ii, int mode)
 {
 	ubyte_t *pacseq;
 	int i;
@@ -466,6 +481,22 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 		bwa_seq_t *p[2];
 		p[0] = seqs[0] + i; p[1] = seqs[1] + i;
 		//if (p[0]->filtered || p[1]->filtered) continue;
+		if (p[0]->filtered)
+		{
+			if (p[1]->filtered)
+			{
+				continue;
+			}
+			else
+			{
+				expand_seq(p[0], p[1],mode);
+			}
+		}
+		else if (p[1]->filtered)
+		{
+			expand_seq(p[1], p[0],mode);
+		}
+
 		if ((p[0]->mapQ >= SW_MIN_MAPQ || p[1]->mapQ >= SW_MIN_MAPQ) && (p[0]->extra_flag&SAM_FPP) == 0) { // unpaired and one read has high mapQ
 			int k, n_cigar[2], is_singleton, mapQ = 0, mq_adjust[2];
 			int64_t beg[2], end[2];

@@ -16,7 +16,7 @@
 #include "../libbwa/khash.h"
 #include "../libmpu/Error.h"
 #include <algorithm>
-
+#include <gperftools/profiler.h>
 
 
 using namespace std;
@@ -176,8 +176,7 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
 }
 BwtMapper::BwtMapper()
 {}
-int BwtMapper::bwa_cal_pac_pos(BwtIndexer& BwtIndex, int n_seqs,
-	bwa_seq_t *seqs, int max_mm, float fnr)
+int BwtMapper::bwa_cal_pac_pos(BwtIndexer& BwtIndex, int n_seqs,bwa_seq_t *seqs, int max_mm, float fnr)
 {
 	int i, j;
 	//char str[1024];
@@ -218,64 +217,61 @@ int BwtMapper::bwa_cal_pac_pos(BwtIndexer& BwtIndex, int n_seqs,
 	//bwt_destroy(bwt);
 	return 1;
 }
-static bool Skip(BwtIndexer& BwtIndex, int mode, const char* seq1, const char* qual1, const char* seq2 = 0, const char* qual2 = 0, int len = 0, double frac = 1.)
-{
-	if (drand48() >frac)
-	{
-		//PassFlag[index] = 1;
-		return true;
-	}
-	else
-	{
-		ubyte_t* Seq = new ubyte_t[len];
-		ubyte_t* Qual = new ubyte_t[len];
-		ubyte_t* Seq2 = 0;
-		ubyte_t* Qual2 = 0;
-		for (int i = 0; i != len; ++i)
-			Seq[i] = nst_nt4_table[(int)seq1[i]];
-		if (qual1) { // copy quality
-			if (mode | BWA_MODE_IL13)
-				for (int i = 0; i < len; ++i) Qual[i] = qual1[i] - 31;
-			else
-				for (int i = 0; i < len; ++i) Qual[i] = qual1[i];
-		}
-		if (seq2 != 0 && qual2 != 0)
-		{
-			Seq2 = new ubyte_t[len];
-			Qual2 = new ubyte_t[len];
-			for (int i = 0; i != len; ++i)
-				Seq2[i] = nst_nt4_table[(int)seq2[i]];
-			if (qual2) { // copy quality
-				if (mode | BWA_MODE_IL13)
-					for (int i = 0; i < len; ++i) Qual2[i] = qual2[i] - 31;
-				else
-					for (int i = 0; i < len; ++i) Qual2[i] = qual2[i];
-			}
-		}
-		if (BwtIndex.IsReadFiltered(Seq, Qual, len) && BwtIndex.IsReadFiltered(Seq2, Qual2, len))
-		{
-			delete[] Seq, Qual;
-			if (Seq2 != 0)
-			{
-				delete [] Seq2;
-				delete [] Qual2;
-			}
-			return true;
-		}
-		else
-		{
-			delete [] Seq;
-			delete [] Qual;
-			if (Seq2 != 0)
-			{
-				delete [] Seq2;
-				delete [] Qual2;
-			}
-			return false;
-		}
-	}
-	return false;
-}
+//bool BwtMapper::Skip(BwtIndexer& BwtIndex, int mode, const char* seq1, const char* qual1, const char* seq2 = 0, const char* qual2 = 0, int len = 0, double frac = 1.)
+//{
+//	if (drand48() >frac)
+//	{
+//		//PassFlag[index] = 1;
+//		return true;
+//	}
+//	else
+//	{
+//		ubyte_t* Seq = new ubyte_t[len];
+//		ubyte_t* Qual = new ubyte_t[len];
+//		ubyte_t* Seq2 = 0;
+//		ubyte_t* Qual2 = 0;
+//		for (int i = 0; i != len; ++i)
+//			Seq[i] = nst_nt4_table[(int)seq1[i]];
+//		if (qual1) { // copy quality
+//			if (mode | BWA_MODE_IL13)
+//				for (int i = 0; i < len; ++i) Qual[i] = qual1[i] - 31;
+//			else
+//				for (int i = 0; i < len; ++i) Qual[i] = qual1[i];
+//		}
+//		if (seq2 != 0 && qual2 != 0)
+//		{
+//			Seq2 = new ubyte_t[len];
+//			Qual2 = new ubyte_t[len];
+//			for (int i = 0; i != len; ++i)
+//				Seq2[i] = nst_nt4_table[(int)seq2[i]];
+//			if (qual2) { // copy quality
+//				if (mode | BWA_MODE_IL13)
+//					for (int i = 0; i < len; ++i) Qual2[i] = qual2[i] - 31;
+//				else
+//					for (int i = 0; i < len; ++i) Qual2[i] = qual2[i];
+//			}
+//		}
+//		if (BwtIndex.IsReadFiltered(Seq, Qual, len) && BwtIndex.IsReadFiltered(Seq2, Qual2, len))
+//		{
+//			delete[] Seq, Qual;
+//			if (Seq2 != 0)
+//			{
+//				delete[] Seq2, Qual2;
+//			}
+//			return true;
+//		}
+//		else
+//		{
+//			delete[] Seq, Qual;
+//			if (Seq2 != 0)
+//			{
+//				delete[] Seq2, Qual2;
+//			}
+//			return false;
+//		}
+//	}
+//	return false;
+//}
 typedef struct
 {
 	kvec_t(bwt_aln1_t)
@@ -295,8 +291,10 @@ struct __bwa_seqio_t {
 	kseq_t *ks;
 };
 #define BARCODE_LOW_QUAL 13
+
 static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed)
 {
+	
 	struct drand48_data randBuffer;
 	srand48_r(seed,&randBuffer);
 	bwa_seq_t *seqs, *p;
@@ -310,27 +308,204 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 	}
 	if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
 	n_seqs = 0;
-	seqs = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
+	//seqs = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
+	seqs = new bwa_seq_t[n_needed];
+	//ProfilerStart("FastPopCon.prof");
 	/*while ((l = kseq_read(seq)) >= 0) {*/
 
 	/*if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, 0, 0, seq->seq.l, frac)) continue;*/
+	//while (1)
+	//{
+	//	double rand_num = 0;
+	//	drand48_r(&randBuffer,&rand_num);
+	//	if ( rand_num> frac)
+	//	{
+	//		//notice("before length:%d", seq->seq.l);
+	//		if ((l = kseq_read4_fpc(seq)) < 0) break;
+	//		//notice("after length:%d", seq->seq.l);
+	//		continue;
+	//	}
+	//	if ((l = kseq_read3_fpc(seq)) < 0) break;
+
+	//	if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+	//	p = &seqs[n_seqs++];
+
+	//	if (l_bc) { // then trim barcode
+	//		for (i = 0; i < l_bc; ++i)
+	//			p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
+	//		p->bc[i] = 0;
+	//		for (; i < seq->seq.l; ++i)
+	//			seq->seq.s[i - l_bc] = seq->seq.s[i];
+	//		seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
+	//		if (seq->qual.l) {
+	//			for (i = l_bc; i < seq->qual.l; ++i)
+	//				seq->qual.s[i - l_bc] = seq->qual.s[i];
+	//			seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
+	//		}
+	//		l = seq->seq.l;
+	//	}
+	//	else p->bc[0] = 0;
+	//	p->tid = -1; // no assigned to a thread
+	//	p->qual = 0;
+	//	//p->count=0;
+	//	p->full_len = p->clip_len = p->len = l;
+	//	n_tot += p->full_len;
+	//	p->seq = (ubyte_t*)calloc(p->len, 1);
+	//	for (i = 0; i != p->full_len; ++i)
+	//		p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
+	//	if (seq->qual.l) { // copy quality
+	//		if (is_64)
+	//			for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
+	//		p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
+	//		if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
+	//	}
+
+	//	if (BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
+	//	{
+	//		p->filtered |= 1;
+	//		if (n_seqs == n_needed) break;
+	//		continue;
+	//	}
+
+	//	p->rseq = (ubyte_t*)calloc(p->full_len, 1);
+	//	memcpy(p->rseq, p->seq, p->len);
+	//	//fprintf(stderr, "I have been here: %d times!\n",i);
+	//	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+	//	seq_reverse(p->len, p->rseq, is_comp);
+
+	//	p->name = strdup((const char*)seq->name.s);
+	//	{ // trim /[12]$
+	//		int t = strlen(p->name);
+	//		if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+	//	}
+
+	//	if (n_seqs == n_needed) break;
+	//}
+	while (1)
+		{
+			double rand_num = 0;
+			drand48_r(&randBuffer,&rand_num);
+			if ( rand_num> frac)
+			{
+				//notice("before length:%d", seq->seq.l);
+				if ((l = kseq_read4_fpc(seq)) < 0) break;
+				//notice("after length:%d", seq->seq.l);
+				continue;
+			}
+			if ((l = kseq_read3_fpc(seq)) < 0) break;
+
+			if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+			p = &seqs[n_seqs++];
+
+			if (l_bc) { // then trim barcode
+				for (i = 0; i < l_bc; ++i)
+					p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
+				p->bc[i] = 0;
+				for (; i < seq->seq.l; ++i)
+					seq->seq.s[i - l_bc] = seq->seq.s[i];
+				seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
+				if (seq->qual.l) {
+					for (i = l_bc; i < seq->qual.l; ++i)
+						seq->qual.s[i - l_bc] = seq->qual.s[i];
+					seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
+				}
+				l = seq->seq.l;
+			}
+			else p->bc[0] = 0;
+			p->full_len = p->clip_len = p->len = l;
+			n_tot += p->full_len;
+			//if (p->len>SEQ_INIT_Len)
+			{
+				delete[] p->seq;
+				delete[] p->qual;
+				p->seq = new ubyte_t[p->len];
+				p->qual = new ubyte_t[p->len];
+			}
+			for (i = 0; i != p->full_len; ++i)
+				p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
+			if (seq->qual.l) { // copy quality
+				if (is_64)
+					for (i = 0; i < seq->qual.l; ++i)
+					{
+						seq->qual.s[i] -= 31;
+						p->qual[i] = seq->qual.s[i];
+					}
+				else
+				{
+					for (i = 0; i < seq->qual.l; ++i)
+					{
+						p->qual[i] = seq->qual.s[i];
+					}
+				}
+				if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
+			}
+
+			if (BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
+			{
+				p->filtered |= 1;
+				if (n_seqs == n_needed) break;
+				continue;
+			}
+
+			p->rseq = (ubyte_t*)calloc(p->full_len, 1);
+			memcpy(p->rseq, p->seq, p->len);
+			//fprintf(stderr, "I have been here: %d times!\n",i);
+			seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+			seq_reverse(p->len, p->rseq, is_comp);
+
+			//p->name = strdup((const char*)seq->name.s);
+			strncpy(p->name,seq->name.s,seq->name.l);
+			{ // trim /[12]$
+				int t = strlen(p->name);
+				if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+			}
+
+			if (n_seqs == n_needed) break;
+		}
+	*n = n_seqs;
+	if (n_seqs && trim_qual >= 1)
+		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
+	if (n_seqs == 0) {
+		//free(seqs);
+		delete[] seqs;
+		return 0;
+	}
+	//ProfilerStop();
+	return seqs;
+}
+static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed,bwa_seq_t* seqs, int read_len)
+{
+	
+	struct drand48_data randBuffer;
+	srand48_r(seed, &randBuffer);
+	bwa_seq_t /**seqs,*/ *p;
+	kseq_t *seq = bs->ks;
+	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 = mode&BWA_MODE_IL13, l_bc = mode >> 24;
+	long n_trimmed = 0, n_tot = 0;
+
+	if (l_bc > 15) {
+		fprintf(stderr, "[%s] the maximum barcode length is 15.\n", __func__);
+		return 0;
+	}
+	if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
+	n_seqs = 0;
+	//ProfilerStart("FastPopCon.prof");
 	while (1)
 	{
 		double rand_num = 0;
-		drand48_r(&randBuffer,&rand_num);
-		if ( rand_num> frac)
+		drand48_r(&randBuffer, &rand_num);
+		if (rand_num> frac)
 		{
-			//notice("before length:%d", seq->seq.l);
-			if ((l = kseq_read4_fpc(seq)) < 0) break;
-			//notice("after length:%d", seq->seq.l);
+			if ((l = kseq_read4_fpc(seq)) < 0) {
+			break;
+			}
 			continue;
 		}
-		//warning("never come here\n");
-		if ((l = kseq_read3_fpc(seq)) < 0) break;
-
+		if ((l = kseq_read3_fpc(seq)) < 0) {
+			break;
+		}
 		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
 		p = &seqs[n_seqs++];
-
 		if (l_bc) { // then trim barcode
 			for (i = 0; i < l_bc; ++i)
 				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
@@ -346,31 +521,35 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 			l = seq->seq.l;
 		}
 		else p->bc[0] = 0;
-		p->tid = -1; // no assigned to a thread
-		p->qual = 0;
-		//p->count=0;
 		p->full_len = p->clip_len = p->len = l;
 		n_tot += p->full_len;
-		p->seq = (ubyte_t*)calloc(p->len, 1);
+		p->filtered = 0;
+		if (p->len>read_len)
+		{
+			//fprintf(stderr, "the length is weird:%d\np->seq:%x\n%s\n",p->len,p->seq,(char*)p->seq);
+			free(p->seq);
+			free(p->qual);
+			p->seq = (ubyte_t*)calloc(p->len, 1);
+			p->qual = (ubyte_t*)calloc(p->len, 1);
+			p->rseq = (ubyte_t*)calloc(p->len, 1);
+		}
 		for (i = 0; i != p->full_len; ++i)
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
 		if (seq->qual.l) { // copy quality
 			if (is_64)
-				for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
-			p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
+				for (i = 0; i < seq->qual.l; ++i)
+				{
+					seq->qual.s[i] -= 31;
+					p->qual[i] = seq->qual.s[i];
+				}
+			else
+			{
+				for (i = 0; i < seq->qual.l; ++i)
+				{
+					p->qual[i] = seq->qual.s[i];
+				}
+			}
 			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
-		}
-
-		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
-		memcpy(p->rseq, p->seq, p->len);
-		//fprintf(stderr, "I have been here: %d times!\n",i);
-		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
-		seq_reverse(p->len, p->rseq, is_comp);
-
-		p->name = strdup((const char*)seq->name.s);
-		{ // trim /[12]$
-			int t = strlen(p->name);
-			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
 		}
 		if (BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
 		{
@@ -378,144 +557,152 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 			if (n_seqs == n_needed) break;
 			continue;
 		}
+		//p->rseq = (ubyte_t*)calloc(p->full_len, 1);
+		memcpy(p->rseq, p->seq, p->len);
+		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+		seq_reverse(p->len, p->rseq, is_comp);
+		//p->name = strdup((const char*)seq->name.s);
+		strncpy(p->name, seq->name.s, seq->name.l);
+		{ // trim /[12]$
+			int t = strlen(p->name);
+			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+		}
+
 		if (n_seqs == n_needed) break;
 	}
 	*n = n_seqs;
 	if (n_seqs && trim_qual >= 1)
 		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
 	if (n_seqs == 0) {
-		warning("n_seqs equals 0\n");
-		free(seqs);
-		return 0;
-	}
-	return seqs;
-}
-
-static int bwa_read_seq_pair_with_hash(BwtIndexer& BwtIndex, bwa_seqio_t *bs, bwa_seqio_t *bs2, int n_needed, int *n, int mode, int trim_qual, double frac, bwa_seq_t * seqs, bwa_seq_t * seqs2)
-{
-	bwa_seq_t /**seqs,*seqs2,*/ *p, *p2;
-	kseq_t *seq = bs->ks;
-	kseq_t *seq2 = bs2->ks;
-	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 = mode&BWA_MODE_IL13, l_bc = mode >> 24;
-	long n_trimmed = 0, n_tot = 0;
-	if (l_bc > 15) {
-		fprintf(stderr, "[%s] the maximum barcode length is 15.\n", __func__);
-		return 0;
-	}
-	//if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
-	n_seqs = 0;
-	//fprintf(stderr, "before seqs address: %x\n", seqs);
-	//fprintf(stderr, "before seqs2 address: %x\n",seqs2);
-	//seqs = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
-	//seqs2 = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
-	//fprintf(stderr, "seqs address: %x\n", seqs);
-	//fprintf(stderr, "seqs2 address: %x\n",seqs2);
-	while ((l = kseq_read_pair(seq, seq2)) >= 0) {
-
-		if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, seq2->seq.s, seq2->qual.s, seq2->seq.l, frac)) continue;
-
-		if (is_64 && seq->qual.l)
-		{
-			for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
-			for (i = 0; i < seq2->qual.l; ++i) seq2->qual.s[i] -= 31;
-		}
-		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
-		//fprintf(stderr, "read in reads num:%d\n", n_seqs);
-		p2 = &seqs2[n_seqs];
-		p = &seqs[n_seqs++];
-
-		if (l_bc) { // then trim barcode
-			for (i = 0; i < l_bc; ++i)
-			{
-				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
-				p2->bc[i] = (seq2->qual.l && seq2->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq2->seq.s[i]) : toupper(seq2->seq.s[i]);
-			}
-			p->bc[i] = 0;
-			p2->bc[i] = 0;
-			for (; i < seq->seq.l; ++i)
-			{
-				seq->seq.s[i - l_bc] = seq->seq.s[i];
-				seq2->seq.s[i - l_bc] = seq2->seq.s[i];
-			}
-			seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
-			seq2->seq.l -= l_bc; seq2->seq.s[seq->seq.l] = 0;
-			if (seq->qual.l) {
-				for (i = l_bc; i < seq->qual.l; ++i)
-					seq->qual.s[i - l_bc] = seq->qual.s[i];
-				seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
-			}
-			if (seq2->qual.l) {
-				for (i = l_bc; i < seq2->qual.l; ++i)
-					seq2->qual.s[i - l_bc] = seq2->qual.s[i];
-				seq2->qual.l -= l_bc; seq2->qual.s[seq2->qual.l] = 0;
-			}
-			l = seq->seq.l;
-		}
-		else
-		{
-			p->bc[0] = 0;
-			p2->bc[0] = 0;
-		}
-		p->tid = -1; // no assigned to a thread
-		p2->tid = -1; // no assigned to a thread
-		p->qual = 0;
-		p2->qual = 0;
-		//p->count=0;
-		p->full_len = p->clip_len = p->len = l;
-		p2->full_len = p2->clip_len = p2->len = l;
-		n_tot += p->full_len;
-		n_tot += p2->full_len;
-
-		p->seq = (ubyte_t*)calloc(p->len, 1);
-		p2->seq = (ubyte_t*)calloc(p2->len, 1);
-		/*
-		p->original_seq =(char*)calloc(p->len, 1);
-		strcpy(p->original_seq,seq->seq.s);
-		*/
-		for (i = 0; i != p->full_len; ++i)
-			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
-		for (i = 0; i != p2->full_len; ++i)
-			p2->seq[i] = nst_nt4_table[(int)seq2->seq.s[i]];
-		if (seq->qual.l) { // copy quality
-			p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
-			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
-		}
-		if (seq2->qual.l) { // copy quality
-			p2->qual = (ubyte_t*)strdup((char*)seq2->qual.s);
-			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
-		}
-		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
-		memcpy(p->rseq, p->seq, p->len);
-		p2->rseq = (ubyte_t*)calloc(p2->full_len, 1);
-		memcpy(p2->rseq, p2->seq, p2->len);
-		//fprintf(stderr, "I have been here: %d times!\n",i);
-		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
-		seq_reverse(p->len, p->rseq, is_comp);
-		seq_reverse(p2->len, p2->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
-		seq_reverse(p2->len, p2->rseq, is_comp);
-		p->name = strdup((const char*)seq->name.s);
-		{ // trim /[12]$
-			int t = strlen(p->name);
-			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-		}
-		p2->name = strdup((const char*)seq2->name.s);
-		{ // trim /[12]$
-			int t = strlen(p2->name);
-			if (t > 2 && p2->name[t - 2] == '/' && (p2->name[t - 1] == '1' || p2->name[t - 1] == '2')) p2->name[t - 2] = '\0';
-		}
-		if (n_seqs == n_needed) break;
-	}
-	*n = n_seqs;//now it's pairs
-	if (n_seqs && trim_qual >= 1)
-		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
-	if (n_seqs == 0) {
-		warning("n_seqs equals 0\n");
 		//free(seqs);
-		//free(seqs2);
-			return 0;
+		//delete[] seqs;
+		return 0;
 	}
-	return 1;
+	//ProfilerStop();
+	//return seqs;
+	//ProfilerStop();
+	return n_seqs;//return success
 }
+//int BwtMapper::bwa_read_seq_pair_with_hash(BwtIndexer& BwtIndex, bwa_seqio_t *bs, bwa_seqio_t *bs2, int n_needed, int *n, int mode, int trim_qual, double frac, bwa_seq_t * seqs, bwa_seq_t * seqs2)
+//{
+//	bwa_seq_t /**seqs,*seqs2,*/ *p, *p2;
+//	kseq_t *seq = bs->ks;
+//	kseq_t *seq2 = bs2->ks;
+//	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 = mode&BWA_MODE_IL13, l_bc = mode >> 24;
+//	long n_trimmed = 0, n_tot = 0;
+//
+//	if (l_bc > 15) {
+//		fprintf(stderr, "[%s] the maximum barcode length is 15.\n", __func__);
+//		return 0;
+//	}
+//	//if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
+//	n_seqs = 0;
+//	seqs = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
+//	seqs2 = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
+//	while ((l = kseq_read2(seq, seq2)) >= 0) {
+//
+//		if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, seq2->seq.s, seq2->qual.s, seq2->seq.l, frac)) continue;
+//
+//		if (is_64 && seq->qual.l)
+//		{
+//			for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
+//			for (i = 0; i < seq2->qual.l; ++i) seq2->qual.s[i] -= 31;
+//		}
+//		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+//		p2 = &seqs2[n_seqs];
+//		p = &seqs[n_seqs++];
+//
+//		if (l_bc) { // then trim barcode
+//			for (i = 0; i < l_bc; ++i)
+//			{
+//				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
+//				p2->bc[i] = (seq2->qual.l && seq2->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq2->seq.s[i]) : toupper(seq2->seq.s[i]);
+//			}
+//			p->bc[i] = 0;
+//			p2->bc[i] = 0;
+//			for (; i < seq->seq.l; ++i)
+//			{
+//				seq->seq.s[i - l_bc] = seq->seq.s[i];
+//				seq2->seq.s[i - l_bc] = seq2->seq.s[i];
+//			}
+//			seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
+//			seq2->seq.l -= l_bc; seq2->seq.s[seq->seq.l] = 0;
+//			if (seq->qual.l) {
+//				for (i = l_bc; i < seq->qual.l; ++i)
+//					seq->qual.s[i - l_bc] = seq->qual.s[i];
+//				seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
+//			}
+//			if (seq2->qual.l) {
+//				for (i = l_bc; i < seq2->qual.l; ++i)
+//					seq2->qual.s[i - l_bc] = seq2->qual.s[i];
+//				seq2->qual.l -= l_bc; seq2->qual.s[seq2->qual.l] = 0;
+//			}
+//			l = seq->seq.l;
+//		}
+//		else
+//		{
+//			p->bc[0] = 0;
+//			p2->bc[0] = 0;
+//		}
+//		p->tid = -1; // no assigned to a thread
+//		p2->tid = -1; // no assigned to a thread
+//		p->qual = 0;
+//		p2->qual = 0;
+//		//p->count=0;
+//		p->full_len = p->clip_len = p->len = l;
+//		p2->full_len = p2->clip_len = p2->len = l;
+//		n_tot += p->full_len;
+//		n_tot += p2->full_len;
+//
+//		p->seq = (ubyte_t*)calloc(p->len, 1);
+//		p2->seq = (ubyte_t*)calloc(p2->len, 1);
+//		/*
+//		p->original_seq =(char*)calloc(p->len, 1);
+//		strcpy(p->original_seq,seq->seq.s);
+//		*/
+//		for (i = 0; i != p->full_len; ++i)
+//			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
+//		for (i = 0; i != p2->full_len; ++i)
+//			p2->seq[i] = nst_nt4_table[(int)seq2->seq.s[i]];
+//		if (seq->qual.l) { // copy quality
+//			p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
+//			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
+//		}
+//		if (seq2->qual.l) { // copy quality
+//			p2->qual = (ubyte_t*)strdup((char*)seq2->qual.s);
+//			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
+//		}
+//		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
+//		memcpy(p->rseq, p->seq, p->len);
+//		p2->rseq = (ubyte_t*)calloc(p2->full_len, 1);
+//		memcpy(p2->rseq, p2->seq, p2->len);
+//		//fprintf(stderr, "I have been here: %d times!\n",i);
+//		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
+//		seq_reverse(p->len, p->rseq, is_comp);
+//		seq_reverse(p2->len, p2->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()
+//		seq_reverse(p2->len, p2->rseq, is_comp);
+//		p->name = strdup((const char*)seq->name.s);
+//		{ // trim /[12]$
+//			int t = strlen(p->name);
+//			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+//		}
+//		p2->name = strdup((const char*)seq2->name.s);
+//		{ // trim /[12]$
+//			int t = strlen(p2->name);
+//			if (t > 2 && p2->name[t - 2] == '/' && (p2->name[t - 1] == '1' || p2->name[t - 1] == '2')) p2->name[t - 2] = '\0';
+//		}
+//		if (n_seqs == n_needed) break;
+//	}
+//	*n = n_seqs;//now it's pairs
+//	if (n_seqs && trim_qual >= 1)
+//		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
+//	if (n_seqs == 0) {
+//		free(seqs);
+//		free(seqs2)
+//			return 0;
+//	}
+//	return 1;
+//}
 //specific wrapper for bwa_read_seq[end]
 #ifdef HAVE_PTHREAD
 static void bwa_cal_sa_reg_gap(int tid, bwt_t *const bwt[2], int n_seqs, bwa_seq_t *seqs, const gap_opt_t *opt, const BwtIndexer * Indexer);
@@ -547,16 +734,19 @@ typedef struct// if((seqs[0] = bwa_read_seq(ks[0], 10000000, &n_seqs, opt->mode,
 	int trim_qual;
 	double frac;
 	uint32_t round;
+	int* ret;
+	int read_len;
 }
 thread_IO_t;
 static void *IOworker(void *data)
 {
 	thread_IO_t *d = (thread_IO_t*)data;
-	d->seqAddress = bwa_read_seq_with_hash(d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual, d->frac, d->round);
+	//d->seqAddress = bwa_read_seq_with_hash(d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual, d->frac, d->round);
+	*(d->ret) = bwa_read_seq_with_hash_dev(d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual, d->frac, d->round, d->seqAddress,d->read_len);
 	return 0;
 }
 #endif
-int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], int n_seqs,
+int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 	bwa_seq_t *seqs[2], isize_info_t *ii, const pe_opt_t *opt,
 	const gap_opt_t *gopt, const isize_info_t *last_ii)
 {
@@ -1134,7 +1324,8 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 
 /*********bam format*********************************************************/
 //ToDo:add in hash filtering in single versoin
-bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,const gap_opt_t * opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
+bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
+	const gap_opt_t * opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
 {
 	int i, n_seqs, tot_seqs = 0; //,m_aln;
 	bwa_seq_t *seqs;
@@ -1281,7 +1472,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,const ga
 	bwa_seq_close(ks);
 	return 0;
 }
-bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,const char * fn_fa2, const pe_opt_t *popt, const gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
+bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
+	const char * fn_fa2, const pe_opt_t *popt,
+	const gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
 {
 
 	int i, j, n_seqs, n_seqs_buff, tot_seqs = 0; //,m_aln;
@@ -1459,11 +1652,10 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,const cha
 		fprintf(stderr, "NOTICE - align unmapped mate...\n");
 		if (pacseq == 0) //indexing path
 			/*pacseq = */
-			pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs, seqs,
-			popt, &ii);
+			pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs, seqs, popt, &ii, opt->mode);
 		else
 			/*pacseq = */
-			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs, popt, &ii);
+			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs, popt, &ii, opt->mode);
 		fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
 			(float)(clock() - t) / CLOCKS_PER_SEC);
 		t = clock();
@@ -1547,6 +1739,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,const cha
 		for (j = 0; j < 2; ++j)
 		{
 			bwa_free_read_seq(n_seqs, seqs[j]);
+			delete[] seqs[j];
 			n_seqs = n_seqs_buff;
 			seqs[j] = seqs_buff[j];
 		}
@@ -1572,8 +1765,11 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,const cha
 	kh_destroy(64, g_hash);
 	return 0;
 	}
-bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *fn_fa1, const char * fn_fa2, const pe_opt_t *popt, const gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
-{
+
+	bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1,
+		const char * fn_fa2, const pe_opt_t *popt,
+		const gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
+	{
 
 		int i, j, n_seqs, n_seqs_buff, tot_seqs = 0; //,m_aln;
 		bwa_seq_t *seqs[2];
@@ -1599,19 +1795,40 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 
 		ubyte_t *pacseq = 0;
 		FileStatCollector FSC(fn_fa1, fn_fa2);
+		//try{
+			seqs[0] = (bwa_seq_t*) calloc(READ_BUFFER_SIZE,sizeof(bwa_seq_t));
+			seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+			seqs_buff[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+			seqs_buff[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+			bwa_init_read_seq(READ_BUFFER_SIZE, seqs[0],opt);
+			bwa_init_read_seq(READ_BUFFER_SIZE, seqs[1],opt);
+			bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[0],opt);
+			bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[1],opt);
+		//}
+		//catch (std::bad_alloc& exc)
+		//{
+		//	warning("Allocating memory failed!\n");
+		//	exit(EXIT_FAILURE);
+		//}
 		int ReadIsGood = 2;
-		seqs[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
-		seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
-		while ((bwa_read_seq_pair_with_hash(BwtIndex,ks[0], ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual,opt->frac,seqs[0],seqs[1])) != 0)
-		{
-			FSC.NumRead+=n_seqs*2;
+		uint32_t round = 0;
+		int ret(-1);
+		while (ReadIsGood)
+		{ // opt should be different for two fa files theoretically
+			if (ReadIsGood == 2)
+			{
+				if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round, seqs[0],opt->read_len)) != 0) ReadIsGood = 1;
+				else ReadIsGood = 0;
+				FSC.NumRead += n_seqs;
+			}
+			//FSC.NumRead+=n_seqs;
 			int cnt_chg;
 			isize_info_t ii;
 
 			t = clock();
 			// seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual);
 
-			tot_seqs += n_seqs*2;
+			tot_seqs += n_seqs;
 
 			//fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
 
@@ -1620,12 +1837,20 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 
 			if (opt->n_threads <= 1)
 			{ // no multi-threading at all
-				//fprintf(stderr, "test memory:%s\n", seqs[0][0].name);
+				ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round, seqs[1],opt->read_len);
+				FSC.NumRead += n_seqs;
 				for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 				{
 					bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx], opt, &BwtIndex);
 				}
-				
+				round++;
+				if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac, round, seqs_buff[0],opt->read_len)) != 0)
+				{
+					ReadIsGood = 1;
+					FSC.NumRead += n_seqs;
+				}
+				else ReadIsGood = 0;
+				FSC.NumRead += n_seqs_buff;
 			}
 			else
 			{
@@ -1635,42 +1860,81 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 					pthread_attr_t attr;
 					thread_aux_t *data;
 					int j;
+					/*added for IO begin*/
+					int n_align_thread = opt->n_threads - 1;
+					thread_IO_t* IO_param = (thread_IO_t*)calloc(1, sizeof(thread_IO_t));
+					/*added for IO end*/
 					pthread_attr_init(&attr);
 					pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-					data = (thread_aux_t*)calloc(opt->n_threads, sizeof(thread_aux_t));
+					data = (thread_aux_t*)calloc(n_align_thread, sizeof(thread_aux_t));
 					tid = (pthread_t*)calloc(opt->n_threads, sizeof(pthread_t));
 					/*decopling of the multithread*/
-					size_t grain_size = n_seqs / opt->n_threads;
-					for (j = 0; j < opt->n_threads; ++j)
+					size_t grain_size = n_seqs / n_align_thread;
+					for (j = 0; j < n_align_thread; ++j)
 					{
 						data[j].tid = j;//+pair_idx*opt->n_threads;
 						data[j].bwt[0] = bwt[0];
 						data[j].bwt[1] = bwt[1];
 						//data[j].n_seqs = n_seqs;
 						//data[j].seqs = seqs[pair_idx];
-						if (j == opt->n_threads - 1) data[j].n_seqs = n_seqs - grain_size*(opt->n_threads - 1);
+						if (j == n_align_thread - 1) data[j].n_seqs = n_seqs - grain_size*(n_align_thread - 1);
 						else data[j].n_seqs = grain_size;
 						data[j].seqs = seqs[pair_idx] + j*grain_size;
 						data[j].opt = opt;
 						data[j].Indexer_Ptr = &BwtIndex;
 						pthread_create(&tid[j], &attr, worker, data + j);
 					}
+				  {
+					  IO_param->BwtIndex = &BwtIndex;
+					  IO_param->ksAddress = ks[1 - pair_idx];
+					  IO_param->n_seqs = &n_seqs_buff;
+					  IO_param->mode = opt->mode;
+					  IO_param->trim_qual = opt->trim_qual;
+					  IO_param->frac = opt->frac;
+					  IO_param->round = round;
+					  IO_param->seqAddress = seqs_buff[1 - pair_idx];
+					  IO_param->ret = &ret;
+					  pthread_create(&tid[opt->n_threads - 1], &attr, IOworker, IO_param);
+				  }
 
-					for (j = 0; j < opt->n_threads; ++j)
-						pthread_join(tid[j], 0);
-					free(data);
-					free(tid);
+				  for (j = 0; j < opt->n_threads; ++j)
+					  pthread_join(tid[j], 0);
+
+				  /*IO thread*/
+				  if (pair_idx == 0)
+				  {
+					  bwa_seq_t * tmp = seqs[1];
+					  seqs[1] = seqs_buff[1 - pair_idx];
+					  seqs_buff[1 - pair_idx] = tmp;		 
+				  }
+				  else
+				  {
+					  //seqs_buff[0] = IO_param->seqAddress;
+					  round++;
+				  }
+				  FSC.NumRead += n_seqs;
+				  //if (IO_param->seqAddress == 0) ReadIsGood = 0;
+				  if (ret == 0) ReadIsGood = 0;
+				  free(IO_param);
+				  free(data);
+				  free(tid);
 				}
 			}
 #else
 
+
+			ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,seqs[1],opt->read_len);
+			FSC.NumRead += n_seqs;
 			for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 			{
 				//DBG(fprintf(stderr,"Before come into cal sa reg gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 				bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx], opt, &BwtIndex);
 				//DBG(fprintf(stderr,"After come into cal sa reg gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 			}
-
+			round++;
+			if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,seqs[0],opt->read_len)) != 0) ReadIsGood = 1;
+			else ReadIsGood = 0;
+			FSC.NumRead += n_seqs;
 #endif
 
 			//}
@@ -1699,11 +1963,10 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 			fprintf(stderr, "NOTICE - align unmapped mate...\n");
 			if (pacseq == 0) //indexing path
 				/*pacseq = */
-				pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs, seqs,
-				popt, &ii);
+				pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs, seqs, popt, &ii, opt->mode);
 			else
 				/*pacseq = */
-				pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs, popt, &ii);
+				pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs, popt, &ii, opt->mode);
 			fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
 				(float)(clock() - t) / CLOCKS_PER_SEC);
 			t = clock();
@@ -1784,32 +2047,29 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 			//cerr<<"In total "<<total_add<<" reads were calculated!"<<endl;
 			t = clock();
 
-			//for (j = 0; j < 2; ++j)
-			//{
-			//	bwa_free_read_seq(n_seqs, seqs[j]);
-			//	//n_seqs = n_seqs_buff;
-			//	//seqs[j] = seqs_buff[j];
-			//}
-			for (int k = 0; k < 2; ++k)
+			for (j = 0; j < 2; ++j)
 			{
-				for (int i = 0; i != n_seqs; ++i) {
-					bwa_seq_t *p = seqs[k] + i;
-					
-					for (int j = 0; j < p->n_multi; ++j)
-						if (p->multi[j].cigar) free(p->multi[j].cigar);
-					free(p->name);
-					free(p->seq); free(p->rseq); free(p->qual); free(p->aln); free(p->md); free(p->multi);
-					free(p->cigar);
-				}
+				//bwa_free_read_seq(n_seqs, seqs[j]);
+				//delete[] seqs[j];
+				n_seqs = n_seqs_buff;
+				bwa_seq_t * tmp = seqs[j];
+				seqs[j] = seqs_buff[j];
+				seqs_buff[j] = tmp;
 			}
 			fprintf(stderr, "NOTICE - %d sequences have been processed.\n", tot_seqs);
 
 			last_ii = ii;
 		} //end while
-		
-			free(seqs[0]);
-			free(seqs[1]);
 
+		for (j = 0; j < 2; ++j)
+		{
+			bwa_free_read_seq(READ_BUFFER_SIZE, seqs[j]);
+			bwa_free_read_seq(READ_BUFFER_SIZE, seqs_buff[j]);
+		}
+		free(seqs[0]);
+		free(seqs[1]);
+		free(seqs_buff[0]);
+		free(seqs_buff[1]);
 		collector.addFSC(FSC);
 		if (pacseq)
 			free(pacseq);
@@ -1968,7 +2228,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 			if (!BamFile->isOpen())
 			{
 				warning("Open Bam file for writing failed, abort!\n");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			SetSamFileHeader(SFH, BwtIndex.bns);
 			BamIO.writeHeader(BamFile, SFH, StatusTracker);
@@ -1993,8 +2253,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 			{
 				notice("Processing Pair End mapping\t%d\n%s\n%s\n", i, Fastq_1.c_str(), Fastq_2.c_str());
 				t_tmp = realtime();
-				PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-				//PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
+				/*PairEndMapper*/PairEndMapper_dev(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
 				notice("Processed Pair End mapping in %f sec\n", realtime() - t_tmp);
 			}
 			else
