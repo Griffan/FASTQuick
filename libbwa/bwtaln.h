@@ -149,6 +149,7 @@ extern "C" {
 	bwa_seq_t *bwa_read_seq(bwa_seqio_t *seq, int n_needed, int *n, int mode, int trim_qual, double frac);
 	bwa_seq_t *bwa_read_seq2(bwa_seqio_t *seq, int n_needed, int *n, int mode, int trim_qual, bwa_seq_t* first_mate);
 	void bwa_free_read_seq(int n_seqs, bwa_seq_t *seqs);
+	void bwa_clean_read_seq(int n_seqs, bwa_seq_t *seqs);
 	void bwa_init_read_seq(int n_seqs, bwa_seq_t * seqs, const gap_opt_t* opt);
 	int bwa_cal_maxdiff(int l, double err, double thres);
 	//void bwa_cal_sa_reg_gap(int tid, bwt_t *const bwt[2], int n_seqs, bwa_seq_t *seqs, const gap_opt_t *opt);
