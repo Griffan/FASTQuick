@@ -95,7 +95,7 @@ ubyte_t * bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs, ub
 int bwa_approx_mapQ(const bwa_seq_t *p, int mm);
 void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, int mode, int max_top2);
 bntseq_t *bwa_open_nt(const char *prefix);
-ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, bwa_seq_t *seqs[2], const pe_opt_t *popt, const isize_info_t *ii);
+ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, bwa_seq_t *seqs[2], const pe_opt_t *popt, const isize_info_t *ii,int mode);
 void bwa_print_sam_SQ(const bntseq_t *bns);
 void bwa_print_sam_PG();
  int pairing(bwa_seq_t *p[2], pe_data_t *d, const pe_opt_t *opt, int s_mm, const isize_info_t *ii);

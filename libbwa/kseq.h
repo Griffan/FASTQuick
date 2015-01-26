@@ -94,7 +94,7 @@
 			ks->end = __read(ks->f, ks->buf+remain, __bufsize-remain);	\
 			if (ks->end < __bufsize-remain) ks->is_eof = 1;		\
 			if (ks->end == 0) return -1;					\
-			ks->end = __bufsize;							\
+			ks->end +=remain;							\
 		}													\
 		memcpy(str, ks->buf + ks->begin, len);				\
 		ks->begin += len;									\
@@ -112,7 +112,7 @@
 			ks->end = __read(ks->f, ks->buf+remain, __bufsize-remain);	\
 			if (ks->end < __bufsize-remain) ks->is_eof = 1;		\
 			if (ks->end == 0) return -1;					\
-			ks->end = __bufsize;							\
+			ks->end +=remain;							\
 		}													\
 		ks->begin += len-2;									\
 		return (int)ks->buf[ks->begin++];/*return the last char that read*/						\

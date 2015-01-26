@@ -45,6 +45,7 @@ gap_opt_t *gap_init_opt()
 	o->RG=0;
 	o->cal_dup=0;
 	o->frac=1;
+	o->read_len = 168;
 	return o;
 }
 void gap_free_opt(gap_opt_t * o)
