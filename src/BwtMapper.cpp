@@ -528,6 +528,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		{
 			//fprintf(stderr, "the length is weird:%d\np->seq:%x\n%s\n",p->len,p->seq,(char*)p->seq);
 			free(p->seq);
+			free(p->rseq);
 			free(p->qual);
 			p->seq = (ubyte_t*)calloc(p->len, 1);
 			p->qual = (ubyte_t*)calloc(p->len, 1);
@@ -1768,7 +1769,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 	bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1,
 		const char * fn_fa2, const pe_opt_t *popt,
-		const gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
+		 gap_opt_t* opt, SamFileHeader& SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker, std::ofstream& fout, int &total_add)
 	{
 
 		int i, j, n_seqs, n_seqs_buff, tot_seqs = 0; //,m_aln;
@@ -1795,7 +1796,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 
 		ubyte_t *pacseq = 0;
 		FileStatCollector FSC(fn_fa1, fn_fa2);
-		//try{
+
+		opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
 			seqs[0] = (bwa_seq_t*) calloc(READ_BUFFER_SIZE,sizeof(bwa_seq_t));
 			seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 			seqs_buff[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
@@ -1804,12 +1806,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 			bwa_init_read_seq(READ_BUFFER_SIZE, seqs[1],opt);
 			bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[0],opt);
 			bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[1],opt);
-		//}
-		//catch (std::bad_alloc& exc)
-		//{
-		//	warning("Allocating memory failed!\n");
-		//	exit(EXIT_FAILURE);
-		//}
+
 		int ReadIsGood = 2;
 		uint32_t round = 0;
 		int ret(-1);
@@ -1894,6 +1891,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 					  IO_param->round = round;
 					  IO_param->seqAddress = seqs_buff[1 - pair_idx];
 					  IO_param->ret = &ret;
+					  IO_param->read_len = opt->read_len;
 					  pthread_create(&tid[opt->n_threads - 1], &attr, IOworker, IO_param);
 				  }
 
@@ -2051,6 +2049,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1,
 			{
 				//bwa_free_read_seq(n_seqs, seqs[j]);
 				//delete[] seqs[j];
+				bwa_clean_read_seq(n_seqs, seqs[j]);
 				n_seqs = n_seqs_buff;
 				bwa_seq_t * tmp = seqs[j];
 				seqs[j] = seqs_buff[j];
