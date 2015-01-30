@@ -74,8 +74,7 @@ StatCollector::StatCollector(const string & OutFile)
 	MaxInsertSizeDist = vector<size_t>(2048, 0);
 }
 int flag2 = 0;
-int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
-	const gap_opt_t* opt) //
+int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt) //
 {
 	int seqid(0), j(0);
 
@@ -1842,9 +1841,9 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpCycleDist(statPrefix);
 	getInsertSizeDist(statPrefix);
 	getSexChromInfo(statPrefix);
-	//outputPileup(statPrefix,opt);
+	outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
-	//getGenoLikelihood(statPrefix);
+	getGenoLikelihood(statPrefix);
 	return 0;
 }
 int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
@@ -1947,7 +1946,7 @@ int countAllele(size_t*a, const string & seq)
 #define REV_PHRED(x)	pow(10.0,x/(-10))
 vector<double>  calLikelihood(const string & seq, const string & qual, const char& maj, const char& min)//maj:ref, min:alt
 {
-	double lik(0),GL0(log10(0.999)),GL1(log10(0.00066)),GL2(log10(0.00034));
+	double lik(0), GL0(1e-60), GL1(1e-60), GL2(1e-60);
 	//if (maj == min)
 	//	for (uint32_t i = 0; i != seq.size(); ++i)
 	//	{
@@ -1975,25 +1974,35 @@ vector<double>  calLikelihood(const string & seq, const string & qual, const cha
 			if (seq[i] == maj)
 			{
 				GL0 += log10(1 - REV_PHRED(qual[i]));
-				GL1 += log10(1 / 2);
-				GL2 += log10(REV_PHRED(qual[i]));
+				GL1 += log10(1 / 2 - REV_PHRED(qual[i])/3);
+				GL2 += log10(REV_PHRED(qual[i]) / 3);
 			}
 			else if (seq[i] == min)
 			{
-				GL0 += log10( REV_PHRED(qual[i]));
-				GL1 += log10(1 / 2);
+				GL0 += log10( REV_PHRED(qual[i])/3);
+				GL1 += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
 				GL2 += log10(1-REV_PHRED(qual[i]));
 			}
 			else
 			{
-				GL0 += log10(REV_PHRED(qual[i]));
-				GL1 += log10(REV_PHRED(qual[i]));
-				GL2 += log10(REV_PHRED(qual[i]));
+				GL0 += log10(2*REV_PHRED(qual[i])/3);
+				GL1 += log10(2*REV_PHRED(qual[i])/3);
+				GL2 += log10(2*REV_PHRED(qual[i])/3);
 			}
 		}
 	}
 	vector<double> tmp(3, 0);
-	tmp[0] = GL0<(-255)?(-255):GL0; tmp[1] = GL1<(-255)?(-255):GL1; tmp[2] = GL2<(-255)?(-255):GL2;
+	tmp[0] = GL0*(-10); tmp[1] = GL1*(-10); tmp[2] = GL2*(-10);
+	double minimal(tmp[0]);
+	if (tmp[1] > minimal)
+	{
+		minimal = tmp[1];
+	}
+	if (tmp[2] > minimal)
+	{
+		minimal = tmp[2];
+	}
+	tmp[0] -= minimal; tmp[1] -= minimal; tmp[2] -= minimal;
 	return tmp;
 }
 int StatCollector::getGenoLikelihood(const string & outputPath)
@@ -2106,17 +2115,25 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	fout << "Estimated AvgDepth for Q30 bases : " << Q30AvgDepth() << endl;
 	auto MIS500 =
 		[&]()->double
-	{	long long tmp(0), total(0); for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; for (size_t i = 500; i != InsertSizeDist.size(); ++i)
-	{
-		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
-	}};
+	{	long long tmp(0), total(0); 
+		for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
+		for (size_t i = 500; i != InsertSizeDist.size(); ++i)
+		{
+			tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
+		}
+		return 0;
+	};
 	fout << "Median Insert Size(>=500bp) : " << MIS500() << endl;
 	auto MIS300 =
 		[&]()->double
-	{	long long tmp(0), total(0); for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; for (size_t i = 300; i != InsertSizeDist.size(); ++i)
-	{
-		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
-	}};
+	{	long long tmp(0), total(0); 
+		for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
+		for (size_t i = 300; i != InsertSizeDist.size(); ++i)
+		{
+		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i; 
+		}
+		return 0;
+	};
 	fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
 	//output for fraction figure
 	auto Q20BaseFraction = [&]()->double
