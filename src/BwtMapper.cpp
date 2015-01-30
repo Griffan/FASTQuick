@@ -2884,7 +2884,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 		int i(0);
 		while (getline(fin, line))
 		{
-			+i;
+			++i;
 			std::string Fastq_1(""), Fastq_2("");
 			stringstream ss(line);
 			ss >> Fastq_1 >> Fastq_2;
