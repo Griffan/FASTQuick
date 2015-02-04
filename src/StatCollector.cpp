@@ -1943,53 +1943,35 @@ int countAllele(size_t*a, const string & seq)
 	}
 	return 0;
 }
-#define REV_PHRED(x)	pow(10.0,x/(-10))
+#define REV_PHRED(x)	pow(10.0,x/(-10.0))
 vector<double>  calLikelihood(const string & seq, const string & qual, const char& maj, const char& min)//maj:ref, min:alt
 {
-	double lik(0), GL0(1e-60), GL1(1e-60), GL2(1e-60);
-	//if (maj == min)
-	//	for (uint32_t i = 0; i != seq.size(); ++i)
-	//	{
-	//	if (seq[i] == maj)
-	//	{
-	//		lik += log10(1 - REV_PHRED(qual[i]));
-	//	}
-	//	else
-	//	{
-	//		lik += log10(REV_PHRED(qual[i]) / 3);
-	//	}
-	//	}
-	//else
+	double lik(0), GL0(0), GL1(0), GL2(0);
 	{
 		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
-			//if (seq[i] == maj || seq[i] == min)
-			//{
-			//	lik += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
-			//}
-			//else
-			//{
-			//	lik += log10(REV_PHRED(qual[i]) / 3);
-			//}
+			double seq_error = REV_PHRED(qual[i]);
+			//fprintf(stderr,"Debug (qual:%d\tseq_error:%f)",qual[i],seq_error);
 			if (seq[i] == maj)
 			{
-				GL0 += log10(1 - REV_PHRED(qual[i]));
-				GL1 += log10(1 / 2 - REV_PHRED(qual[i])/3);
-				GL2 += log10(REV_PHRED(qual[i]) / 3);
+				GL0 += log10(1 - seq_error);
+				GL1 += log10(1 / 2.0 - seq_error / 3);
+				GL2 += log10(seq_error / 3);
 			}
 			else if (seq[i] == min)
 			{
-				GL0 += log10( REV_PHRED(qual[i])/3);
-				GL1 += log10(1 / 2 - REV_PHRED(qual[i]) / 3);
-				GL2 += log10(1-REV_PHRED(qual[i]));
+				GL0 += log10(seq_error / 3);
+				GL1 += log10(1 / 2.0 - seq_error / 3);
+				GL2 += log10(1 - seq_error);
 			}
 			else
 			{
-				GL0 += log10(2*REV_PHRED(qual[i])/3);
-				GL1 += log10(2*REV_PHRED(qual[i])/3);
-				GL2 += log10(2*REV_PHRED(qual[i])/3);
+				GL0 += log10(2 * seq_error / 3);
+				GL1 += log10(2 * seq_error / 3);
+				GL2 += log10(2 * seq_error / 3);
 			}
 		}
+		//fprintf(stderr, "\n");
 	}
 	vector<double> tmp(3, 0);
 	tmp[0] = GL0*(-10); tmp[1] = GL1*(-10); tmp[2] = GL2*(-10);
