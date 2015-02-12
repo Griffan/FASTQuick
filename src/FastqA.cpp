@@ -246,6 +246,7 @@ int runIndex(int argc, char ** argv)
 	*
 	*/
 	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty");
+	bool reselect(false);
 	//std::string Prefix("Empty");
 	paramList pl;
 
@@ -260,6 +261,7 @@ int runIndex(int argc, char ** argv)
 		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
 		LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
 		LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
+		LONG_PARAM("reselect", &reselect, "[Bool] If you want to reselect subset of snp sites for generating reference")
 	END_LONG_PARAMS();
 
 	pl.Add(new longParams("Available Options", longParameters));
@@ -295,7 +297,7 @@ int runIndex(int argc, char ** argv)
 	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
-		RefBuilder ArtiRef(VcfPath, RefPath, DBsnpPath, MaskPath, opt);
+		RefBuilder ArtiRef(VcfPath, RefPath, DBsnpPath, MaskPath, opt, reselect);
 		//Indexer.longRefTable);
 		Indexer.BuildIndex(ArtiRef, RefPath, opt);
 	}

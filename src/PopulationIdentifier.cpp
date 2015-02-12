@@ -165,12 +165,15 @@ int PopulationIdentifier::RunSVD()
 	return 0;
 }
 
-PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string & GLpath)
+PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed)
 {
 	NumMarker = ReadMatrixUD(UDpath);
 	NumIndividual = ReadMatrixPC(PCpath);
+	ReadChooseBed(Bed);
 	ReadMatrixGL(GLpath);
+
 	FormatMarkerIntersection();
+	ReadMean(Mean);
 	fn = PopulationIdentifier::fullLLKFunc(this);
 }
 int PopulationIdentifier::ReadMatrixUD(const std::string &path)
@@ -188,6 +191,27 @@ int PopulationIdentifier::ReadMatrixUD(const std::string &path)
 		//ss >> chr >> pos;
 		ss >> tmpUD[0] >> tmpUD[1];
 		UD.push_back(tmpUD);
+	}
+	fin.close();
+	return UD.size();
+}
+int PopulationIdentifier::ReadChooseBed(const std::string &path)
+{
+	std::ifstream fin(path);
+	std::string line,chr;
+	uint32_t index(0),pos(0);
+	
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin, line))
+	{
+		index++;
+		std::stringstream ss(line);
+		//std::string chr;
+		//int pos;
+		ss >> chr >> pos;
+		//ss >> tmpUD[0] >> tmpUD[1];
+		//UD.push_back(tmpUD);
+		ChooseBed[chr][pos+1] = index;
 	}
 	fin.close();
 	return UD.size();
@@ -213,6 +237,24 @@ int PopulationIdentifier::ReadMatrixPC(const std::string &path)
 	fin.close();
 	return PC.size();
 }
+int PopulationIdentifier::ReadMean(const std::string &path)
+{
+	std::ifstream fin(path);
+	std::string line;
+	uint32_t index(0);
+	double mu(0);
+	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	while (std::getline(fin, line))
+	{
+		std::stringstream ss(line);
+
+		ss >> mu;
+		means[index]=mu;
+		index++;
+	}
+	fin.close();
+	return means.size();
+}
 int PopulationIdentifier::CheckMarkerSetConsistency()
 {
 	return UD.size() == GL.size();
@@ -226,7 +268,7 @@ int PopulationIdentifier::FormatMarkerIntersection()
 	}
 	else//implement intersection behavior if needed
 	{
-		std::cerr << "[Waring] - Marker Sets are not consistent" << std::endl;
+		std::cerr << "[Waring] - Marker Sets are not consistent UD:"<<UD.size()<<"\tGL:"<<GL.size() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 }
@@ -243,6 +285,11 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 		std::string chr;
 		int pos;
 		ss >> chr >> pos;
+		if (ChooseBed.size()!=0)
+		{
+			if (ChooseBed.find(chr) == ChooseBed.end()) continue;
+			else if (ChooseBed[chr].find(pos) == ChooseBed[chr].end()) continue;
+		}
 		MarkerIndex[chr][pos] = index;
 		ss >> tmpGL[0] >> tmpGL[1] >> tmpGL[2];
 		GL.push_back(tmpGL);
@@ -262,9 +309,9 @@ int PopulationIdentifier::OptimizeLLK()
 	myMinimizer.func = &fn;
 	myMinimizer.Reset(2);
 	myMinimizer.point = startingPoint;
-	myMinimizer.Minimize(1e-3);
-	double optimalPC1 = fullLLKFunc::invLogit(myMinimizer.point[0]);
-	double optimalPC2 = fullLLKFunc::invLogit(myMinimizer.point[1]);
+	myMinimizer.Minimize(1e-6);
+	double optimalPC1 = myMinimizer.point[0];// fullLLKFunc::invLogit(myMinimizer.point[0]);
+	double optimalPC2 = myMinimizer.point[1]; //fullLLKFunc::invLogit(myMinimizer.point[1]);
 	std::cout << "PCs in OptimizaLLK():" << std::endl;
 	std::cout << "PC1:" << optimalPC1 << "\tPC2:" << optimalPC2 << std::endl;
 	return 0;
