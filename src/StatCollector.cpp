@@ -1976,11 +1976,11 @@ vector<double>  calLikelihood(const string & seq, const string & qual, const cha
 	vector<double> tmp(3, 0);
 	tmp[0] = GL0*(-10); tmp[1] = GL1*(-10); tmp[2] = GL2*(-10);
 	double minimal(tmp[0]);
-	if (tmp[1] > minimal)
+	if (tmp[1] < minimal)
 	{
 		minimal = tmp[1];
 	}
-	if (tmp[2] > minimal)
+	if (tmp[2] < minimal)
 	{
 		minimal = tmp[2];
 	}
