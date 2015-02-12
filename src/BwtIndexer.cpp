@@ -827,13 +827,27 @@ BwtIndexer::~BwtIndexer()
 {
 	// TODO Auto-generated destructor stub
 	DBG(fprintf(stderr,"Incoming destroyer...\n");)
-	free(bwt_d->sa);
-	free(bwt_d->bwt);
-	free(bwt_d);
+		if (bwt_d)
+		{
+			
+		if (bwt_d->sa)
+			free(bwt_d->sa);
+		if (bwt_d->bwt)
+			free(bwt_d->bwt);
+			free(bwt_d);
+		}
+
 	DBG(fprintf(stderr,"bwt_d delete successfully...\n");)
-	free(rbwt_d->sa);
-	free(rbwt_d->bwt);
-	free(rbwt_d);
+		if (rbwt_d)
+		{
+			
+		if (rbwt_d->sa)
+			free(rbwt_d->sa);
+		if (rbwt_d->bwt)
+			free(rbwt_d->bwt);
+		free(rbwt_d);
+		}
+
 	DBG(fprintf(stderr,"rbwt_d delete successfully...\n");)
 	if (pac_buf)
 		free(pac_buf);
@@ -851,12 +865,15 @@ BwtIndexer::~BwtIndexer()
 		int i;
 		if (bns->fp_pac)
 			fclose(bns->fp_pac);
+		if (bns->ambs)
 		free(bns->ambs);
 		for (i = 0; i < bns->n_seqs; ++i)
 		{
+
 			free(bns->anns[i].name);
 			free(bns->anns[i].anno);
 		}
+		if (bns->anns)
 		free(bns->anns);
 		free(bns);
 	}
