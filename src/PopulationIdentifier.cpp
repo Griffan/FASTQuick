@@ -241,14 +241,19 @@ int PopulationIdentifier::ReadMean(const std::string &path)
 {
 	std::ifstream fin(path);
 	std::string line;
-	uint32_t index(0);
+	uint32_t index(0),pos(0);
 	double mu(0);
+	std::string snpName,chr;
 	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
 	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
-
+		ss >> snpName;
+		chr=snpName.substr(0,snpName.find(':',0));
+		pos = atoi(snpName.substr(snpName.find(':', 0)+1,snpName.find('_',0)).c_str());
 		ss >> mu;
+		std::cerr << chr << "\t" << pos << std::endl;
+		PosVec.push_back(make_pair(chr, pos));
 		means[index]=mu;
 		index++;
 	}
@@ -292,7 +297,9 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 		}
 		MarkerIndex[chr][pos] = index;
 		ss >> tmpGL[0] >> tmpGL[1] >> tmpGL[2];
+		//cout << chr <<"\t"<< pos << "\t"<<tmpGL[0] << "\t"<<tmpGL[1] <<"\t"<< tmpGL[2] << endl;
 		GL.push_back(tmpGL);
+		index++;
 	}
 	fin.close();
 	return 0;
