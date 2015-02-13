@@ -1955,13 +1955,13 @@ vector<double>  calLikelihood(const string & seq, const string & qual, const cha
 			if (seq[i] == maj)
 			{
 				GL0 += log10(1 - seq_error);
-				GL1 += log10(1 / 2.0 - seq_error / 3);
+				GL1 += log10(0.5 - seq_error / 3);
 				GL2 += log10(seq_error / 3);
 			}
 			else if (seq[i] == min)
 			{
 				GL0 += log10(seq_error / 3);
-				GL1 += log10(1 / 2.0 - seq_error / 3);
+				GL1 += log10(0.5 - seq_error / 3);
 				GL2 += log10(1 - seq_error);
 			}
 			else

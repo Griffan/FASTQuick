@@ -136,19 +136,22 @@ public:
 		{
 			double min_af(0.5 / ptr->NumIndividual), max_af((ptr->NumIndividual - 0.5) / ptr->NumIndividual);
 			double sumLLK(0), GF0(0), GF1(0), GF2(0);
-
+			std::string chr;
+			uint32_t pos;
 			for (size_t i = 0; i != ptr->NumMarker; ++i)
 			{
 				//std::cerr << "Number " << i << "th marker out of " << ptr->NumMarker << " markers and " << ptr->NumIndividual << " individuals"<<std::endl;
 				//std::cerr << "AF:" << ptr->AFs[i] << "\tUD:" << ptr->UD[i][0] << "\t" << ptr->UD[i][1] << "\tmeans:" << ptr->means[i] << std::endl;
+				chr = ptr->PosVec[i].first;
+				pos = ptr->PosVec[i].second;
 				ptr->AFs[i] = ((ptr->UD[i][0] * tPC1 + ptr->UD[i][1] * tPC2) + ptr->means[i]) / 2.0;
 				if (ptr->AFs[i] < min_af) ptr->AFs[i] = min_af;
 				if (ptr->AFs[i] > max_af) ptr->AFs[i] = max_af;
 				GF0 = (1 - ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF1 = 2 * (ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF2 = (ptr->AFs[i])*(ptr->AFs[i]);
-				sumLLK += log(PHRED(ptr->GL[i][0]) * GF0 + PHRED(ptr->GL[i][1]) * GF1 + PHRED(ptr->GL[i][2]) * GF2);
-				//std::cerr << "GL:" << ptr->GL[i][0] << "\t" << ptr->GL[i][1] << "\t" << ptr->GL[i][2] << std::endl;
+				sumLLK += log(PHRED(ptr->GL[ptr->MarkerIndex[chr][pos]][0]) * GF0 + PHRED(ptr->GL[ptr->MarkerIndex[chr][pos]][1]) * GF1 + PHRED(ptr->GL[ptr->MarkerIndex[chr][pos]][2]) * GF2);
+				//std::cerr << "GL:" << ptr->GL[i][0] << "\t" << ptr->GL[i][1] << "\t" << ptr->GL[i][2] << "\t"<<ptr->GL.size()<<std::endl;
 			}
 			//std::cerr << "sumLLK:" << sumLLK << std::endl;
 			return sumLLK;
@@ -194,6 +197,7 @@ public:
 	std::vector<double> AFs;
 
 	std::unordered_map<std::string, std::unordered_map<int, int> > ChooseBed;
+	std::vector<std::pair<std::string, int> > PosVec;
 
 	PopulationIdentifier();
 	/*Initialize from VCF*/
