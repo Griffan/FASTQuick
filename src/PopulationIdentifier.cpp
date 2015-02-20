@@ -1,8 +1,10 @@
 #include "PopulationIdentifier.h"
 #include <fstream>
 #include <algorithm>
+#ifdef ARMADILLO
 #include <armadillo>
 using namespace arma;
+#endif
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
 GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, /*std::vector<std::string>& subsetInds,*/ double minAF, double minCallRate)
@@ -106,6 +108,7 @@ PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
 PopulationIdentifier::PopulationIdentifier()
 {
 }
+#ifdef ARMADILLO
 PopulationIdentifier::PopulationIdentifier(const std::string& VCF, PopArgs *p, const std::string & GLpath) :pArgs(p), GenoMatrix(VCF.c_str(), pArgs->bSiteOnly, pArgs->bFindBest/*subsetInds*/, pArgs->minAF, pArgs->minCallRate)
 {//using selected sites from union
 	/*PopArgs* pArgs =new PopArgs;*/
@@ -164,7 +167,7 @@ int PopulationIdentifier::RunSVD()
 	}
 	return 0;
 }
-
+#endif
 PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed)
 {
 	NumMarker = ReadMatrixUD(UDpath);
@@ -252,7 +255,7 @@ int PopulationIdentifier::ReadMean(const std::string &path)
 		chr=snpName.substr(0,snpName.find(':',0));
 		pos = atoi(snpName.substr(snpName.find(':', 0)+1,snpName.find('_',0)).c_str());
 		ss >> mu;
-		std::cerr << chr << "\t" << pos << std::endl;
+		//std::cerr << chr << "\t" << pos << std::endl;
 		PosVec.push_back(make_pair(chr, pos));
 		means[index]=mu;
 		index++;
