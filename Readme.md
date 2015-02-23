@@ -105,6 +105,6 @@ Estimate the probability that this sample is contaminated with other genomic mat
 ###AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
 ###COPYRIGHT
-   The full FastPopCon package is distributed under GPLv3 as it uses source codes from BWT-SW which is covered by GPL. Sorting, hash table, BWT and IS libraries are distributed under the MIT license.
+   The full FastPopCon package is distributed under GPLv3.
 
 
