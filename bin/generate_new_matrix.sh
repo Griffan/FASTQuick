@@ -3,6 +3,32 @@
 #$3 is the src/bin directory which contains auxilary tools
 #$4 is exact path of hapmap_3.3.b37.vcf.gz, e.g. GATK-resources/hapmap_3.3.b37.vcf.gz
 #$5 is exact path of 1000g/release/20110521/ e.g. /net/1000g/1000g/release/20110521/
+
+PRG=$0
+usage()
+{
+    echo "usage:$PRG [your own *.SelectedSite.vcf.gz] [src/resource directory] [ src/bin directory] [path of hapmap_3.3.b37.vcf.gz] [path of 1000g/release/20110521/]...." >&2
+    exit 1
+}
+
+[ "$#" -ne 5 ] && usage
+
+# parse commandline
+#while [ $# -gt 0 ]
+#do
+#      arg="$1"
+#      case "$arg" in
+#     -d|--debug) echo "debug" ;;
+#     -h|--help) usage ;;
+     #--) shift; break;;  # no more options
+#     -*) usage ;; 
+#      *) break;; # not option, its some argument
+#    esac
+#    shift
+#done
+
+
+
 ##prepare hapmap_3.3.b37.dat file and bed file
 echo "selected vcf file: $1
 resource directory: $2
