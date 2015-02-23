@@ -16,7 +16,7 @@
 #include "../libbwa/khash.h"
 #include "../libmpu/Error.h"
 #include <algorithm>
-#include <gperftools/profiler.h>
+//#include <gperftools/profiler.h>
 
 
 using namespace std;
@@ -480,7 +480,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		fprintf(stderr, "[%s] the maximum barcode length is 15.\n", __func__);
 		return 0;
 	}
-	if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
+	//if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
 	n_seqs = 0;
 	//ProfilerStart("FastPopCon.prof");
 	while (1)
@@ -2695,7 +2695,7 @@ else ReadIsGood = 0;
 			seqs[j] = seqs_buff[j];
 			seqs_buff[j] = tmp;
 		}
-		fprintf(stderr, "NOTICE - %d sequences have been processed.\n", FSC.NumRead);
+		fprintf(stderr, "NOTICE - %lld sequences have been processed.\n", FSC.NumRead);
 
 		last_ii = ii;
 	} //end while
@@ -2829,7 +2829,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 }
 BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 	const string & Prefix, const string & RefPath, const pe_opt_t* popt,
-	const gap_opt_t * opt)
+	gap_opt_t * opt)
 {
 	bwa_set_rg(opt->RG);
 	if (opt->in_bam != 0)

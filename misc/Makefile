@@ -47,8 +47,8 @@ AR = ar
 ARFLAGS = cru
 libmisc_a_AR = $(AR) $(ARFLAGS)
 libmisc_a_LIBADD =
-am_libmisc_a_OBJECTS = libmisc_a-Error.$(OBJEXT) faidx.$(OBJEXT) \
-	libmisc_a-params.$(OBJEXT) razf.$(OBJEXT)
+am_libmisc_a_OBJECTS = faidx.$(OBJEXT) libmisc_a-params.$(OBJEXT) \
+	razf.$(OBJEXT)
 libmisc_a_OBJECTS = $(am_libmisc_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -68,11 +68,11 @@ DIST_SOURCES = $(libmisc_a_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run aclocal-1.11
+ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11
 AMTAR = $${TAR-tar}
-AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoconf
-AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoheader
-AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run automake-1.11
+AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf
+AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader
+AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -100,7 +100,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -lz -lpthread 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run makeinfo
+MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = full-package-name
@@ -116,10 +116,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = 
 VERSION = VERSION
-abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/misc
-abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/misc
-abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
-abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
+abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/misc
+abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/misc
+abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
+abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -139,7 +139,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/install-sh
+install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -162,7 +162,7 @@ top_builddir = ..
 top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign     
 noinst_LIBRARIES = libmisc.a
-libmisc_a_SOURCES = Error.cpp faidx.c params.cpp razf.c
+libmisc_a_SOURCES = faidx.c params.cpp razf.c
 libmisc_a_CXXFLAGS = -lz -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3  
 all: all-am
 
@@ -213,7 +213,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/faidx.Po
-include ./$(DEPDIR)/libmisc_a-Error.Po
 include ./$(DEPDIR)/libmisc_a-params.Po
 include ./$(DEPDIR)/razf.Po
 
@@ -244,20 +243,6 @@ include ./$(DEPDIR)/razf.Po
 #	source='$<' object='$@' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-libmisc_a-Error.o: Error.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmisc_a_CXXFLAGS) $(CXXFLAGS) -MT libmisc_a-Error.o -MD -MP -MF $(DEPDIR)/libmisc_a-Error.Tpo -c -o libmisc_a-Error.o `test -f 'Error.cpp' || echo '$(srcdir)/'`Error.cpp
-	$(am__mv) $(DEPDIR)/libmisc_a-Error.Tpo $(DEPDIR)/libmisc_a-Error.Po
-#	source='Error.cpp' object='libmisc_a-Error.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmisc_a_CXXFLAGS) $(CXXFLAGS) -c -o libmisc_a-Error.o `test -f 'Error.cpp' || echo '$(srcdir)/'`Error.cpp
-
-libmisc_a-Error.obj: Error.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmisc_a_CXXFLAGS) $(CXXFLAGS) -MT libmisc_a-Error.obj -MD -MP -MF $(DEPDIR)/libmisc_a-Error.Tpo -c -o libmisc_a-Error.obj `if test -f 'Error.cpp'; then $(CYGPATH_W) 'Error.cpp'; else $(CYGPATH_W) '$(srcdir)/Error.cpp'; fi`
-	$(am__mv) $(DEPDIR)/libmisc_a-Error.Tpo $(DEPDIR)/libmisc_a-Error.Po
-#	source='Error.cpp' object='libmisc_a-Error.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmisc_a_CXXFLAGS) $(CXXFLAGS) -c -o libmisc_a-Error.obj `if test -f 'Error.cpp'; then $(CYGPATH_W) 'Error.cpp'; else $(CYGPATH_W) '$(srcdir)/Error.cpp'; fi`
 
 libmisc_a-params.o: params.cpp
 	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmisc_a_CXXFLAGS) $(CXXFLAGS) -MT libmisc_a-params.o -MD -MP -MF $(DEPDIR)/libmisc_a-params.Tpo -c -o libmisc_a-params.o `test -f 'params.cpp' || echo '$(srcdir)/'`params.cpp
