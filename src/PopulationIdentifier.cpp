@@ -4,7 +4,7 @@
 #ifdef ARMADILLO
 #include <armadillo>
 using namespace arma;
-#endif
+
 /*Functions for GenotypeMatrix*/
 GenotypeMatrix::GenotypeMatrix(){}
 GenotypeMatrix::GenotypeMatrix(const char* vcfFile, bool siteOnly, bool findBest, /*std::vector<std::string>& subsetInds,*/ double minAF, double minCallRate)
@@ -81,7 +81,6 @@ float GenotypeMatrix::getGenotype(int indIndex, int markerIndex)
 {
 	return genotypes[markerIndex][indIndex];
 }
-
 void GenotypeMatrix::printVCF(std::string path)
 {
 	std::ofstream fout(path);
@@ -101,6 +100,7 @@ void GenotypeMatrix::printVCF(std::string path)
 	fout.close();
 }
 GenotypeMatrix::~GenotypeMatrix(){}
+#endif
 /*Functions for fullLLKFunc*/
 PopulationIdentifier::fullLLKFunc::fullLLKFunc(){}
 PopulationIdentifier::fullLLKFunc::~fullLLKFunc(){}
@@ -170,6 +170,7 @@ int PopulationIdentifier::RunSVD()
 #endif
 PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed)
 {
+	
 	NumMarker = ReadMatrixUD(UDpath);
 	NumIndividual = ReadMatrixPC(PCpath);
 	ReadChooseBed(Bed);
@@ -279,6 +280,7 @@ int PopulationIdentifier::FormatMarkerIntersection()
 		std::cerr << "[Waring] - Marker Sets are not consistent UD:"<<UD.size()<<"\tGL:"<<GL.size() << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	return 0;
 }
 int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL information for individual need to be classified
 {
@@ -310,15 +312,21 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 
 int PopulationIdentifier::OptimizeLLK()
 {
-	//fullLLKFunc myFunc(UD,PC, GL);
+	//std::cerr << "Now the label is:1" << std::endl;
 	AmoebaMinimizer myMinimizer;
-	Vector startingPoint(2);
-	startingPoint[0] = PC[0][0];  // start with fMix = 0.01
-	startingPoint[1] = PC[0][1];       // pRefHet = 0.5
-
+	//std::cerr << "Now the label is:2" << std::endl;
+	Vector startingPoint("TestPoint",2);
+	//std::cerr << "Now the label is:3" << std::endl;
+	startingPoint[0] = PC[0][0];  
+	startingPoint[1] = PC[0][1];   
+	//startingPoint.label = "startPoint";
+	//std::cerr << "Now the label is:" << startingPoint.label << std::endl;
 	myMinimizer.func = &fn;
+	//std::cerr << "Before minimizing:1" << startingPoint.label << std::endl;
 	myMinimizer.Reset(2);
+	//std::cerr << "Before minimizing:2" << startingPoint.label << std::endl;
 	myMinimizer.point = startingPoint;
+	//std::cerr << "Before minimizing:3" << startingPoint.label << std::endl;
 	myMinimizer.Minimize(1e-6);
 	double optimalPC1 = myMinimizer.point[0];// fullLLKFunc::invLogit(myMinimizer.point[0]);
 	double optimalPC2 = myMinimizer.point[1]; //fullLLKFunc::invLogit(myMinimizer.point[1]);
@@ -330,6 +338,7 @@ int PopulationIdentifier::RunMapping()
 {
 	return 0;
 }
+#ifdef ARMADILLO
 int PopulationIdentifier::PrintVcf(const std::string & path)
 {
 	GenoMatrix.printVCF(path);
@@ -337,7 +346,7 @@ int PopulationIdentifier::PrintVcf(const std::string & path)
 	std::cout << "PC1:" << fn.PC1 << "\tPC2:" << fn.PC2 << std::endl;
 	return 0;
 }
-
+#endif
 PopulationIdentifier::~PopulationIdentifier()
 {
 }

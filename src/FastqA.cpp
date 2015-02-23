@@ -495,7 +495,31 @@ int runPop(int argc, char ** argv)
 	pl.Add(new longParams("Available Options", longParameters));
 	pl.Read(argc, argv);
 	pl.Status();
-	
+	if (UDPath == "Empty")
+	{
+		error("--UD is required");
+		exit(1);
+	}
+	if (PCPath == "Empty")
+	{
+		error("--PC is required");
+		exit(1);
+	}
+	if (muPath == "Empty")
+	{
+		error("--mu is required");
+		exit(1);
+	}
+	if (glPath == "Empty")
+	{
+		error("--gl is required");
+		exit(1);
+	}
+	if (bedPath == "Empty")
+	{
+		error("--bed is required");
+		exit(1);
+	}
 	PopulationIdentifier pop(UDPath, PCPath, muPath, glPath, bedPath);
 	pop.OptimizeLLK();
 
