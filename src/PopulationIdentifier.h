@@ -2,9 +2,10 @@
 #define POPULATIONIDENTIFIER_H_
 #include <string>
 #include <unordered_map>
-#include "fVcf.h"
 #include "MathVector.h"
-#include "MathGenMin.h"
+#include "../libmpu/MathGenMin.h"
+#ifdef ARMADILLO
+#include "../libmpu/fVcf.h"
 class GenotypeMatrix{
 public:
 	fVcf tvcf;
@@ -115,7 +116,7 @@ public:
 		grid = 0.05;
 	}
 };
-
+#endif
 class PopulationIdentifier
 {
 public:
@@ -165,7 +166,7 @@ public:
 
 		virtual double Evaluate(Vector& v) {
 			if (v.Length() != 2)
-				error("fullMixLLKFunc(): Input vector must be length of 3");
+				error("fullMixLLKFunc(): Input vector must be length of 2");
 
 			double tmpPC1 = v[0];//invLogit(v[0]);
 			double tmpPC2 = v[1]; //invLogit(v[1]);
@@ -182,9 +183,10 @@ public:
 		}
 	};
 
-
+#ifdef ARMADILLO
 	PopArgs* pArgs;
 	GenotypeMatrix GenoMatrix;
+#endif
 	uint32_t NumMarker;
 	uint32_t NumIndividual;
 	fullLLKFunc fn;
@@ -202,11 +204,13 @@ public:
 	std::vector<std::pair<std::string, int> > PosVec;
 
 	PopulationIdentifier();
+#ifdef ARMADILLO
 	/*Initialize from VCF*/
 	/*This assumes the markers are from new VCF files which is different from the index vcf file*/
 	PopulationIdentifier(const std::string& VCF,PopArgs* p, const std::string & GLpath);
 	int ImputeMissing();
 	int RunSVD();
+#endif
 	/*Initialize from existed UD*/
 	/*This assumes the markers are the same as the selected vcf*/
 	PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed);
@@ -221,7 +225,9 @@ public:
 	/*Optimize*/
 	int OptimizeLLK();
 	int RunMapping();
+#ifdef ARMADILLO
 	int PrintVcf(const std::string & path);
+#endif
 	~PopulationIdentifier();
 };
 

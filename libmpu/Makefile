@@ -53,9 +53,9 @@ libmpu_a_AR = $(AR) $(ARFLAGS)
 libmpu_a_DEPENDENCIES = libtabix.a
 am_libmpu_a_OBJECTS = mpuTool.$(OBJEXT) Parameters.$(OBJEXT) \
 	Error.$(OBJEXT) PhredHelper.$(OBJEXT) BaseAsciiMap.$(OBJEXT) \
-	MathGold.$(OBJEXT) MathGenMin.$(OBJEXT) MathVector.$(OBJEXT) \
-	MathMatrix.$(OBJEXT) Random.$(OBJEXT) Sort.$(OBJEXT) \
-	fVcf.$(OBJEXT) boolParser.$(OBJEXT) mpuVerify.$(OBJEXT) \
+	MathGold.$(OBJEXT) MathGenMin.$(OBJEXT) MathMatrix.$(OBJEXT) \
+	Random.$(OBJEXT) Sort.$(OBJEXT) fVcf.$(OBJEXT) \
+	boolParser.$(OBJEXT) mpuVerify.$(OBJEXT) \
 	mpuPileBases.$(OBJEXT) mpuMixupLikelihoods.$(OBJEXT)
 libmpu_a_OBJECTS = $(am_libmpu_a_OBJECTS)
 libtabix_a_AR = $(AR) $(ARFLAGS)
@@ -89,11 +89,11 @@ HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run aclocal-1.11
+ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11
 AMTAR = $${TAR-tar}
-AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoconf
-AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoheader
-AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run automake-1.11
+AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf
+AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader
+AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -121,7 +121,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -lz -lpthread 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run makeinfo
+MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = full-package-name
@@ -137,10 +137,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = 
 VERSION = VERSION
-abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/libmpu
-abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/libmpu
-abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
-abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
+abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/libmpu
+abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/libmpu
+abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
+abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -160,7 +160,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/install-sh
+install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -181,12 +181,12 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-AM_CPPFLAGS = -Wall -fpic -O2
+ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
+AM_CPPFLAGS = -Wall -fpic -O2 -I../libStatGen/include
 #AM_CPPFLAGS = -Wall -fpic -g -O0
 
 #noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h bgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h mpuLikelihoods.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h mpuSetLikelihoods.h mpuSet.h
-noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h mbgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h
+noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h mbgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h  MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h
 noinst_LIBRARIES = libtabix.a libmpu.a
 
 #mpuTool_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp mpuLikelihoods.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp MathVector.cpp MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp mpuSetLikelihoods.cpp
@@ -198,7 +198,7 @@ libmpu_a_LIBADD = libtabix.a
 #bgzip_SOURCES = bgzip.c bedidx.c bgzf.c knetfile.c kstring.c
 tabix_SOURCES = tabix.c bedidx.c mbgzf.c knetfile.c kstring.c index.c
 libtabix_a_SOURCES = bedidx.c mbgzf.c knetfile.c kstring.c index.c
-libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp MathVector.cpp MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
+libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp  MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
 all: all-am
 
 .SUFFIXES:
@@ -296,7 +296,6 @@ include ./$(DEPDIR)/Error.Po
 include ./$(DEPDIR)/MathGenMin.Po
 include ./$(DEPDIR)/MathGold.Po
 include ./$(DEPDIR)/MathMatrix.Po
-include ./$(DEPDIR)/MathVector.Po
 include ./$(DEPDIR)/Parameters.Po
 include ./$(DEPDIR)/PhredHelper.Po
 include ./$(DEPDIR)/Random.Po

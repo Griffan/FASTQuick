@@ -376,7 +376,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	//uint32_t test = 0x00000000903b7458;
 	for (; i != 32; ++i)
 	{
-		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
+		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)); */ // N not considered
 	}
@@ -395,7 +395,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	for (; i != Seq.length() / 2/*last one considered*/; ++i)
 	{
 		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
+		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
 		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
@@ -421,9 +421,9 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 		for (; j != Seq.length() / 2 + 32; ++j)
 		{
 			if (j==Seq.length()/2)
-			tmp = ((tmp << 2) | nst_nt4_table["ACGT"[(char) let]]);
+				tmp = ((tmp << 2) | nst_nt4_table[(unsigned char)"ACGT"[let]]);
 			else
-			tmp = ((tmp << 2) | nst_nt4_table[Seq[j]]);
+				tmp = ((tmp << 2) | nst_nt4_table[(unsigned char)Seq[j]]);
 			shrinked = KmerShrinkage(tmp, iter);
 			//if (debug_flag)
 			//{
@@ -443,7 +443,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 			++i)
 	{
 		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum = ((datum << 2) | nst_nt4_table[Seq[i]]);/*
+		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
 		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
