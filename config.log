@@ -41,6 +41,7 @@ PATH: /net/wonderland/home/fanzhang/WorkingSpace/bin
 PATH: /net/wonderland/home/fanzhang/WorkingSpace/install-packages/CORTEX_release_v1.0.5.21//scripts/analyse_variants/needleman_wunsch/
 PATH: /net/wonderland/home/fanzhang/WorkingSpace/development/sga/src/bin/
 PATH: /net/wonderland/home/fanzhang/WorkingSpace/install-packages/CORTEX_release_v1.0.5.21/bin
+R_LIBS=/net/wonderland/home/fanzhang/WorkingSpace/lib/Rlib/
 
 
 ## ----------- ##
@@ -928,8 +929,8 @@ configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:64:6: warning: conflicting types for built-in function 'pow' [enabled by default]
  char pow ();
       ^
-/tmp/ccLXxHt7.o: In function `main':
-/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/conftest.c:75: undefined reference to `pow'
+/tmp/cci9IhvX.o: In function `main':
+/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/conftest.c:75: undefined reference to `pow'
 collect2: error: ld returned 1 exit status
 configure:5341: $? = 1
 configure: failed program was:
@@ -1036,101 +1037,19 @@ configure:5491: creating ./config.status
 ## Cache variables. ##
 ## ---------------- ##
 
-ac_cv_c_compiler_gnu=yes
-ac_cv_c_inline=inline
-ac_cv_c_int32_t=yes
-ac_cv_c_int64_t=yes
-ac_cv_c_uint16_t=yes
-ac_cv_c_uint32_t=yes
-ac_cv_c_uint64_t=yes
-ac_cv_c_uint8_t=yes
-ac_cv_cxx_compiler_gnu=yes
-ac_cv_env_CCC_set=
-ac_cv_env_CCC_value=
-ac_cv_env_CC_set=
-ac_cv_env_CC_value=
-ac_cv_env_CFLAGS_set=
-ac_cv_env_CFLAGS_value=
-ac_cv_env_CPPFLAGS_set=
-ac_cv_env_CPPFLAGS_value=
-ac_cv_env_CPP_set=
-ac_cv_env_CPP_value=
-ac_cv_env_CXXFLAGS_set=
-ac_cv_env_CXXFLAGS_value=
-ac_cv_env_CXX_set=
-ac_cv_env_CXX_value=
-ac_cv_env_LDFLAGS_set=
-ac_cv_env_LDFLAGS_value=
-ac_cv_env_LIBS_set=
-ac_cv_env_LIBS_value=
-ac_cv_env_build_alias_set=
-ac_cv_env_build_alias_value=
-ac_cv_env_host_alias_set=
-ac_cv_env_host_alias_value=
-ac_cv_env_target_alias_set=
-ac_cv_env_target_alias_value=
-ac_cv_func_gettimeofday=yes
-ac_cv_func_malloc_0_nonnull=yes
-ac_cv_func_memmove=yes
-ac_cv_func_memset=yes
-ac_cv_func_pow=no
-ac_cv_func_realloc_0_nonnull=yes
-ac_cv_func_strdup=yes
-ac_cv_func_strerror=yes
-ac_cv_func_strstr=yes
-ac_cv_header_fcntl_h=yes
-ac_cv_header_inttypes_h=yes
-ac_cv_header_limits_h=yes
-ac_cv_header_memory_h=yes
-ac_cv_header_stdbool_h=yes
-ac_cv_header_stdc=yes
-ac_cv_header_stddef_h=yes
-ac_cv_header_stdint_h=yes
-ac_cv_header_stdlib_h=yes
-ac_cv_header_string_h=yes
-ac_cv_header_strings_h=yes
-ac_cv_header_sys_stat_h=yes
-ac_cv_header_sys_time_h=yes
-ac_cv_header_sys_types_h=yes
-ac_cv_header_unistd_h=yes
-ac_cv_lib_StatGen_main=no
-ac_cv_lib_error_at_line=yes
-ac_cv_lib_pthread_main=yes
-ac_cv_lib_z_main=yes
-ac_cv_objext=o
-ac_cv_path_EGREP='/bin/grep -E'
-ac_cv_path_GREP=/bin/grep
-ac_cv_path_install='/usr/bin/install -c'
-ac_cv_path_mkdir=/bin/mkdir
-ac_cv_prog_AWK=gawk
-ac_cv_prog_CPP='gcc -E'
-ac_cv_prog_ac_ct_CC=gcc
-ac_cv_prog_ac_ct_CXX=g++
-ac_cv_prog_ac_ct_RANLIB=ranlib
-ac_cv_prog_cc_c89=
-ac_cv_prog_cc_g=yes
-ac_cv_prog_cxx_g=yes
-ac_cv_prog_make_make_set=yes
-ac_cv_sys_largefile_source=no
-ac_cv_type__Bool=yes
-ac_cv_type_off_t=yes
-ac_cv_type_size_t=yes
-ac_cv_type_ssize_t=yes
-am_cv_CC_dependencies_compiler_type=gcc3
-am_cv_CXX_dependencies_compiler_type=gcc3
 
 ## ----------------- ##
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run aclocal-1.11'
+ACLOCAL='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
 AMTAR='$${TAR-tar}'
-AUTOCONF='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoconf'
-AUTOHEADER='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoheader'
-AUTOMAKE='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run automake-1.11'
+AUTOCONF='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf'
+AUTOHEADER='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader'
+AUTOMAKE='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11'
 AWK='gawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
@@ -1157,7 +1076,7 @@ LDFLAGS=''
 LIBOBJS=''
 LIBS='-lz -lpthread '
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run makeinfo'
+MAKEINFO='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo'
 MKDIR_P='/bin/mkdir -p'
 OBJEXT='o'
 PACKAGE='full-package-name'
@@ -1199,7 +1118,7 @@ host_alias=''
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/install-sh'
+install_sh='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
@@ -1288,40 +1207,4 @@ config.status:895: creating misc/Makefile
 config.status:895: creating libmpu/Makefile
 config.status:895: creating config.h
 config.status:1076: config.h is unchanged
-config.status:1124: executing depfiles commands
-
-## ---------------------- ##
-## Running config.status. ##
-## ---------------------- ##
-
-This file was extended by FULL-PACKAGE-NAME config.status VERSION, which was
-generated by GNU Autoconf 2.68.  Invocation command line was
-
-  CONFIG_FILES    = 
-  CONFIG_HEADERS  = 
-  CONFIG_LINKS    = 
-  CONFIG_COMMANDS = 
-  $ ./config.status config.h
-
-on 1000g
-
-config.status:895: creating config.h
-config.status:1076: config.h is unchanged
-
-## ---------------------- ##
-## Running config.status. ##
-## ---------------------- ##
-
-This file was extended by FULL-PACKAGE-NAME config.status VERSION, which was
-generated by GNU Autoconf 2.68.  Invocation command line was
-
-  CONFIG_FILES    = 
-  CONFIG_HEADERS  = 
-  CONFIG_LINKS    = 
-  CONFIG_COMMANDS = 
-  $ ./config.status src/Makefile depfiles
-
-on 1000g
-
-config.status:895: creating src/Makefile
 config.status:1124: executing depfiles commands
