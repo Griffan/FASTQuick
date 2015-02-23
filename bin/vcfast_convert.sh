@@ -1,0 +1,2 @@
+less /net/wonderland/home/fanzhang/1000g/data/1.FastqA/RealDataTest/2.benchmark/hs37d5.fa.SelectedSite.vcf.gz|grep -P -v "^#|^Y|^X"|awk '{print $1"\t"$2-1"\t"$2"\t"$4"\t"$5}' >choose.bed
+time /net/fantasia/home/hmkang/bin/epactsTest/bin/vcfast convert --bedf /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/resource/choose.bed --vcf /net/fantasia/home/hmkang/data/GATK-resources/hapmap_3.3.b37.vcf.gz --out ~/WorkingSpace/data/5.FastA/resource/hapmap_3.3.b37.dat --minMAC 0 --minMAF 0 --ignoreFilter
