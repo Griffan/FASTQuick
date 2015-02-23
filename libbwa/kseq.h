@@ -57,7 +57,7 @@
 								{																\
 		kstream_t *ks = (kstream_t*)calloc(1, sizeof(kstream_t));	\
 		ks->f = f;													\
-		ks->buf = malloc(__bufsize);								\
+		ks->buf =(unsigned char *)malloc(__bufsize);								\
 		return ks;													\
 								}																\
 	static inline void ks_destroy(kstream_t *ks)					\
@@ -192,7 +192,7 @@ typedef struct __kstring_t {
 		s->f = ks_init(fd);												\
 		s->name.l=s->comment.l=s->seq.l=s->qual.l=0;					\
 		s->name.m=s->comment.m=s->seq.m=s->qual.m=128;					\
-		s->name.s=calloc(128,sizeof(char));s->comment.s=calloc(128,sizeof(char));s->seq.s=calloc(128,sizeof(char));s->qual.s=calloc(128,sizeof(char));				\
+		s->name.s=(char*)calloc(128,sizeof(char));s->comment.s=(char*)calloc(128,sizeof(char));s->seq.s=(char*)calloc(128,sizeof(char));s->qual.s=(char*)calloc(128,sizeof(char));				\
 		return s;														\
 	}																	\
 	static inline void kseq_rewind(kseq_t *ks)							\
@@ -252,14 +252,14 @@ typedef struct __kstring_t {
 		seq->last_char = 0;	/* we have not come to the next header line */ \
 		if (seq->seq.l != seq->qual.l) return -2; /* qual string is shorter than seq string */ \
 		return seq->seq.l;												\
-	}																	\
-	static int kseq_read_pair(kseq_t *seq, kseq_t *seq2)				\
-	{																	\
-		int ret=0;														\
-		if ((ret = kseq_read(seq)) == -1) return -1;					\
-		if ((ret = kseq_read(seq2)) == -1) return -1;					\
-		return ret;														\
-	}
+	}																	
+	//static int kseq_read_pair(kseq_t *seq, kseq_t *seq2)				\
+	//{																	\
+	//	int ret=0;														\
+	//	if ((ret = kseq_read(seq)) == -1) return -1;					\
+	//	if ((ret = kseq_read(seq2)) == -1) return -1;					\
+	//	return ret;														\
+	//}
 
 
 #define __KSEQ_READ_FPC														\
@@ -365,7 +365,7 @@ typedef struct __kstring_t {
 		}																\
 		seq->qual.s[seq->qual.l] = 0; /* null terminated string */		\
 		seq->last_char = 0;	/* we have not come to the next header line */ \
-		/*if (seq->seq.l != seq->qual.l) return -2; /* qual string is shorter than seq string */ \
+		/*if (seq->seq.l != seq->qual.l) return -2;*/ /* qual string is shorter than seq string */ \
 		return seq->seq.l;												\
 	}																	\
 	static int kseq_read4_fpc(kseq_t *seq)								\
@@ -395,7 +395,7 @@ typedef struct __kstring_t {
 		if((c=ks_shift_bulk(ks,seq->seq.l))==-1) return -2;		\
 		if((c = ks_getc(ks)) != -1&&c!='\n')	/*eat up \n*/				\
 		{																\
-			fprintf(stderr,"last char:%c %d\nError:%s this fastq file contains reads with different length, please switch to compatible mode with '--cpt' \n",c,seq->seq.l,seq->name.s);exit(EXIT_FAILURE);	\
+			fprintf(stderr,"last char:%c %lu\nError:%s this fastq file contains reads with different length, please switch to compatible mode with '--cpt' \n",c,seq->seq.l,seq->name.s);exit(EXIT_FAILURE);	\
 		}																\
 		seq->last_char = 0;	/* we have not come to the next header line */ \
 		return 0;														\

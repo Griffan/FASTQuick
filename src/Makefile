@@ -50,7 +50,8 @@ am_FastqA_OBJECTS = FastqA-FastqA.$(OBJEXT) \
 	FastqA-RefBuilder.$(OBJEXT) FastqA-StatCollector.$(OBJEXT)
 FastqA_OBJECTS = $(am_FastqA_OBJECTS)
 FastqA_DEPENDENCIES = ../libmpu/libtabix.a ../libmpu/libmpu.a \
-	../libbwa/libbwa.a ../misc/libmisc.a
+	../libbwa/libbwa.a ../misc/libmisc.a \
+	../libStatGen/libStatGen.a
 FastqA_LINK = $(CXXLD) $(FastqA_CXXFLAGS) $(CXXFLAGS) \
 	$(FastqA_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
@@ -67,11 +68,11 @@ DIST_SOURCES = $(FastqA_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run aclocal-1.11
+ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11
 AMTAR = $${TAR-tar}
-AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoconf
-AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoheader
-AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run automake-1.11
+AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf
+AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader
+AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -99,7 +100,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -lz -lpthread 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run makeinfo
+MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = full-package-name
@@ -115,10 +116,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = 
 VERSION = VERSION
-abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/src
-abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/src
-abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
-abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present
+abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/src
+abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/src
+abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
+abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -138,7 +139,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/install-sh
+install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -162,8 +163,8 @@ top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign     
 FastqA_SOURCES = FastqA.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp
 FastqA_LDFLAGS = 
-FastqA_LDADD = ../libmpu/libtabix.a ../libmpu/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a -lStatGen -lmpu -ltabix
-FastqA_CXXFLAGS = -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/
+FastqA_LDADD = ../libmpu/libtabix.a ../libmpu/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a ../libStatGen/libStatGen.a
+FastqA_CXXFLAGS = -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
 all: all-am
 
 .SUFFIXES:
