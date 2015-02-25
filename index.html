@@ -156,9 +156,11 @@ src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup -
 </code></pre>
 
 <h3>
-<a id="see-also" class="anchor" href="#see-also" aria-hidden="true"><span class="octicon octicon-link"></span></a>SEE ALSO</h3>
+<a id="useful-tips" class="anchor" href="#useful-tips" aria-hidden="true"><span class="octicon octicon-link"></span></a>Useful Tips</h3>
 
-<p>A list of related commands or functions.</p>
+<p>The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.</p>
+
+<p>FastPopCon was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.</p>
 
 <h3>
 <a id="bugs" class="anchor" href="#bugs" aria-hidden="true"><span class="octicon octicon-link"></span></a>BUGS</h3>
