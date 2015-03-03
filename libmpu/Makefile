@@ -97,12 +97,12 @@ AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O4
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -g -O4
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -182,7 +182,7 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
-AM_CPPFLAGS = -Wall -fpic -O2 -I../libStatGen/include
+AM_CPPFLAGS = -Wall -fpic -O4 -I../libStatGen/include
 #AM_CPPFLAGS = -Wall -fpic -g -O0
 
 #noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h bgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h mpuLikelihoods.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h mpuSetLikelihoods.h mpuSet.h

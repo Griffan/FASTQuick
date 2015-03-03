@@ -156,7 +156,7 @@ typedef struct __kstring_t {
 				for (i = ks->begin; i < ks->end; ++i)					\
 					if (isspace(ks->buf[i]) && ks->buf[i] != ' ') break; \
 			} else i = 0; /* never come to here! */						\
-			if (str->m - str->l < i - ks->begin + 1) {					\
+			if (int(str->m - str->l) < i - ks->begin + 1) {					\
 				str->m = str->l + (i - ks->begin) + 1;					\
 				kroundup32(str->m);										\
 				str->s = (char*)realloc(str->s, str->m);				\
@@ -253,13 +253,13 @@ typedef struct __kstring_t {
 		if (seq->seq.l != seq->qual.l) return -2; /* qual string is shorter than seq string */ \
 		return seq->seq.l;												\
 	}																	
-	//static int kseq_read_pair(kseq_t *seq, kseq_t *seq2)				\
-	//{																	\
-	//	int ret=0;														\
-	//	if ((ret = kseq_read(seq)) == -1) return -1;					\
-	//	if ((ret = kseq_read(seq2)) == -1) return -1;					\
-	//	return ret;														\
-	//}
+	/*static int kseq_read_pair(kseq_t *seq, kseq_t *seq2)				\
+	{																	\
+		int ret=0;														\
+		if ((ret = kseq_read(seq)) == -1) return -1;					\
+		if ((ret = kseq_read(seq2)) == -1) return -1;					\
+		return ret;														\
+	}*/
 
 
 #define __KSEQ_READ_FPC														\
