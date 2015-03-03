@@ -1,37 +1,40 @@
 <!DOCTYPE html>
 <html>
+
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <meta name="description" content="FASTQuick : ">
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>FastPopCon by Griffan</title>
+    <title>FASTQuick</title>
   </head>
 
   <body>
-    <header>
-      <div class="inner">
-        <h1>FastPopCon</h1>
-        <h2></h2>
-        <a href="https://github.com/Griffan/FastPopCon" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h3>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Griffan/FASTQuick">View on GitHub</a>
+
+          <h1 id="project_title">FASTQuick</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Griffan/FASTQuick/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Griffan/FASTQuick/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>
 <a id="name" class="anchor" href="#name" aria-hidden="true"><span class="octicon octicon-link"></span></a>NAME</h3>
 
-<p>FastPopCon, a <strong>Fast</strong>q file based <strong>Pop</strong>ulation identification and <strong>Con</strong>tamination detection tool</p>
+<p>FASTQuick, a Fastq file based Population identification and Contamination detection tool</p>
 
 <h3>
 <a id="contents" class="anchor" href="#contents" aria-hidden="true"><span class="octicon octicon-link"></span></a>CONTENTS</h3>
@@ -39,26 +42,26 @@
 <h3>
 <a id="synopsis" class="anchor" href="#synopsis" aria-hidden="true"><span class="octicon octicon-link"></span></a>SYNOPSIS</h3>
 
-<pre><code>FastPopCon index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
+<pre><code>FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
 
-FastPopCon align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
+FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
 
-FastPopCon pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
+FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
-FastPopCon con --prefix NA12878
+FASTQuick con --prefix NA12878
 </code></pre>
 
 <h3>
 <a id="description" class="anchor" href="#description" aria-hidden="true"><span class="octicon octicon-link"></span></a>DESCRIPTION</h3>
 
-<p>FastPopCon is short for <strong>Fast</strong>q file based <strong>Pop</strong>ulation identification and <strong>Con</strong>tamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.</p>
+<p>FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.</p>
 
 <h3>
 <a id="commands-and-options" class="anchor" href="#commands-and-options" aria-hidden="true"><span class="octicon octicon-link"></span></a>COMMANDS AND OPTIONS</h3>
 
 <p><strong>index</strong>   </p>
 
-<pre><code>FastPopCon index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
+<pre><code>FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
 </code></pre>
 
 <p>Index database sequences, using known variant sites to anchor informative region.</p>
@@ -76,7 +79,7 @@ FastPopCon con --prefix NA12878
 
 <p><strong>align</strong></p>
 
-<pre><code>FastPopCon align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
+<pre><code>FASTQuick align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
 </code></pre>
 
 <p>Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.</p>
@@ -121,7 +124,7 @@ FastPopCon con --prefix NA12878
 
 <p><strong>pop</strong></p>
 
-<pre><code>FastPopCon pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
+<pre><code>FASTQuick pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
 </code></pre>
 
 <p>Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.</p>
@@ -136,7 +139,7 @@ FastPopCon con --prefix NA12878
 
 <p><strong>con</strong></p>
 
-<pre><code>FastPopCon con --prefix [NA12878]
+<pre><code>FASTQuick con --prefix [NA12878]
 </code></pre>
 
 <p>Estimate the probability that this sample is contaminated with other genomic material.</p>
@@ -150,9 +153,9 @@ FastPopCon con --prefix NA12878
 
 <p>Some examples of common usage.</p>
 
-<pre><code>src/FastqA index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
+<pre><code>src/FASTQuick index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
 
-src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
+src/FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
 </code></pre>
 
 <h3>
@@ -160,7 +163,7 @@ src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup -
 
 <p>The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.</p>
 
-<p>FastPopCon was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.</p>
+<p>FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.</p>
 
 <h3>
 <a id="bugs" class="anchor" href="#bugs" aria-hidden="true"><span class="octicon octicon-link"></span></a>BUGS</h3>
@@ -175,27 +178,19 @@ src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup -
 <h3>
 <a id="copyright" class="anchor" href="#copyright" aria-hidden="true"><span class="octicon octicon-link"></span></a>COPYRIGHT</h3>
 
-<p>The full FastPopCon package is distributed under GPLv3.</p>
-        </section>
-
-        <aside id="sidebar">
-          <a href="https://github.com/Griffan/FastPopCon/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/Griffan/FastPopCon/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/Griffan/FastPopCon"></a> is maintained by <a href="https://github.com/Griffan">Griffan</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+<p>The full FASTQuick package is distributed under GPLv3.</p>
+      </section>
     </div>
 
-            <script type="text/javascript">
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">FASTQuick maintained by <a href="https://github.com/Griffan">Griffan</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+              <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
           </script>
@@ -205,6 +200,7 @@ src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup -
             pageTracker._trackPageview();
             } catch(err) {}
           </script>
+
 
   </body>
 </html>
