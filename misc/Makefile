@@ -76,12 +76,12 @@ AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O4
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -g -O4
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -163,7 +163,7 @@ top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign     
 noinst_LIBRARIES = libmisc.a
 libmisc_a_SOURCES = faidx.c params.cpp razf.c
-libmisc_a_CXXFLAGS = -lz -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3  
+libmisc_a_CXXFLAGS = -lz -O4   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable  -Wno-unused-variable -mmmx -msse -msse2 -msse3  
 all: all-am
 
 .SUFFIXES:
