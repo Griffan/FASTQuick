@@ -6,5 +6,5 @@ libbwa_a_SOURCES=bamlite.c bntseq.c bwape.c bwase.c bwaseqio.c bwtaln.c bwt.c bw
 
 libbwa_a_LIBADD=
 
-libbwa_a_CFLAGS= -x c++ -lpthread -lz -O3   -g   -Wall  -DHAVE_PTHREAD  -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -fpermissive 
+libbwa_a_CFLAGS= -x c++ -lpthread -lz -O4    -Wall  -DHAVE_PTHREAD  -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -fpermissive 
 
