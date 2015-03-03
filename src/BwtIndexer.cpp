@@ -17,6 +17,7 @@
 #include <zlib.h>
 #include "../libbwa/kseq.h"
 #include <iostream>
+#include <sstream>
 #include "../libmpu/Error.h"
 using namespace std;
 extern void notice(const char*,...);
@@ -463,11 +464,11 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
 }
 /******************************/
-bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & NewRef,
+bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & OldRef,string & NewRef,
 		const gap_opt_t * opt)
 {
 	//NewRef += ".FASTQuick.fa";
-	RefPath = NewRef;
+	RefPath = OldRef;
 	string str;
 	Fa2Pac(ArtiRef, NewRef.c_str(), opt); //dump .pac
 	Fa2RevPac(NewRef.c_str()); //dump .rpac
@@ -508,10 +509,14 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & NewRef,
 }
 bool BwtIndexer::LoadIndex(string & NewRef)
 {
-	//NewRef += ".FASTQuick.fa";
-	RefPath=NewRef;
+	string str;
+	ifstream ParamIN(NewRef + ".param");
+	std::getline(ParamIN, str);
+	stringstream ss(str);
+	ss >> RefPath >> RefPath;
+	//RefPath=NewRef;
 	ReadRollHashTable(NewRef);
-	string str = NewRef + ".bwt";
+	str = NewRef + ".bwt";
 	bwt_d = bwt_restore_bwt(str.c_str());
 	str = NewRef + ".sa";
 	bwt_restore_sa(str.c_str(), bwt_d);
