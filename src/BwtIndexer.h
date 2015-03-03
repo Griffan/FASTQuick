@@ -61,7 +61,7 @@ public:
 
 	bool LoadIndex(std::string & NewRef);
 
-	bool BuildIndex(RefBuilder & ArtiRef, string & OldRef, std::string & NewRef,
+	bool BuildIndex(RefBuilder & ArtiRef, std::string & OldRef, std::string & NewRef,
 			const gap_opt_t * opt);
 
 	bool Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_t* op);
