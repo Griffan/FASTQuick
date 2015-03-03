@@ -77,12 +77,12 @@ AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O4
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -g -O4
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -165,7 +165,7 @@ AUTOMAKE_OPTIONS = foreign
 noinst_LIBRARIES = libbwa.a
 libbwa_a_SOURCES = bamlite.c bntseq.c bwape.c bwase.c bwaseqio.c bwtaln.c bwt.c bwtgap.c bwtio.c bwtmisc.c cs2nt.c is.c kstring.c stdaln.c utils.c
 libbwa_a_LIBADD = 
-libbwa_a_CFLAGS = -x c++ -lpthread -lz -O3   -g   -Wall  -DHAVE_PTHREAD  -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -fpermissive 
+libbwa_a_CFLAGS = -x c++ -lpthread -lz -O4    -Wall  -DHAVE_PTHREAD  -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -fpermissive 
 all: all-am
 
 .SUFFIXES:
