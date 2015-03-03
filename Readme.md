@@ -4,21 +4,21 @@
 
 ###SYNOPSIS
 ```
-FastPopCon index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
+FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
 
-FastPopCon align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
+FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
 
-FastPopCon pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
+FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
-FastPopCon con --prefix NA12878
+FASTQuick con --prefix NA12878
 ```
 ###DESCRIPTION
-   FastPopCon is short for **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+   FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
 ###COMMANDS AND OPTIONS
 
 **index**	
 
-    FastPopCon index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
+    FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -34,7 +34,7 @@ Index database sequences, using known variant sites to anchor informative region
 
 **align**
 
-    FastPopCon align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
+    FASTQuick align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
     
@@ -76,7 +76,7 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --frac_samp	FLOAT	Overall reads downsampling rate.[1]
 **pop**
 
-    FastPopCon pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
+    FASTQuick pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
 Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.
 
     OPTIONS
@@ -87,7 +87,7 @@ Identify individual’s population identity, ancestry information. The geometric
     --bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 **con**
 
-    FastPopCon con --prefix [NA12878]
+    FASTQuick con --prefix [NA12878]
 Estimate the probability that this sample is contaminated with other genomic material.
 
     OPTIONS
@@ -95,9 +95,9 @@ Estimate the probability that this sample is contaminated with other genomic mat
 ###EXAMPLES
    Some examples of common usage.
    
-    src/FastqA index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
+    src/FASTQuick index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
     
-    src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
+    src/FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
 ###Useful Tips
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
    
