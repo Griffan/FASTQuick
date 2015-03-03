@@ -26,14 +26,14 @@ RefBuilder::RefBuilder()
 
 }
 
-RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const string& DBsnpPath, const string& MaskPath, const gap_opt_t* opt, bool reselect=false)//, unordered_map<string,bool>& longRefTable)
+RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const string& NewRef, const string& DBsnpPath, const string& MaskPath, const gap_opt_t* opt, bool reselect = false)//, unordered_map<string,bool>& longRefTable)
 {
   notice("Initialization of RefBwt...\n");
   //read in ref.fa and ref.fai
   //string RefFaiPath=RefPath+".fai";
   faidx_t * seq;
   seq=fai_load(RefPath.c_str());
-  cerr<<endl;
+  //cerr<<endl;
   notice("Loading Ref fai file done!\n");
 
   faidx_t * FastaMask=0;
@@ -46,11 +46,11 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
   VcfHeader header;
   VcfFileReader reader;
 
-  string SelectedSite = RefPath + ".SelectedSite.vcf";
+  string SelectedSite = NewRef + ".SelectedSite.vcf";
   InputFile FoutSelectedSite(SelectedSite.c_str(),"w");
-  string GCpath = RefPath + ".gc";
+  string GCpath = NewRef + ".gc";
   ofstream FGC(GCpath,ios_base::binary);
-  string BedPath = RefPath + ".bed";
+  string BedPath = NewRef + ".bed";
   ofstream BedFile(BedPath);
   //FGC.write((char*)opt->num_variant_short,sizeof(int));
   //_GCstruct * GCstruct=new _GCstruct [opt->num_variant_long+opt->num_variant_short];
@@ -64,7 +64,7 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
   string last_chr;
   srand(time(NULL));
   /* generate secret number between 1 and 10: */
-  double iSelect = (rand() % 1000 + 1)/1000.0;
+  //double iSelect = (rand() % 1000 + 1)/1000.0;
   //int num_so_far=0;
   while(!reader.isEOF())
     {
@@ -356,7 +356,7 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
   FGC.close();
   BedFile.close();
   char cmdline[2048];
-  sprintf(cmdline, "tabix  -p bed -s 1 -b 2 -e 3 -h  %s %s  > %s.dpSNP.subset.vcf", DBsnpPath.c_str(), BedPath.c_str(), RefPath.c_str());
+  sprintf(cmdline, "tabix  -p bed -s 1 -b 2 -e 3 -h  %s %s  > %s.dpSNP.subset.vcf", DBsnpPath.c_str(), BedPath.c_str(), NewRef.c_str());
   int ret=system(cmdline);
   if(ret!=0)
     {
@@ -365,25 +365,25 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
     }
   FoutSelectedSite.ifclose();
 
-  sprintf(cmdline, "(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp", RefPath.c_str(), RefPath.c_str(), RefPath.c_str());
+  sprintf(cmdline, "(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp", NewRef.c_str(), NewRef.c_str(), NewRef.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
 	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline, "mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf", RefPath.c_str(), RefPath.c_str());
+  sprintf(cmdline, "mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf", NewRef.c_str(), NewRef.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
 	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline, "bgzip -f %s.SelectedSite.vcf", RefPath.c_str());
+  sprintf(cmdline, "bgzip -f %s.SelectedSite.vcf", NewRef.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);
 	  exit(EXIT_FAILURE);
     }
-  sprintf(cmdline, "tabix -pvcf %s.SelectedSite.vcf.gz", RefPath.c_str());
+  sprintf(cmdline, "tabix -pvcf %s.SelectedSite.vcf.gz", NewRef.c_str());
   if(system(cmdline)!=0)
     {
       warning("Call command line:\n%s\nfailed!\n",cmdline);

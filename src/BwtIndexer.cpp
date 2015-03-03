@@ -463,18 +463,19 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
 }
 /******************************/
-bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
+bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & NewRef,
 		const gap_opt_t * opt)
 {
-	RefPath=prefix;
+	//NewRef += ".FASTQuick.fa";
+	RefPath = NewRef;
 	string str;
-	Fa2Pac(ArtiRef, prefix.c_str(), opt); //dump .pac
-	Fa2RevPac(prefix.c_str()); //dump .rpac
+	Fa2Pac(ArtiRef, NewRef.c_str(), opt); //dump .pac
+	Fa2RevPac(NewRef.c_str()); //dump .rpac
 
-	DumpRollHashTable(prefix);
-	//str=prefix+".pac";
+	DumpRollHashTable(NewRef);
+	//str=NewRef+".pac";
 	//std::cerr<<"The bwa seq len is:"<<bwa_seq_len(str.c_str())<<std::endl;
-	bns_dump(bns, prefix.c_str());
+	bns_dump(bns, NewRef.c_str());
 	notice(" Building Pac from Bwt...\n");
 	bwt_d = Pac2Bwt(pac_buf);
 	//cerr<<"Pac2Bwt..."<<bwt_d->bwt_size<<endl;
@@ -486,53 +487,54 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & prefix,
 	//cerr<<"Bwt update..."<<bwt_d->bwt_size<<endl;
 	bwt_bwtupdate_core(rbwt_d);
 	notice("Dumping Bwt...\n");
-	str = prefix + ".bwt";
+	str = NewRef + ".bwt";
 	bwt_dump_bwt(str.c_str(), bwt_d);
-	str = prefix + ".rbwt";
+	str = NewRef + ".rbwt";
 	//cerr<<"The Mapper hs rbwt_d->bwt_size is:"<<rbwt_d->bwt_size<<endl;
 	bwt_dump_bwt(str.c_str(), rbwt_d);
 
 	//bwt_d=bwt_gen_cnt_table(bwt_d);
 	//rbwt_d=bwt_gen_cnt_table(rbwt_d);
 	notice("Calculate SA from Bwt...\n");
-	str = prefix + ".sa";
+	str = NewRef + ".sa";
 	bwt_cal_sa(bwt_d, 32);
 	bwt_dump_sa(str.c_str(), bwt_d);
-	str = prefix + ".rsa";
+	str = NewRef + ".rsa";
 	bwt_cal_sa(rbwt_d, 32);
 	bwt_dump_sa(str.c_str(), rbwt_d);
 
 	DBG(fprintf(stderr,"Indexer initialization finished...\n");)
 	return true;
 }
-bool BwtIndexer::LoadIndex(string & prefix)
+bool BwtIndexer::LoadIndex(string & NewRef)
 {
-	RefPath=prefix;
-	ReadRollHashTable(prefix);
-	string str = prefix + ".bwt";
+	//NewRef += ".FASTQuick.fa";
+	RefPath=NewRef;
+	ReadRollHashTable(NewRef);
+	string str = NewRef + ".bwt";
 	bwt_d = bwt_restore_bwt(str.c_str());
-	str = prefix + ".sa";
+	str = NewRef + ".sa";
 	bwt_restore_sa(str.c_str(), bwt_d);
 	//bwt_cal_sa(bwt_d, 32);
-	str = prefix + ".rbwt";
+	str = NewRef + ".rbwt";
 	if (stat(str.c_str(), &sb) == 0)
 		rbwt_d = bwt_restore_bwt(str.c_str());
 	else
 	{
-		str = prefix + ".pac";
-		string str2 = prefix + ".rpac";
+		str = NewRef + ".pac";
+		string str2 = NewRef + ".rpac";
 		bwa_pac_rev_core(str.c_str(), str2.c_str());
 		rbwt_d = bwt_pac2bwt(str2.c_str(), 3);
 		bwt_gen_cnt_table(rbwt_d);
 		bwt_bwtupdate_core(rbwt_d);
-		str = prefix + ".rbwt";
+		str = NewRef + ".rbwt";
 		//cerr<<"The Mapper rbwt_d->bwt_size is:"<<rbwt_d->bwt_size<<endl;
 		bwt_dump_bwt(str.c_str(), rbwt_d);
 	}
-	str = prefix + ".rsa";
+	str = NewRef + ".rsa";
 	bwt_restore_sa(str.c_str(), rbwt_d);
 	//bwt_cal_sa(rbwt_d, 32);
-	bns = bns_restore(prefix.c_str());
+	bns = bns_restore(NewRef.c_str());
 	DBG(fprintf(stderr,"Indexer loading  finished...\n");)
 	return true;
 }
@@ -566,7 +568,7 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	//while ((l = kseq_read(seq)) >= 0) {
 	DBG(fprintf(stderr,"NOTE:Come into Fa2Pac...\n");)
 	string RefOutput(prefix);
-	RefOutput+=".ref.fa";
+	//RefOutput+=".FASTQuick.fa";
 	ofstream Fout(RefOutput);
 	for (unordered_map<string, uint32_t>::iterator iter =
 			ArtiRef.RefTableIndex.begin(); iter != ArtiRef.RefTableIndex.end();
@@ -577,14 +579,14 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 		//if (CurrentSeqName == "8:32617714@G/A") debug_flag = true;
 		//if(ArtiRef.longRefTable[CurrentSeqName]==true) continue;// long ref seq would not be indexed
 		string CurrentSeq = ArtiRef.SeqVec[iter->second];
-		if (debug_flag) std::cerr << CurrentSeq << endl;
+		//if (debug_flag) std::cerr << CurrentSeq << endl;
 		AddSeq2Hash(CurrentSeq, opt);
-		if (debug_flag) std::cerr << string(CurrentSeq.rbegin(), CurrentSeq.rend()) << endl;
+		//if (debug_flag) std::cerr << string(CurrentSeq.rbegin(), CurrentSeq.rend()) << endl;
 		AddSeq2Hash(string(CurrentSeq.rbegin(), CurrentSeq.rend()), opt);
 		string tmp_rev_cmp = ReverseComplement(CurrentSeq);
-		if (debug_flag) std::cerr << tmp_rev_cmp << endl;
+		//if (debug_flag) std::cerr << tmp_rev_cmp << endl;
 		AddSeq2Hash(tmp_rev_cmp, opt);
-		if (debug_flag) std::cerr << string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()) << endl;
+		//if (debug_flag) std::cerr << string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()) << endl;
 		AddSeq2Hash(string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()), opt);
 		Fout << ">" << CurrentSeqName << "\n" << CurrentSeq << "\n";
 		//if (debug_flag) exit(EXIT_FAILURE);

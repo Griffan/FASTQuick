@@ -55,13 +55,13 @@ public:
 
 	BwtIndexer();
 
-	BwtIndexer(std::string & prefix);
+	BwtIndexer(std::string & NewRef);
 
-	BwtIndexer(RefBuilder & ArtiRef, std::string & prefix);
+	BwtIndexer(RefBuilder & ArtiRef, std::string & NewRef);
 
-	bool LoadIndex(std::string & prefix);
+	bool LoadIndex(std::string & NewRef);
 
-	bool BuildIndex(RefBuilder & ArtiRef, std::string & prefix,
+	bool BuildIndex(RefBuilder & ArtiRef, std::string & NewRef,
 			const gap_opt_t * opt);
 
 	bool Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_t* op);
