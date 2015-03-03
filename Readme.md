@@ -1,5 +1,5 @@
 ###NAME
-   FastPopCon, a **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool
+   FASTQuick, a Fastq file based Population identification and Contamination detection tool
 ###CONTENTS
 
 ###SYNOPSIS
