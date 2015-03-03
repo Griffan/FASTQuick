@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = FastqA$(EXEEXT)
+bin_PROGRAMS = FASTQuick$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -45,15 +45,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_FastqA_OBJECTS = FastqA-FastqA.$(OBJEXT) \
-	FastqA-BwtIndexer.$(OBJEXT) FastqA-BwtMapper.$(OBJEXT) \
-	FastqA-RefBuilder.$(OBJEXT) FastqA-StatCollector.$(OBJEXT)
-FastqA_OBJECTS = $(am_FastqA_OBJECTS)
-FastqA_DEPENDENCIES = ../libmpu/libtabix.a ../libmpu/libmpu.a \
+am_FASTQuick_OBJECTS = FASTQuick-FASTQuick.$(OBJEXT) \
+	FASTQuick-BwtIndexer.$(OBJEXT) FASTQuick-BwtMapper.$(OBJEXT) \
+	FASTQuick-RefBuilder.$(OBJEXT) \
+	FASTQuick-StatCollector.$(OBJEXT)
+FASTQuick_OBJECTS = $(am_FASTQuick_OBJECTS)
+FASTQuick_DEPENDENCIES = ../libmpu/libtabix.a ../libmpu/libmpu.a \
 	../libbwa/libbwa.a ../misc/libmisc.a \
 	../libStatGen/libStatGen.a
-FastqA_LINK = $(CXXLD) $(FastqA_CXXFLAGS) $(CXXFLAGS) \
-	$(FastqA_LDFLAGS) $(LDFLAGS) -o $@
+FASTQuick_LINK = $(CXXLD) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) \
+	$(FASTQuick_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -63,8 +64,8 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(FastqA_SOURCES)
-DIST_SOURCES = $(FastqA_SOURCES)
+SOURCES = $(FASTQuick_SOURCES)
+DIST_SOURCES = $(FASTQuick_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -161,10 +162,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign     
-FastqA_SOURCES = FastqA.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp
-FastqA_LDFLAGS = 
-FastqA_LDADD = ../libmpu/libtabix.a ../libmpu/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a ../libStatGen/libStatGen.a
-FastqA_CXXFLAGS = -O3   -g   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-but-set-variable -D_GLIBCXX_DEBUG -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
+FASTQuick_SOURCES = FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp
+FASTQuick_LDFLAGS = 
+FASTQuick_LDADD = ../libmpu/libtabix.a ../libmpu/libmpu.a ../libbwa/libbwa.a ../misc/libmisc.a ../libStatGen/libStatGen.a
+FASTQuick_CXXFLAGS = -O4   -Wall -std=c++11  -DHAVE_PTHREAD -fpermissive -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
 all: all-am
 
 .SUFFIXES:
@@ -236,9 +237,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-FastqA$(EXEEXT): $(FastqA_OBJECTS) $(FastqA_DEPENDENCIES) $(EXTRA_FastqA_DEPENDENCIES) 
-	@rm -f FastqA$(EXEEXT)
-	$(FastqA_LINK) $(FastqA_OBJECTS) $(FastqA_LDADD) $(LIBS)
+FASTQuick$(EXEEXT): $(FASTQuick_OBJECTS) $(FASTQuick_DEPENDENCIES) $(EXTRA_FASTQuick_DEPENDENCIES) 
+	@rm -f FASTQuick$(EXEEXT)
+	$(FASTQuick_LINK) $(FASTQuick_OBJECTS) $(FASTQuick_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -246,11 +247,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FastqA-BwtIndexer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FastqA-BwtMapper.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FastqA-FastqA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FastqA-RefBuilder.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FastqA-StatCollector.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FASTQuick-BwtIndexer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FASTQuick-BwtMapper.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FASTQuick-FASTQuick.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FASTQuick-RefBuilder.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FASTQuick-StatCollector.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -266,75 +267,75 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-FastqA-FastqA.o: FastqA.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-FastqA.o -MD -MP -MF $(DEPDIR)/FastqA-FastqA.Tpo -c -o FastqA-FastqA.o `test -f 'FastqA.cpp' || echo '$(srcdir)/'`FastqA.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-FastqA.Tpo $(DEPDIR)/FastqA-FastqA.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FastqA.cpp' object='FastqA-FastqA.o' libtool=no @AMDEPBACKSLASH@
+FASTQuick-FASTQuick.o: FASTQuick.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-FASTQuick.o -MD -MP -MF $(DEPDIR)/FASTQuick-FASTQuick.Tpo -c -o FASTQuick-FASTQuick.o `test -f 'FASTQuick.cpp' || echo '$(srcdir)/'`FASTQuick.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-FASTQuick.Tpo $(DEPDIR)/FASTQuick-FASTQuick.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FASTQuick.cpp' object='FASTQuick-FASTQuick.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-FastqA.o `test -f 'FastqA.cpp' || echo '$(srcdir)/'`FastqA.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-FASTQuick.o `test -f 'FASTQuick.cpp' || echo '$(srcdir)/'`FASTQuick.cpp
 
-FastqA-FastqA.obj: FastqA.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-FastqA.obj -MD -MP -MF $(DEPDIR)/FastqA-FastqA.Tpo -c -o FastqA-FastqA.obj `if test -f 'FastqA.cpp'; then $(CYGPATH_W) 'FastqA.cpp'; else $(CYGPATH_W) '$(srcdir)/FastqA.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-FastqA.Tpo $(DEPDIR)/FastqA-FastqA.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FastqA.cpp' object='FastqA-FastqA.obj' libtool=no @AMDEPBACKSLASH@
+FASTQuick-FASTQuick.obj: FASTQuick.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-FASTQuick.obj -MD -MP -MF $(DEPDIR)/FASTQuick-FASTQuick.Tpo -c -o FASTQuick-FASTQuick.obj `if test -f 'FASTQuick.cpp'; then $(CYGPATH_W) 'FASTQuick.cpp'; else $(CYGPATH_W) '$(srcdir)/FASTQuick.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-FASTQuick.Tpo $(DEPDIR)/FASTQuick-FASTQuick.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FASTQuick.cpp' object='FASTQuick-FASTQuick.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-FastqA.obj `if test -f 'FastqA.cpp'; then $(CYGPATH_W) 'FastqA.cpp'; else $(CYGPATH_W) '$(srcdir)/FastqA.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-FASTQuick.obj `if test -f 'FASTQuick.cpp'; then $(CYGPATH_W) 'FASTQuick.cpp'; else $(CYGPATH_W) '$(srcdir)/FASTQuick.cpp'; fi`
 
-FastqA-BwtIndexer.o: BwtIndexer.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-BwtIndexer.o -MD -MP -MF $(DEPDIR)/FastqA-BwtIndexer.Tpo -c -o FastqA-BwtIndexer.o `test -f 'BwtIndexer.cpp' || echo '$(srcdir)/'`BwtIndexer.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-BwtIndexer.Tpo $(DEPDIR)/FastqA-BwtIndexer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtIndexer.cpp' object='FastqA-BwtIndexer.o' libtool=no @AMDEPBACKSLASH@
+FASTQuick-BwtIndexer.o: BwtIndexer.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-BwtIndexer.o -MD -MP -MF $(DEPDIR)/FASTQuick-BwtIndexer.Tpo -c -o FASTQuick-BwtIndexer.o `test -f 'BwtIndexer.cpp' || echo '$(srcdir)/'`BwtIndexer.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-BwtIndexer.Tpo $(DEPDIR)/FASTQuick-BwtIndexer.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtIndexer.cpp' object='FASTQuick-BwtIndexer.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-BwtIndexer.o `test -f 'BwtIndexer.cpp' || echo '$(srcdir)/'`BwtIndexer.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-BwtIndexer.o `test -f 'BwtIndexer.cpp' || echo '$(srcdir)/'`BwtIndexer.cpp
 
-FastqA-BwtIndexer.obj: BwtIndexer.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-BwtIndexer.obj -MD -MP -MF $(DEPDIR)/FastqA-BwtIndexer.Tpo -c -o FastqA-BwtIndexer.obj `if test -f 'BwtIndexer.cpp'; then $(CYGPATH_W) 'BwtIndexer.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtIndexer.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-BwtIndexer.Tpo $(DEPDIR)/FastqA-BwtIndexer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtIndexer.cpp' object='FastqA-BwtIndexer.obj' libtool=no @AMDEPBACKSLASH@
+FASTQuick-BwtIndexer.obj: BwtIndexer.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-BwtIndexer.obj -MD -MP -MF $(DEPDIR)/FASTQuick-BwtIndexer.Tpo -c -o FASTQuick-BwtIndexer.obj `if test -f 'BwtIndexer.cpp'; then $(CYGPATH_W) 'BwtIndexer.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtIndexer.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-BwtIndexer.Tpo $(DEPDIR)/FASTQuick-BwtIndexer.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtIndexer.cpp' object='FASTQuick-BwtIndexer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-BwtIndexer.obj `if test -f 'BwtIndexer.cpp'; then $(CYGPATH_W) 'BwtIndexer.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtIndexer.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-BwtIndexer.obj `if test -f 'BwtIndexer.cpp'; then $(CYGPATH_W) 'BwtIndexer.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtIndexer.cpp'; fi`
 
-FastqA-BwtMapper.o: BwtMapper.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-BwtMapper.o -MD -MP -MF $(DEPDIR)/FastqA-BwtMapper.Tpo -c -o FastqA-BwtMapper.o `test -f 'BwtMapper.cpp' || echo '$(srcdir)/'`BwtMapper.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-BwtMapper.Tpo $(DEPDIR)/FastqA-BwtMapper.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtMapper.cpp' object='FastqA-BwtMapper.o' libtool=no @AMDEPBACKSLASH@
+FASTQuick-BwtMapper.o: BwtMapper.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-BwtMapper.o -MD -MP -MF $(DEPDIR)/FASTQuick-BwtMapper.Tpo -c -o FASTQuick-BwtMapper.o `test -f 'BwtMapper.cpp' || echo '$(srcdir)/'`BwtMapper.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-BwtMapper.Tpo $(DEPDIR)/FASTQuick-BwtMapper.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtMapper.cpp' object='FASTQuick-BwtMapper.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-BwtMapper.o `test -f 'BwtMapper.cpp' || echo '$(srcdir)/'`BwtMapper.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-BwtMapper.o `test -f 'BwtMapper.cpp' || echo '$(srcdir)/'`BwtMapper.cpp
 
-FastqA-BwtMapper.obj: BwtMapper.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-BwtMapper.obj -MD -MP -MF $(DEPDIR)/FastqA-BwtMapper.Tpo -c -o FastqA-BwtMapper.obj `if test -f 'BwtMapper.cpp'; then $(CYGPATH_W) 'BwtMapper.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtMapper.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-BwtMapper.Tpo $(DEPDIR)/FastqA-BwtMapper.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtMapper.cpp' object='FastqA-BwtMapper.obj' libtool=no @AMDEPBACKSLASH@
+FASTQuick-BwtMapper.obj: BwtMapper.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-BwtMapper.obj -MD -MP -MF $(DEPDIR)/FASTQuick-BwtMapper.Tpo -c -o FASTQuick-BwtMapper.obj `if test -f 'BwtMapper.cpp'; then $(CYGPATH_W) 'BwtMapper.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtMapper.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-BwtMapper.Tpo $(DEPDIR)/FASTQuick-BwtMapper.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BwtMapper.cpp' object='FASTQuick-BwtMapper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-BwtMapper.obj `if test -f 'BwtMapper.cpp'; then $(CYGPATH_W) 'BwtMapper.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtMapper.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-BwtMapper.obj `if test -f 'BwtMapper.cpp'; then $(CYGPATH_W) 'BwtMapper.cpp'; else $(CYGPATH_W) '$(srcdir)/BwtMapper.cpp'; fi`
 
-FastqA-RefBuilder.o: RefBuilder.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-RefBuilder.o -MD -MP -MF $(DEPDIR)/FastqA-RefBuilder.Tpo -c -o FastqA-RefBuilder.o `test -f 'RefBuilder.cpp' || echo '$(srcdir)/'`RefBuilder.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-RefBuilder.Tpo $(DEPDIR)/FastqA-RefBuilder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='RefBuilder.cpp' object='FastqA-RefBuilder.o' libtool=no @AMDEPBACKSLASH@
+FASTQuick-RefBuilder.o: RefBuilder.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-RefBuilder.o -MD -MP -MF $(DEPDIR)/FASTQuick-RefBuilder.Tpo -c -o FASTQuick-RefBuilder.o `test -f 'RefBuilder.cpp' || echo '$(srcdir)/'`RefBuilder.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-RefBuilder.Tpo $(DEPDIR)/FASTQuick-RefBuilder.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='RefBuilder.cpp' object='FASTQuick-RefBuilder.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-RefBuilder.o `test -f 'RefBuilder.cpp' || echo '$(srcdir)/'`RefBuilder.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-RefBuilder.o `test -f 'RefBuilder.cpp' || echo '$(srcdir)/'`RefBuilder.cpp
 
-FastqA-RefBuilder.obj: RefBuilder.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-RefBuilder.obj -MD -MP -MF $(DEPDIR)/FastqA-RefBuilder.Tpo -c -o FastqA-RefBuilder.obj `if test -f 'RefBuilder.cpp'; then $(CYGPATH_W) 'RefBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/RefBuilder.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-RefBuilder.Tpo $(DEPDIR)/FastqA-RefBuilder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='RefBuilder.cpp' object='FastqA-RefBuilder.obj' libtool=no @AMDEPBACKSLASH@
+FASTQuick-RefBuilder.obj: RefBuilder.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-RefBuilder.obj -MD -MP -MF $(DEPDIR)/FASTQuick-RefBuilder.Tpo -c -o FASTQuick-RefBuilder.obj `if test -f 'RefBuilder.cpp'; then $(CYGPATH_W) 'RefBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/RefBuilder.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-RefBuilder.Tpo $(DEPDIR)/FASTQuick-RefBuilder.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='RefBuilder.cpp' object='FASTQuick-RefBuilder.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-RefBuilder.obj `if test -f 'RefBuilder.cpp'; then $(CYGPATH_W) 'RefBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/RefBuilder.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-RefBuilder.obj `if test -f 'RefBuilder.cpp'; then $(CYGPATH_W) 'RefBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/RefBuilder.cpp'; fi`
 
-FastqA-StatCollector.o: StatCollector.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-StatCollector.o -MD -MP -MF $(DEPDIR)/FastqA-StatCollector.Tpo -c -o FastqA-StatCollector.o `test -f 'StatCollector.cpp' || echo '$(srcdir)/'`StatCollector.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-StatCollector.Tpo $(DEPDIR)/FastqA-StatCollector.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StatCollector.cpp' object='FastqA-StatCollector.o' libtool=no @AMDEPBACKSLASH@
+FASTQuick-StatCollector.o: StatCollector.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-StatCollector.o -MD -MP -MF $(DEPDIR)/FASTQuick-StatCollector.Tpo -c -o FASTQuick-StatCollector.o `test -f 'StatCollector.cpp' || echo '$(srcdir)/'`StatCollector.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-StatCollector.Tpo $(DEPDIR)/FASTQuick-StatCollector.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StatCollector.cpp' object='FASTQuick-StatCollector.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-StatCollector.o `test -f 'StatCollector.cpp' || echo '$(srcdir)/'`StatCollector.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-StatCollector.o `test -f 'StatCollector.cpp' || echo '$(srcdir)/'`StatCollector.cpp
 
-FastqA-StatCollector.obj: StatCollector.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -MT FastqA-StatCollector.obj -MD -MP -MF $(DEPDIR)/FastqA-StatCollector.Tpo -c -o FastqA-StatCollector.obj `if test -f 'StatCollector.cpp'; then $(CYGPATH_W) 'StatCollector.cpp'; else $(CYGPATH_W) '$(srcdir)/StatCollector.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FastqA-StatCollector.Tpo $(DEPDIR)/FastqA-StatCollector.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StatCollector.cpp' object='FastqA-StatCollector.obj' libtool=no @AMDEPBACKSLASH@
+FASTQuick-StatCollector.obj: StatCollector.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-StatCollector.obj -MD -MP -MF $(DEPDIR)/FASTQuick-StatCollector.Tpo -c -o FASTQuick-StatCollector.obj `if test -f 'StatCollector.cpp'; then $(CYGPATH_W) 'StatCollector.cpp'; else $(CYGPATH_W) '$(srcdir)/StatCollector.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/FASTQuick-StatCollector.Tpo $(DEPDIR)/FASTQuick-StatCollector.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StatCollector.cpp' object='FASTQuick-StatCollector.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FastqA_CXXFLAGS) $(CXXFLAGS) -c -o FastqA-StatCollector.obj `if test -f 'StatCollector.cpp'; then $(CYGPATH_W) 'StatCollector.cpp'; else $(CYGPATH_W) '$(srcdir)/StatCollector.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-StatCollector.obj `if test -f 'StatCollector.cpp'; then $(CYGPATH_W) 'StatCollector.cpp'; else $(CYGPATH_W) '$(srcdir)/StatCollector.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
