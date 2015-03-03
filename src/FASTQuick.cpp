@@ -116,17 +116,17 @@ int runOneStop(int argc, char ** argv)
 	if(RefPath=="Empty")
 	{
 		error("--ref is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if(VcfPath=="Empty")
 	{
 		error("--vcf is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if(DBsnpPath=="Empty")
 	{
 		error("--dbsnp is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if(BamOut)
 	{
@@ -246,7 +246,7 @@ int runIndex(int argc, char ** argv)
 	* Parameters
 	*
 	*/
-	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty");
+	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty");
 	bool reselect(false);
 	//std::string Prefix("Empty");
 	paramList pl;
@@ -255,58 +255,72 @@ int runIndex(int argc, char ** argv)
 		LONG_STRING_PARAM("vcf", &VcfPath, "[String] Input Hapmap or Selected Sites VCF file[Required]")
 		LONG_STRING_PARAM("dbsnp", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
-		//LONG_STRING_PARAM("prefix", &Prefix, "[String] Prefix of all the output files[Required]")
+		LONG_STRING_PARAM("index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
 		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
 		LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
 		LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
-		LONG_PARAM("reselect", &reselect, "[Bool] If you want to reselect subset of snp sites for generating reference")
+		//LONG_PARAM("reselect", &reselect, "[Bool] If you want to reselect subset of snp sites for generating reference")
 	END_LONG_PARAMS();
 
 	pl.Add(new longParams("Available Options", longParameters));
 	pl.Read(argc, argv);
 	pl.Status();
-	//if (Prefix == "Empty")
-	//{
-	//	error("--prefix is required");
-	//	exit(1);
-	//}
+	if (Prefix == "Empty")
+	{
+		error("--prefix is required");
+		exit(EXIT_FAILURE);
+	}
 	if (RefPath == "Empty")
 	{
 		error("--ref is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (VcfPath == "Empty")
 	{
 		error("--vcf is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (DBsnpPath == "Empty")
 	{
 		error("--dbsnp is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	struct stat sb;
 	//
 	//build ref index
 	BwtIndexer Indexer;
-	std::string BwtPath = RefPath + ".bwt";
+	std::string NewRef = Prefix + ".FASTQuick.fa";
+	std::string BwtPath = NewRef + ".bwt";
 	//string BwtPathR = RefPath + ".rbwt";
 	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
-		RefBuilder ArtiRef(VcfPath, RefPath, DBsnpPath, MaskPath, opt, reselect);
+		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath, opt, reselect);
 		//Indexer.longRefTable);
-		Indexer.BuildIndex(ArtiRef, RefPath, opt);
+		Indexer.BuildIndex(ArtiRef, NewRef, opt);
 	}
 	else //load ref index
 	{
 		notice("Index file exists, exit...\n");
 		return 0;
 	}
+
+	ofstream ParamOut(NewRef + ".param");
+	if (!ParamOut.is_open())
+	{
+		cerr << "Open file :" << NewRef + ".param" << "failed!" << endl;
+	}
+	ParamOut << "index_prefix:\t" << Prefix << endl;
+	ParamOut << "var_long:\t" << opt->num_variant_long << endl;
+	ParamOut << "var_short:\t" << opt->num_variant_short << endl;
+	ParamOut << "flank_len:\t" << opt->flank_len << endl;
+	ParamOut << "flank_long_len:\t" << opt->flank_long_len << endl;
+	ParamOut.close();
+
 	notice("Version: %s\n", PACKAGE_VERSION);
 	notice("Real time: %.3f sec; CPU: %.3f sec\n",realtime() - t_real, cputime());
 	return 0;
@@ -322,16 +336,16 @@ int runAlign(int argc, char ** argv)
 	popt = bwa_init_pe_opt();
 	opt = gap_init_opt();
 
-	std::string RefPath("Empty"), /*VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
+	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
 		"Empty"), BamIn("Empty"), ReadGroup("default"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
-	std::string Prefix("Empty");
+	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), BamOut(0);
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 		//LONG_STRING_PARAM("vcf", &VcfPath, "[String] Input Hapmap or Selected Sites VCF file[Required]")
 		//LONG_STRING_PARAM("dbsnp", &DBsnpPath, "[String] dbSNP VCF file[Required]")
-		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
+		//LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		//LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
 		LONG_STRING_PARAM("fastq_1", &Fastq_1, "[String] Pair end 1 fastq file[Leave empty if using fq_list or bam_in]")
 		LONG_STRING_PARAM("fastq_2", &Fastq_2, "[String] Pair end 2 fastq file.[Leave empty if using single end]")
@@ -339,17 +353,19 @@ int runAlign(int argc, char ** argv)
 		LONG_STRING_PARAM("bam_in", &BamIn, "[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
 		LONG_PARAM("bam_out", &BamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
 		LONG_STRING_PARAM("prefix", &Prefix, "[String] Prefix of all the output files[Required]")
+		LONG_STRING_PARAM("index_prefix", &IndexPrefix, "[String] Prefix of all the index files[Required]")
 
 
 		//LONG_STRING_PARAM("out",&outf,"Output file prefix")
-		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
-		// LONG_INT_PARAM("K",&Indexer.RollParam.kmer_size,"kmer size for Rolling Hash filtering")
-		// LONG_INT_PARAM("T",&Indexer.RollParam.thresh,"threshold for filtering specific read")
-		// LONG_INT_PARAM("S",&Indexer.RollParam.read_step_size,"step size for extracting kmer")
-		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
-		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
-		LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
-		LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
+		//LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
+		//// LONG_INT_PARAM("K",&Indexer.RollParam.kmer_size,"kmer size for Rolling Hash filtering")
+		//// LONG_INT_PARAM("T",&Indexer.RollParam.thresh,"threshold for filtering specific read")
+		//// LONG_INT_PARAM("S",&Indexer.RollParam.read_step_size,"step size for extracting kmer")
+
+		//LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
+		//LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
+		//LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
+		//LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
 
 		LONG_PARAM_GROUP("Parameters for Alignment ", "Parameters the are universal for both single end and pair end alignment.[Optional]")
 		LONG_DOUBLE_PARAM("n", &opt->fnr, "[INT or Float] Max #diff (int) or missing prob under 0.02 error rate")
@@ -395,22 +411,22 @@ int runAlign(int argc, char ** argv)
 	if (Prefix == "Empty")
 	{
 		error("--prefix is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
-	if (RefPath == "Empty")
+	if (IndexPrefix == "Empty")
 	{
-		error("--ref is required");
-		exit(1);
+		error("--index_prefix is required");
+		exit(EXIT_FAILURE);
 	}
 	//if (VcfPath == "Empty")
 	//{
 	//	error("--vcf is required");
-	//	exit(1);
+	//	exit(EXIT_FAILURE);
 	//}
 	//if (DBsnpPath == "Empty")
 	//{
 	//	error("--dbsnp is required");
-	//	exit(1);
+	//	exit(EXIT_FAILURE);
 	//}
 	if (BamOut)
 	{
@@ -444,7 +460,40 @@ int runAlign(int argc, char ** argv)
 
 	struct stat sb;
 	BwtIndexer Indexer;
-	std::string BwtPath = RefPath + ".bwt";
+	std::string NewRef = IndexPrefix + ".FASTQuick.fa";
+
+	ifstream ParamIn(NewRef + ".param");
+	if (!ParamIn.is_open())
+	{
+		cerr << "Open file :" << NewRef + ".param" << "failed!" << endl;
+	}
+	std::string ParaStr,TmpStr;
+	std::getline(ParamIn, ParaStr);//prefix
+	std::getline(ParamIn, ParaStr);//variant long
+	stringstream ss(ParaStr);
+	ss >> TmpStr;
+	if (TmpStr != "var_long:") ss >> opt->num_variant_long;
+	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
+	std::getline(ParamIn, ParaStr);//variant short
+	stringstream ss(ParaStr);
+	ss >> TmpStr;
+	if (TmpStr != "var_short:") ss >> opt->num_variant_short;
+	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
+	std::getline(ParamIn, ParaStr);//flank_len
+	stringstream ss(ParaStr);
+	ss >> TmpStr;
+	if (TmpStr != "flank_len:") ss >> opt->flank_len;
+	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
+	std::getline(ParamIn, ParaStr);//flank_long_len
+	stringstream ss(ParaStr);
+	ss >> TmpStr;
+	if (TmpStr != "flank_long_len:") ss >> opt->flank_long_len;
+	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
+	ParamIn.close();
+
+
+
+	std::string BwtPath = NewRef + ".bwt";
 	//string BwtPathR = RefPath + ".rbwt";
 	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
@@ -454,16 +503,16 @@ int runAlign(int argc, char ** argv)
 	else //load ref index
 	{
 		t_tmp = realtime();
-		Indexer.LoadIndex(RefPath);
+		Indexer.LoadIndex(NewRef);
 		notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
 		t_tmp = realtime();
 		if (FaList != "Empty")
 		{
-			BwtMapper Mapper(Indexer, FaList, Prefix, RefPath, popt, opt);
+			BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt);
 		}
 		else
 		{
-			BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, RefPath, popt, opt);
+			BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt);
 		}
 		notice("[main]Mapping...%f sec\n", realtime() - t_tmp);
 	}
@@ -498,27 +547,27 @@ int runPop(int argc, char ** argv)
 	if (UDPath == "Empty")
 	{
 		error("--UD is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (PCPath == "Empty")
 	{
 		error("--PC is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (muPath == "Empty")
 	{
 		error("--mu is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (glPath == "Empty")
 	{
 		error("--gl is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if (bedPath == "Empty")
 	{
 		error("--bed is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	PopulationIdentifier pop(UDPath, PCPath, muPath, glPath, bedPath);
 	pop.OptimizeLLK();
@@ -555,7 +604,7 @@ int runVerify(int argc, char ** argv)
 	if (Prefix == "Empty")
 	{
 		error("--prefix is required");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	char cmdline[1024];
