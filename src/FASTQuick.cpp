@@ -301,7 +301,7 @@ int runIndex(int argc, char ** argv)
 		notice("Index file doesn't exist, building...\n");
 		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath, opt, reselect);
 		//Indexer.longRefTable);
-		Indexer.BuildIndex(ArtiRef, NewRef, opt);
+		Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
 	}
 	else //load ref index
 	{
@@ -314,7 +314,7 @@ int runIndex(int argc, char ** argv)
 	{
 		cerr << "Open file :" << NewRef + ".param" << "failed!" << endl;
 	}
-	ParamOut << "index_prefix:\t" << Prefix << endl;
+	ParamOut << "reference_path:\t" << RefPath << endl;
 	ParamOut << "var_long:\t" << opt->num_variant_long << endl;
 	ParamOut << "var_short:\t" << opt->num_variant_short << endl;
 	ParamOut << "flank_len:\t" << opt->flank_len << endl;
@@ -473,7 +473,7 @@ int runAlign(int argc, char ** argv)
 		cerr << "Open file :" << NewRef + ".param" << "failed!" << endl;
 	}
 	std::string ParaStr,TmpStr;
-	std::getline(ParamIn, ParaStr);//prefix
+	std::getline(ParamIn, ParaStr);//RefPath
 	std::getline(ParamIn, ParaStr);//variant long
 	stringstream ss(ParaStr);
 	ss >> TmpStr;
