@@ -36,10 +36,10 @@ gap_opt_t *gap_init_opt()
 	o->n_threads = 1;
 	o->max_top2 = 30;
 	o->trim_qual = 0;
-	o->flank_len=500;
+	o->flank_len=250;
 	o->flank_long_len=1000;
-	o->num_variant_long=0;
-	o->num_variant_short=10000;
+	o->num_variant_long=1000;
+	o->num_variant_short=9000;
 	o->out_bam=0;
 	o->in_bam=0;
 	o->RG=0;
