@@ -270,7 +270,7 @@ int runIndex(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--prefix is required");
+		error("--index_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	if (RefPath == "Empty")
@@ -339,7 +339,7 @@ int runAlign(int argc, char ** argv)
 	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
 		"Empty"), BamIn("Empty"), ReadGroup("default"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
-	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), BamOut(0);
+	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
@@ -351,7 +351,7 @@ int runAlign(int argc, char ** argv)
 		LONG_STRING_PARAM("fastq_2", &Fastq_2, "[String] Pair end 2 fastq file.[Leave empty if using single end]")
 		LONG_STRING_PARAM("fq_list", &FaList, "[String] Path of input fastq files, tab-delimited, one pair-end files per line(one file per line for single end)[Leave empty if using bam_in or fastq_1]")
 		LONG_STRING_PARAM("bam_in", &BamIn, "[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
-		LONG_PARAM("bam_out", &BamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
+		EXCLUSIVE_PARAM("sam_out", &NonBamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
 		LONG_STRING_PARAM("prefix", &Prefix, "[String] Prefix of all the output files[Required]")
 		LONG_STRING_PARAM("index_prefix", &IndexPrefix, "[String] Prefix of all the index files[Required]")
 
@@ -385,7 +385,7 @@ int runAlign(int argc, char ** argv)
 
 		// LONG_PARAM("c",&compread,"seed length")
 		LONG_PARAM("N", &nonstop, "[Bool] non-iterative mode: search for all n-difference hits (slooow)")
-		LONG_PARAM("I", &IL13, "[Bool] the input is in the Illumina 1.3+ FASTQ-like format")
+		EXCLUSIVE_PARAM("NonI", &NonIL13, "[Bool] the input is not in the Illumina 1.3+ FASTQ-like format")
 		LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
 		LONG_PARAM_GROUP("Parameters for PairEnd ", "Parameters specified for Pair end mapping.[Optional]")
@@ -428,9 +428,9 @@ int runAlign(int argc, char ** argv)
 	//	error("--dbsnp is required");
 	//	exit(EXIT_FAILURE);
 	//}
-	if (BamOut)
+	if (NonBamOut)
 	{
-		opt->out_bam = 1;
+		opt->out_bam = 0;
 	}
 	if (BamIn != "Empty")
 	{
@@ -447,9 +447,14 @@ int runAlign(int argc, char ** argv)
 		opt->mode |= BWA_MODE_NONSTOP;
 		opt->max_top2 = 0x7fffffff;
 	}
-	if (IL13)
+	if (NonIL13)
 	{
-		notice("Using Illumina 1.3 version quality system...");
+		notice("using Sanger quality system...");
+		//opt->mode |= BWA_MODE_IL13;
+	}
+	else
+	{
+		notice("using Illumina 1.3 version quality system...");
 		opt->mode |= BWA_MODE_IL13;
 	}
 	if (loggap)
@@ -472,28 +477,28 @@ int runAlign(int argc, char ** argv)
 	std::getline(ParamIn, ParaStr);//variant long
 	stringstream ss(ParaStr);
 	ss >> TmpStr;
-	if (TmpStr != "var_long:") ss >> opt->num_variant_long;
+	if (TmpStr == "var_long:") ss >> opt->num_variant_long;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//variant short
 	ss.str("");
 	ss.clear();
 	ss<<ParaStr;
 	ss >> TmpStr;
-	if (TmpStr != "var_short:") ss >> opt->num_variant_short;
+	if (TmpStr == "var_short:") ss >> opt->num_variant_short;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//flank_len
 	ss.str("");
 	ss.clear();
 	ss << ParaStr;
 	ss >> TmpStr;
-	if (TmpStr != "flank_len:") ss >> opt->flank_len;
+	if (TmpStr == "flank_len:") ss >> opt->flank_len;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//flank_long_len
 	ss.str("");
 	ss.clear();
 	ss << ParaStr;
 	ss >> TmpStr;
-	if (TmpStr != "flank_long_len:") ss >> opt->flank_long_len;
+	if (TmpStr == "flank_long_len:") ss >> opt->flank_long_len;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	ParamIn.close();
 
