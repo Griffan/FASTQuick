@@ -33,14 +33,14 @@ gap_opt_t *gap_init_opt()
 	o->mode = BWA_MODE_GAPE | BWA_MODE_COMPREAD;
 	o->seed_len = 32; o->max_seed_diff = 2;
 	o->fnr = 0.04;
-	o->n_threads = 1;
+	o->n_threads = 2;
 	o->max_top2 = 30;
 	o->trim_qual = 0;
 	o->flank_len=250;
 	o->flank_long_len=1000;
 	o->num_variant_long=1000;
 	o->num_variant_short=9000;
-	o->out_bam=0;
+	o->out_bam=1;
 	o->in_bam=0;
 	o->RG=0;
 	o->cal_dup=0;
