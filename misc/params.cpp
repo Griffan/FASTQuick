@@ -553,7 +553,7 @@ void paramList::Status()
     pl[i]->Status();
 
   fprintf(stderr, "\n");
-
+  fprintf(stderr, "%s\n",errors.c_str());
   if (errors.size())
     {
       ::error("Problems encountered parsing command line:\n\n%s",

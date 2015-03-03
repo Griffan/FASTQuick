@@ -320,18 +320,18 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 		}
 		if ((l = kseq_read3_fpc(seq)) < 0) break;
 
-		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+		if (int(seq->seq.l) <= l_bc) continue; // sequence length equals or smaller than the barcode length
 		p = &seqs[n_seqs++];
 
 		if (l_bc) { // then trim barcode
 			for (i = 0; i < l_bc; ++i)
 				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
 			p->bc[i] = 0;
-			for (; i < seq->seq.l; ++i)
+			for (; i < int(seq->seq.l); ++i)
 				seq->seq.s[i - l_bc] = seq->seq.s[i];
 			seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
 			if (seq->qual.l) {
-				for (i = l_bc; i < seq->qual.l; ++i)
+				for (i = l_bc; i <int(seq->qual.l); ++i)
 					seq->qual.s[i - l_bc] = seq->qual.s[i];
 				seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
 			}
@@ -348,7 +348,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
 		if (seq->qual.l) { // copy quality
 			if (is_64)
-				for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
+				for (i = 0; i < int(seq->qual.l); ++i) seq->qual.s[i] -= 31;
 			p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
 			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
 		}
@@ -497,17 +497,17 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		if ((l = kseq_read3_fpc(seq)) < 0) {
 			break;
 		}
-		if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
+		if (int(seq->seq.l) <= l_bc) continue; // sequence length equals or smaller than the barcode length
 		p = &seqs[n_seqs++];
 		if (l_bc) { // then trim barcode
 			for (i = 0; i < l_bc; ++i)
 				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
 			p->bc[i] = 0;
-			for (; i < seq->seq.l; ++i)
+			for (; i < int(seq->seq.l); ++i)
 				seq->seq.s[i - l_bc] = seq->seq.s[i];
 			seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
 			if (seq->qual.l) {
-				for (i = l_bc; i < seq->qual.l; ++i)
+				for (i = l_bc; i < int(seq->qual.l); ++i)
 					seq->qual.s[i - l_bc] = seq->qual.s[i];
 				seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
 			}
@@ -531,14 +531,14 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
 		if (seq->qual.l) { // copy quality
 			if (is_64)
-				for (i = 0; i < seq->qual.l; ++i)
+				for (i = 0; i < int(seq->qual.l); ++i)
 				{
 				seq->qual.s[i] -= 31;
 				p->qual[i] = seq->qual.s[i];
 				}
 			else
 			{
-				for (i = 0; i < seq->qual.l; ++i)
+				for (i = 0; i < int(seq->qual.l); ++i)
 				{
 					p->qual[i] = seq->qual.s[i];
 				}
@@ -855,7 +855,7 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 							for (l = r->k; l <= r->l; ++l)
 								z->a[l - r->k] = r->a ? bwt_sa(bwt[0], l) : bwt[1]->seq_len - (bwt_sa(bwt[1], l) + p[j]->len); //call forward / reverse bwt respectively
 						}
-						for (l = 0; l < kh_val(g_hash, iter).n; ++l)
+						for (l = 0; (int)l < kh_val(g_hash, iter).n; ++l)
 						{ // ret will surelly show this key in hash, just get its value
 							x = kh_val(g_hash, iter).a[l];
 							x = x << 32 | k << 1 | j; //packed by  bwtint, lower bound k and pair end j

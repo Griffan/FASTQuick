@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
 
 ## Paths to include
-AM_CPPFLAGS = -Wall -fpic -O2 -I../libStatGen/include
+AM_CPPFLAGS = -Wall -fpic -O4 -I../libStatGen/include
 #AM_CPPFLAGS = -Wall -fpic -g -O0
 
 #noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h bgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h mpuLikelihoods.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h mpuSetLikelihoods.h mpuSet.h
