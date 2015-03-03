@@ -475,17 +475,23 @@ int runAlign(int argc, char ** argv)
 	if (TmpStr != "var_long:") ss >> opt->num_variant_long;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//variant short
-	stringstream ss(ParaStr);
+	ss.str("");
+	ss.clear();
+	ss<<ParaStr;
 	ss >> TmpStr;
 	if (TmpStr != "var_short:") ss >> opt->num_variant_short;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//flank_len
-	stringstream ss(ParaStr);
+	ss.str("");
+	ss.clear();
+	ss << ParaStr;
 	ss >> TmpStr;
 	if (TmpStr != "flank_len:") ss >> opt->flank_len;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
 	std::getline(ParamIn, ParaStr);//flank_long_len
-	stringstream ss(ParaStr);
+	ss.str("");
+	ss.clear();
+	ss << ParaStr;
 	ss >> TmpStr;
 	if (TmpStr != "flank_long_len:") ss >> opt->flank_long_len;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
