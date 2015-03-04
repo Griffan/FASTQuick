@@ -2,6 +2,15 @@
    FASTQuick, a Fastq file based Population identification and Contamination detection tool
 ###CONTENTS
 
+- [SYNOPSIS](#)
+- [DESCRIPTION](#)
+- [COMMANDS AND OPTIONS](#)
+- [EXAMPLES](#)
+- [USEFUL TIPS](#)
+- [BUGS](#)
+- [AUTHOR](#)
+- [COPYRIGHT](#)
+
 ###SYNOPSIS
 ```
 FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
