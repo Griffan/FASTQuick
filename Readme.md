@@ -98,7 +98,7 @@ Estimate the probability that this sample is contaminated with other genomic mat
     src/FASTQuick index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
     
     src/FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
-###Useful Tips
+###USEFUL TIPS
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
    
    FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.
