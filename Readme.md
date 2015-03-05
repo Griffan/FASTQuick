@@ -1,24 +1,34 @@
 ###NAME
-   FastPopCon, a **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool
+   FASTQuick, a Fastq file based Population identification and Contamination detection tool.
+   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
 ###CONTENTS
+
+- [SYNOPSIS](#synopsis)
+- [DESCRIPTION](#description)
+- [COMMANDS AND OPTIONS](#commands-and-options)
+- [EXAMPLES](#examples)
+- [USEFUL TIPS](#useful-tips)
+- [BUGS](#bugs)
+- [AUTHOR](#author)
+- [COPYRIGHT](#copyright)
 
 ###SYNOPSIS
 ```
-FastPopCon index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
+FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta --index_prefix NA12878_reduced_ref
 
-FastPopCon align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
+FASTQuick align  --index_prefix NA12878_reduced_ref --fq_list NA12878.fq.list --prefix NA12878 
 
-FastPopCon pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
+FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
-FastPopCon con --prefix NA12878
+FASTQuick con --prefix NA12878
 ```
 ###DESCRIPTION
-   FastPopCon is short for **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+   FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
 ###COMMANDS AND OPTIONS
 
 **index**	
 
-    FastPopCon index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
+    FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --index_prefix [NA12878_reduced_ref]
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -31,10 +41,11 @@ Index database sequences, using known variant sites to anchor informative region
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
     --var_long	INT	number of long-flanking-region variant
+    --index_prefix   STR   Prefix of all the output index files
 
 **align**
 
-    FastPopCon align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
+    FASTQuick align --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0] 
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
     
@@ -44,8 +55,9 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --fastq_1	STR path of pair end 1 fastq file
     --fastq_2	STR path of pair end 2 fastq file
     --bam_in	STR path of already aligned bam file
-    --bam_out	BOOL	output is bam format or not
-    --prefix	STR	prefix of variety of output file associated with specific sample
+     --sam_out Bool  If output sam file[default output bam file]
+    --prefix	STR	prefix of variety of output files
+    --index_prefix   STR   Prefix of all the index files
     --flank_len	INT	flanking region length of short-flanking-region variant
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
@@ -63,7 +75,7 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --q	INT	Quality threshold for read trimming down to 35bp [0]
     --RG	STR	Read group name
     --N	BOOL	Non-iterative mode: search for all n-difference hits
-    --I	BOOL	The input is in the Illumina 1.3+ read format (quality equals ASCII-64)
+    --NonI  Bool  the input fastq quality is sanger format 
     --L	BOOL	Log-scaled gap penalty for long deletions 
     --max_isize	INT	Maximal insert size for a read pair to be considered being mapped properly.[500] 
     --max_occ	INT	Maximum occurrences of a read for pairing. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing. [100000]
@@ -76,7 +88,7 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --frac_samp	FLOAT	Overall reads downsampling rate.[1]
 **pop**
 
-    FastPopCon pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
+    FASTQuick pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
 Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.
 
     OPTIONS
@@ -87,26 +99,26 @@ Identify individual’s population identity, ancestry information. The geometric
     --bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 **con**
 
-    FastPopCon con --prefix [NA12878]
+    FASTQuick con --prefix [NA12878]
 Estimate the probability that this sample is contaminated with other genomic material.
 
     OPTIONS
     --prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
 ###EXAMPLES
    Some examples of common usage.
+   See wiki page tutorial.
+   [https://github.com/Griffan/FASTQuick/wiki]
    
-    src/FastqA index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
-    
-    src/FastqA align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
-###Useful Tips
+   
+###USEFUL TIPS
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
    
-   FastPopCon was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.
+   FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxilary tools in bin directory.
 ###BUGS
    List known bugs.
 ###AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
 ###COPYRIGHT
-   The full FastPopCon package is distributed under GPLv3.
+   The full FASTQuick package is distributed under GPLv3.
 
 
