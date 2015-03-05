@@ -2,14 +2,14 @@
    FASTQuick, a Fastq file based Population identification and Contamination detection tool
 ###CONTENTS
 
-- [SYNOPSIS](#)
-- [DESCRIPTION](#)
-- [COMMANDS AND OPTIONS](#)
-- [EXAMPLES](#)
-- [USEFUL TIPS](#)
-- [BUGS](#)
-- [AUTHOR](#)
-- [COPYRIGHT](#)
+- [SYNOPSIS](#synopsis)
+- [DESCRIPTION](#description)
+- [COMMANDS AND OPTIONS](#commands-and-options)
+- [EXAMPLES](#examples)
+- [USEFUL TIPS](#useful-tips)
+- [BUGS](#bugs)
+- [AUTHOR](#author)
+- [COPYRIGHT](#copyright)
 
 ###SYNOPSIS
 ```
