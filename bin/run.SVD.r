@@ -50,4 +50,4 @@ for(i in 1:l) {
 #                                        #print(paste(ids[i],pops[i],res$par))
 #    
 }
-write.table(out,paste((argv[2],'/1kg.phase1.selected.pc2.out',sep=""),row.names=ids,col.names=F,quote=F))
+write.table(out,paste(args[2],'/1kg.phase1.selected.pc2.out',sep=""),row.names=ids,col.names=F,quote=F)
