@@ -252,7 +252,7 @@ int runIndex(int argc, char ** argv)
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("vcf", &VcfPath, "[String] Input Hapmap or Selected Sites VCF file[Required]")
+		LONG_STRING_PARAM("hapmap", &VcfPath, "[String] Input Hapmap or Selected Sites VCF file[Required]")
 		LONG_STRING_PARAM("dbsnp", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
@@ -280,7 +280,7 @@ int runIndex(int argc, char ** argv)
 	}
 	if (VcfPath == "Empty")
 	{
-		error("--vcf is required");
+		error("--hapmap is required");
 		exit(EXIT_FAILURE);
 	}
 	if (DBsnpPath == "Empty")
