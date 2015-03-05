@@ -172,7 +172,7 @@ public:
 	{ 0xffff0000, 0xffff, 0xff0000ff, 0xffff00, 0xff00ff00, 0xff00ff };
 #endif
 #ifdef KMER_64_BIT
-	static const uint64_t mask[6] =
+	const uint64_t mask[6] =
 	{ 0xffffffff00000000, 0xffffffff, 0xffff00000000ffff, 0xffffffff0000, 0xffff0000ffff0000, 0xffff0000ffff };
 #endif
 
