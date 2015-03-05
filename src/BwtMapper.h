@@ -23,7 +23,8 @@
 class BwtMapper
 {
 	StatCollector collector;
-	char *bwa_rg_line = 0, *bwa_rg_id = 0;
+	char *bwa_rg_line;
+	char *bwa_rg_id;
 	//bool PassFlag[READ_BUFFER_SIZE];
 public:
 
