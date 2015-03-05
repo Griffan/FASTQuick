@@ -13,9 +13,9 @@
 
 ###SYNOPSIS
 ```
-FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
+FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta --index_prefix NA12878_reduced_ref
 
-FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
+FASTQuick align  --index_prefix NA12878_reduced_ref --fq_list NA12878.fq.list --prefix NA12878 
 
 FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
@@ -27,7 +27,7 @@ FASTQuick con --prefix NA12878
 
 **index**	
 
-    FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
+    FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --index_prefix [NA12878_reduced_ref]
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -40,10 +40,11 @@ Index database sequences, using known variant sites to anchor informative region
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
     --var_long	INT	number of long-flanking-region variant
+    --index_prefix   STR   Prefix of all the output index files
 
 **align**
 
-    FASTQuick align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
+    FASTQuick align --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0] 
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
     
@@ -53,8 +54,9 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --fastq_1	STR path of pair end 1 fastq file
     --fastq_2	STR path of pair end 2 fastq file
     --bam_in	STR path of already aligned bam file
-    --bam_out	BOOL	output is bam format or not
-    --prefix	STR	prefix of variety of output file associated with specific sample
+     --sam_out Bool  If output sam file[default output bam file]
+    --prefix	STR	prefix of variety of output files
+    --index_prefix   STR   Prefix of all the index files
     --flank_len	INT	flanking region length of short-flanking-region variant
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
@@ -72,7 +74,7 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --q	INT	Quality threshold for read trimming down to 35bp [0]
     --RG	STR	Read group name
     --N	BOOL	Non-iterative mode: search for all n-difference hits
-    --I	BOOL	The input is in the Illumina 1.3+ read format (quality equals ASCII-64)
+    --NonI  Bool  the input fastq quality is sanger format 
     --L	BOOL	Log-scaled gap penalty for long deletions 
     --max_isize	INT	Maximal insert size for a read pair to be considered being mapped properly.[500] 
     --max_occ	INT	Maximum occurrences of a read for pairing. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing. [100000]
@@ -103,10 +105,10 @@ Estimate the probability that this sample is contaminated with other genomic mat
     --prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
 ###EXAMPLES
    Some examples of common usage.
+   See wiki page tutorial.
+   [https://github.com/Griffan/FASTQuick/wiki]
    
-    src/FASTQuick index --vcf new_sites/All.hapmap.omni.HDGP.recode.vcf --dbsnp dbSNP/b137/00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta
-    
-    src/FASTQuick align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1
+   
 ###USEFUL TIPS
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
    
