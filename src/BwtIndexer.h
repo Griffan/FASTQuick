@@ -148,34 +148,6 @@ public:
 
 #define min_only(X,Y) ((X) < (Y) ? (X) : (Y))
 
-#define KMER_64_BIT 1
-#ifdef KMER_8_BIT
-	unsigned int mask[6]=
-	{	240, //11110000
-		15,//00001111
-		195,//11000011
-		60,//00111100
-		204,//11001100
-		51}; //00110011
-#endif
-#ifdef KMER_16_BIT
-	unsigned int mask[6] =
-	{	65280, //1111111100000000
-		255,//0000000011111111
-		61455,//1111000000001111
-		4080,//00001111111110000
-		12528,//1111000011110000
-		3855}; //0000111100001111
-#endif
-#ifdef KMER_32_BIT
-	unsigned int mask[6] =
-	{ 0xffff0000, 0xffff, 0xff0000ff, 0xffff00, 0xff00ff00, 0xff00ff };
-#endif
-#ifdef KMER_64_BIT
-	const uint64_t mask[6] =
-	{ 0xffffffff00000000, 0xffffffff, 0xffff00000000ffff, 0xffffffff0000, 0xffff0000ffff0000, 0xffff0000ffff };
-#endif
-
 	unsigned char * roll_hash_table[6]; //11110000
 
 	long long int hash_table_size;
