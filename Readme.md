@@ -14,9 +14,9 @@
 
 ###SYNOPSIS
 ```
-FASTQuick index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta --index_prefix NA12878_reduced_ref
+FASTQuick index --hapmap hapmap.test.vcf.gz --dbsnp dbsnp.test.vcf.gz --ref test.fa --index_prefix NA12878_index
 
-FASTQuick align  --index_prefix NA12878_reduced_ref --fq_list NA12878.fq.list --prefix NA12878 
+FASTQuick align  --index_prefix NA12878_index --fq_list NA12878.fq.list --prefix NA12878 
 
 FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
@@ -28,12 +28,12 @@ FASTQuick con --prefix NA12878
 
 **index**	
 
-    FASTQuick index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --index_prefix [NA12878_reduced_ref]
+    FASTQuick index --hapmap [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --index_prefix [NA12878_reduced_ref]
 
 Index database sequences, using known variant sites to anchor informative region.
 
     OPTIONS
-    --vcf	STR	path of input hapmap site vcf file 
+    --hapmap	STR	path of input hapmap site vcf file 
     --dbsnp	STR	path of input dbsnp site vcf file
     --ref	STR	path of reference genome fasta file
     --mask	STR	path of repetitive region  mask fasta file
