@@ -1,0 +1,2 @@
+If you are trying to make your own new population identity matrices, you can use the script generate_new_matrix.sh using similar parameters as following.
+ sh generate_new_matrix.sh hs37d5.fa.SelectedSite.vcf.gz ../resource/ ../bin/ GATK-resources/hapmap_3.3.b37.vcf.gz 1000g/release/20110521/
