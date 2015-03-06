@@ -2048,6 +2048,33 @@ int StatCollector::getGenomeSize(std::string RefPath)
 	fin.close();
 	return 0;
 }
+/*converse lambda function into regular functions*/
+double StatCollector::Q20AvgDepth()
+{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; }
+double StatCollector::Q30AvgDepth()
+{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / total_region_size; }
+size_t StatCollector::MIS500()
+{	long long tmp(0), total(0);
+for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i];
+for (size_t i = 500; i != InsertSizeDist.size(); ++i)
+{
+	tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
+}
+return 0;
+}
+size_t StatCollector::MIS300()
+{	long long tmp(0), total(0);
+for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i];
+for (size_t i = 300; i != InsertSizeDist.size(); ++i)
+{
+	tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
+}
+return 0;
+}
+double StatCollector::Q20BaseFraction()
+{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; }
+double StatCollector::Q30BaseFraction()
+{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; }
 int StatCollector::SummaryOutput(const string & outputPath,
 	const gap_opt_t* opt)
 {
@@ -2087,15 +2114,15 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	fout << "Estimated percentage of accessible genome covered : "
 		<< (1 - (double)DepthDist[0] / total_region_size) * 100 << "/100"
 		<< endl;
-	auto Q20AvgDepth =
+	/*auto Q20AvgDepth =
 		[&]()->double
-	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; };
+	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; };*/
 	fout << "Estimated AvgDepth for Q20 bases : " << Q20AvgDepth() << endl;
-	auto Q30AvgDepth =
+	/*auto Q30AvgDepth =
 		[&]()->double
-	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / total_region_size; };
+	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / total_region_size; };*/
 	fout << "Estimated AvgDepth for Q30 bases : " << Q30AvgDepth() << endl;
-	auto MIS500 =
+	/*auto MIS500 =
 		[&]()->double
 	{	long long tmp(0), total(0); 
 		for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
@@ -2104,9 +2131,9 @@ int StatCollector::SummaryOutput(const string & outputPath,
 			tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
 		}
 		return 0;
-	};
+	};*/
 	fout << "Median Insert Size(>=500bp) : " << MIS500() << endl;
-	auto MIS300 =
+	/*auto MIS300 =
 		[&]()->double
 	{	long long tmp(0), total(0); 
 		for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
@@ -2115,13 +2142,13 @@ int StatCollector::SummaryOutput(const string & outputPath,
 		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i; 
 		}
 		return 0;
-	};
+	};*/
 	fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
 	//output for fraction figure
-	auto Q20BaseFraction = [&]()->double
+	/*auto Q20BaseFraction = [&]()->double
 	{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return NumBaseMapped==0?0:double(tmp) / NumBaseMapped; };
 	auto Q30BaseFraction = [&]()->double
-	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; };
+	{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; };*/
 	double DP1fraction = NumPositionCovered / (double)total_region_size;
 	double DP2fraction = NumPositionCovered2 / (double)total_region_size;
 	double DP5fraction = NumPositionCovered5 / (double)total_region_size;
