@@ -252,13 +252,30 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	v16qi mmx6 = { S[65], S[69], S[73], S[77], S[81], S[85], S[89], S[93], 0, 0, 0, 0, 0, 0, 0, 0 };
 	v16qi mmx7 = { S[66], S[70], S[74], S[78], S[82], S[86], S[90], S[94], 0, 0, 0, 0, 0, 0, 0, 0 };
 	v16qi mmx8 = { S[67], S[71], S[75], S[79], S[83], S[87], S[91], S[95], 0, 0, 0, 0, 0, 0, 0, 0 };
+
+#if defined(GCC_VERSION)&& GCC_VERSION > 40700//4.7#endif
+
 	mmx1 = mmx1 << 6;
 	mmx1 = mmx1 | (mmx2 << 4);
 	mmx1 = mmx1 | (mmx3 << 2);
+#else
+	mmx1 = mmx1 * 64;
+	mmx1 = mmx1 | (mmx2 * 16);
+	mmx1 = mmx1 | (mmx3 * 4);
+#endif
+
 	mmx1 = mmx1 | mmx4;
+
+#if defined(GCC_VERSION)&& GCC_VERSION > 40700//4.7#endif
 	mmx5 = mmx5 << 6;
 	mmx5 = mmx5 | (mmx6 << 4);
 	mmx5 = mmx5 | (mmx7 << 2);
+#else
+	mmx5 = mmx5 * 64;
+	mmx5 = mmx5 | (mmx6 *16);
+	mmx5 = mmx5 | (mmx7 *4);
+#endif
+
 	mmx5 = mmx5 | mmx8;
 	memcpy(&kmer3,&mmx1,16);
 
