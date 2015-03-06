@@ -209,6 +209,13 @@ public:
 	int addFSC(FileStatCollector a);
 	int getGenomeSize(std::string RefPath);
 	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
+
+	double Q20AvgDepth();
+	double Q30AvgDepth();
+	size_t MIS500();
+	size_t MIS300();
+	double Q20BaseFraction();
+	double Q30BaseFraction();
 	virtual ~StatCollector();
 };
 
