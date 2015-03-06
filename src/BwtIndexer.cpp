@@ -253,15 +253,19 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	v16qi mmx7 = { S[66], S[70], S[74], S[78], S[82], S[86], S[90], S[94], 0, 0, 0, 0, 0, 0, 0, 0 };
 	v16qi mmx8 = { S[67], S[71], S[75], S[79], S[83], S[87], S[91], S[95], 0, 0, 0, 0, 0, 0, 0, 0 };
 
+
 #if defined(GCC_VERSION)&& GCC_VERSION > 40700//4.7#endif
 
 	mmx1 = mmx1 << 6;
 	mmx1 = mmx1 | (mmx2 << 4);
 	mmx1 = mmx1 | (mmx3 << 2);
 #else
-	mmx1 = mmx1 * 64;
-	mmx1 = mmx1 | (mmx2 * 16);
-	mmx1 = mmx1 | (mmx3 * 4);
+	v16qi mul64 = {64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64};
+	v16qi mul16 = {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16};
+	v16qi mul4 = {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
+	mmx1 = mmx1 * mul64;
+	mmx1 = mmx1 | (mmx2 * mul16);
+	mmx1 = mmx1 | (mmx3 * mul4);
 #endif
 
 	mmx1 = mmx1 | mmx4;
@@ -271,9 +275,9 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	mmx5 = mmx5 | (mmx6 << 4);
 	mmx5 = mmx5 | (mmx7 << 2);
 #else
-	mmx5 = mmx5 * 64;
-	mmx5 = mmx5 | (mmx6 *16);
-	mmx5 = mmx5 | (mmx7 *4);
+	mmx5 = mmx5 * mul64;
+	mmx5 = mmx5 | (mmx6 *mul16);
+	mmx5 = mmx5 | (mmx7 *mul4);
 #endif
 
 	mmx5 = mmx5 | mmx8;
