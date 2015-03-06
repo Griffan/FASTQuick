@@ -1001,7 +1001,7 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns)
 	for (int i = 0; i < bns->n_seqs; ++i)
 	{
 
-		if (!SFH.setSQTag("LN", std::to_string(long long int(bns->anns[i].len)).c_str(), bns->anns[i].name))
+		if (!SFH.setSQTag("LN", std::to_string(static_cast<long long int>(bns->anns[i].len)).c_str(), bns->anns[i].name))
 			std::cerr << "WARNING:SetSQTag failed" << endl;
 		//printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
 	}
@@ -1159,7 +1159,7 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		if (p->clip_len < p->full_len)
 			//printf("\tXC:i:%d", p->clip_len);
 			//ss<<"\tXC:i:"<<p->clip_len;
-			SR.addTag("XC", 'i', std::to_string(long long int(p->clip_len)).c_str());
+			SR.addTag("XC", 'i', std::to_string(static_cast<long long int>(p->clip_len)).c_str());
 		if (p->type != BWA_TYPE_NO_MATCH)
 		{
 			int i;
@@ -1183,33 +1183,33 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 				ss << "CM";
 			}
 			//ss<<":i:"<<p->nm;
-			SR.addTag(ss.str().c_str(), 'i', to_string(long long int(p->nm)).c_str());
+			SR.addTag(ss.str().c_str(), 'i', to_string(static_cast<long long int>(p->nm)).c_str());
 			if (nn)
 				//printf("\tXN:i:%d", nn);
 				//ss<<"\tXN:i:"<<nn;
-				SR.addTag("XN", 'i', to_string((long long int)nn).c_str());
+				SR.addTag("XN", 'i', to_string(static_cast<long long int>(nn)).c_str());
 			if (mate)
 				//printf("\tSM:i:%d\tAM:i:%d", p->seQ, am);
 				//ss<<"\tSM:i:"<<p->seQ<<"\tAM:i:"<<am;
 			{
-				SR.addTag("SM", 'i', to_string(long long int(p->seQ)).c_str());
-				SR.addTag("AM", 'i', to_string(long long int (am)).c_str());
+				SR.addTag("SM", 'i', to_string(static_cast<long long int>(p->seQ)).c_str());
+				SR.addTag("AM", 'i', to_string(static_cast<long long int> (am)).c_str());
 			}
 			if (p->type != BWA_TYPE_MATESW)
 			{ // X0 and X1 are not available for this type of alignment
 				//printf("\tX0:i:%d", p->c1);
 				//ss<<"\tX0:i:"<<p->c1;
-				SR.addTag("X0", 'i', to_string(long long int (p->c1)).c_str());
+				SR.addTag("X0", 'i', to_string(static_cast<long long int> (p->c1)).c_str());
 				if (p->c1 <= max_top2)
 					//printf("\tX1:i:%d", p->c2);
 					//ss<<"\tX1:i:"<<p->c2;
-					SR.addTag("X1", 'i', to_string(long long int(p->c2)).c_str());
+					SR.addTag("X1", 'i', to_string(static_cast<long long int>(p->c2)).c_str());
 			}
 			//printf("\tXM:i:%d\tXO:i:%d\tXG:i:%d", p->n_mm, p->n_gapo,p->n_gapo + p->n_gape);
 			//ss<<"\tXM:i:"<<p->n_mm<<"\tXO:i:"<<p->n_gapo<<"\tXG:i:"<<p->n_gapo + p->n_gape;
-			SR.addTag("XM", 'i', to_string(long long int (p->n_mm)).c_str());
-			SR.addTag("XO", 'i', to_string(long long int (p->n_gapo)).c_str());
-			SR.addTag("XG", 'i', to_string(long long int (p->n_gapo + p->n_gape)).c_str());
+			SR.addTag("XM", 'i', to_string(static_cast<long long int> (p->n_mm)).c_str());
+			SR.addTag("XO", 'i', to_string(static_cast<long long int> (p->n_gapo)).c_str());
+			SR.addTag("XG", 'i', to_string(static_cast<long long int> (p->n_gapo + p->n_gape)).c_str());
 			if (p->md)
 				//printf("\tMD:Z:%s", p->md);
 				//ss<<"\tMD:Z:"<<p->md;
@@ -1306,7 +1306,7 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		if (p->clip_len < p->full_len)
 			//printf("\tXC:i:%d", p->clip_len);
 			//ss << "\tXC:i:" << p->clip_len;
-			SR.addTag("XC", 'i', to_string(long long int(p->clip_len)).c_str());
+			SR.addTag("XC", 'i', to_string(static_cast<long long int>(p->clip_len)).c_str());
 		//putchar('\n');
 		//ss << "\n";
 	}
