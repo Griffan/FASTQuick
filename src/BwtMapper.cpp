@@ -953,7 +953,11 @@ int BwtMapper::bwa_set_rg(const char *s)
 {
 	char *p, *q, *r;
 	if (strstr(s, "@RG") != s)
+	{
+		bwa_rg_line=0;
+		bwa_rg_id=0;
 		return -1;
+	}
 	if (bwa_rg_line)
 		free(bwa_rg_line);
 	if (bwa_rg_id)
@@ -2732,7 +2736,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 	const gap_opt_t * opt)
 {
 	//std::cerr<<"Open Fastq  ... "<<endl;
-	bwa_set_rg(opt->RG);
+	if(bwa_set_rg(opt->RG)==-1) warning("Setting @RG tag failed!\n");
 	if (opt->in_bam != 0)
 	{
 		notice(" Input alignments from Bam file...\n");
