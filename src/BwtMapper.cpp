@@ -958,10 +958,10 @@ int BwtMapper::bwa_set_rg(const char *s)
 		bwa_rg_id=0;
 		return -1;
 	}
-	if (bwa_rg_line)
+	/*if (bwa_rg_line)
 		free(bwa_rg_line);
 	if (bwa_rg_id)
-		free(bwa_rg_id);
+		free(bwa_rg_id);*/
 	bwa_rg_line = strdup(s);
 	bwa_rg_id = 0;
 	bwa_escape(bwa_rg_line);
