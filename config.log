@@ -929,7 +929,7 @@ configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
 conftest.c:64:6: warning: conflicting types for built-in function 'pow' [enabled by default]
  char pow ();
       ^
-/tmp/ccj2fzn9.o: In function `main':
+/tmp/ccF1dQbD.o: In function `main':
 /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/conftest.c:75: undefined reference to `pow'
 collect2: error: ld returned 1 exit status
 configure:5341: $? = 1
