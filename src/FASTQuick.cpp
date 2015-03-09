@@ -626,7 +626,7 @@ int runCon(int argc, char ** argv)
 
 	char cmdline[1024];
 	char** params = new char*[9];
-	sprintf(cmdline, MPU_PATH " verify --vcf %s.SelectedSite.vcf.gz --mpu %s.Pileup.gz --smID %s --out %s.ctm", idx_Prefix.c_str(), Prefix.c_str(), ReadGroup.c_str(), Prefix.c_str());//TODO:need to change SelectedSite.vcf.gz into vcf print by PCA mapping
+	sprintf(cmdline, MPU_PATH " verify --vcf %s.FASTQuick.fa.SelectedSite.vcf.gz --mpu %s.Pileup.gz --smID %s --out %s.ctm", idx_Prefix.c_str(), Prefix.c_str(), ReadGroup.c_str(), Prefix.c_str());//TODO:need to change SelectedSite.vcf.gz into vcf print by PCA mapping
 	stringstream ss(cmdline);
 	string para;
 	ss >> para;
