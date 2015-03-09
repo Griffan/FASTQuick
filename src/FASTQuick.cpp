@@ -337,7 +337,7 @@ int runAlign(int argc, char ** argv)
 	opt = gap_init_opt();
 
 	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
-		"Empty"), BamIn("Empty"), ReadGroup("@RG:default"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
+		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
 	paramList pl;
