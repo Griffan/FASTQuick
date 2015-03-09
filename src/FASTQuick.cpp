@@ -252,10 +252,10 @@ int runIndex(int argc, char ** argv)
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("hapmap", &VcfPath, "[String] Input Hapmap or Selected Sites VCF file[Required]")
-		LONG_STRING_PARAM("dbsnp", &DBsnpPath, "[String] dbSNP VCF file[Required]")
+		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Input Selected Sites VCF file,e.g. hapmap vcf[Required]")
+		LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
-		LONG_STRING_PARAM("index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
+		LONG_STRING_PARAM("out_idx_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
@@ -270,7 +270,7 @@ int runIndex(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--index_prefix is required");
+		error("--out_idx_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	if (RefPath == "Empty")
@@ -280,12 +280,12 @@ int runIndex(int argc, char ** argv)
 	}
 	if (VcfPath == "Empty")
 	{
-		error("--hapmap is required");
+		error("--siteVCF is required");
 		exit(EXIT_FAILURE);
 	}
 	if (DBsnpPath == "Empty")
 	{
-		error("--dbsnp is required");
+		error("--dbsnpVCF is required");
 		exit(EXIT_FAILURE);
 	}
 
@@ -337,7 +337,7 @@ int runAlign(int argc, char ** argv)
 	opt = gap_init_opt();
 
 	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
-		"Empty"), BamIn("Empty"), ReadGroup("default"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
+		"Empty"), BamIn("Empty"), ReadGroup("@RG:default"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
 	paramList pl;
@@ -352,8 +352,8 @@ int runAlign(int argc, char ** argv)
 		LONG_STRING_PARAM("fq_list", &FaList, "[String] Path of input fastq files, tab-delimited, one pair-end files per line(one file per line for single end)[Leave empty if using bam_in or fastq_1]")
 		LONG_STRING_PARAM("bam_in", &BamIn, "[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
 		EXCLUSIVE_PARAM("sam_out", &NonBamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
-		LONG_STRING_PARAM("prefix", &Prefix, "[String] Prefix of all the output files[Required]")
-		LONG_STRING_PARAM("index_prefix", &IndexPrefix, "[String] Prefix of all the index files[Required]")
+		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output files[Required]")
+		LONG_STRING_PARAM("in_idx_prefix", &IndexPrefix, "[String] Input prefix of all the index files[Required]")
 
 
 		//LONG_STRING_PARAM("out",&outf,"Output file prefix")
@@ -410,12 +410,12 @@ int runAlign(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--prefix is required");
+		error("--out_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	if (IndexPrefix == "Empty")
 	{
-		error("--index_prefix is required");
+		error("--in_idx_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	//if (VcfPath == "Empty")
