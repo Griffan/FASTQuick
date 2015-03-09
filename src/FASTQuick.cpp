@@ -597,13 +597,14 @@ int runCon(int argc, char ** argv)
 	*
 	*/
 
-	/*std::string  ReadGroup("default"),Prefix("Empty");
+	std::string  ReadGroup("default"),Prefix("Empty"),idx_Prefix("Empty");
 
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
-		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.[Required]")
+		LONG_STRING_PARAM("in_idx_prefix", &idx_Prefix, "[String] Specify the prefix used by index files.[Required]")
+		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used as output prefix in step of aling.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 
 
@@ -617,10 +618,15 @@ int runCon(int argc, char ** argv)
 		error("--in_prefix is required");
 		exit(EXIT_FAILURE);
 	}
+	if (idx_Prefix == "Empty")
+	{
+		error("--in_idx_prefix is required");
+		exit(EXIT_FAILURE);
+	}
 
 	char cmdline[1024];
 	char** params = new char*[9];
-	sprintf(cmdline, MPU_PATH " verify --vcf %s.SelectedSite.vcf.gz --mpu %s.Pileup.gz --smID %s --out %s.ctm", Prefix.c_str(), Prefix.c_str(), ReadGroup.c_str(), Prefix.c_str());//TODO:need to change SelectedSite.vcf.gz into vcf print by PCA mapping
+	sprintf(cmdline, MPU_PATH " verify --vcf %s.SelectedSite.vcf.gz --mpu %s.Pileup.gz --smID %s --out %s.ctm", idx_Prefix.c_str(), Prefix.c_str(), ReadGroup.c_str(), Prefix.c_str());//TODO:need to change SelectedSite.vcf.gz into vcf print by PCA mapping
 	stringstream ss(cmdline);
 	string para;
 	ss >> para;
@@ -629,8 +635,9 @@ int runCon(int argc, char ** argv)
 		ss >> para;
 		params[i] = new char[128];
 		strcpy(params[i], para.c_str());
-	}*/
-	runVerify(argc,argv);
+	}
+	//runVerify(argc,argv);
+	runVerify(9, params);
 	notice("Version: %s\n", PACKAGE_VERSION);
 	notice("Real time: %.3f sec; CPU: %.3f sec\n",	realtime() - t_real, cputime());
 	return 0;
