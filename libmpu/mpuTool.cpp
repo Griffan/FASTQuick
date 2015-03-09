@@ -912,7 +912,7 @@ int runVerify(int argc, char** argv) {
   pl.Add(new LongParameters("Available Options",longParameters));
   pl.Read(argc, argv);
 
-//  pl.Status();
+  pl.Status();
 
   // check the validity of input files
   if ( args.sVcfFile.empty() ) {
