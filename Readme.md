@@ -1,6 +1,10 @@
 ###NAME
    FASTQuick, a Fastq file based Population identification and Contamination detection tool.
+   
+   
    For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
+   
+   
 ###CONTENTS
 
 - [SYNOPSIS](#synopsis)
@@ -14,13 +18,13 @@
 
 ###SYNOPSIS
 ```
-FASTQuick index --hapmap hapmap.test.vcf.gz --dbsnp dbsnp.test.vcf.gz --ref test.fa --index_prefix NA12878_index
+FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_idx_prefix NA12878_index
 
-FASTQuick align  --index_prefix NA12878_index --fq_list NA12878.fq.list --prefix NA12878 
+FASTQuick align  --in_idx_prefix NA12878_index --fq_list NA12878.fq.list --out_prefix NA12878 
 
 FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
-FASTQuick con --prefix NA12878
+FASTQuick con --in_prefix NA12878
 ```
 ###DESCRIPTION
    FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
@@ -28,36 +32,36 @@ FASTQuick con --prefix NA12878
 
 **index**	
 
-    FASTQuick index --hapmap [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --index_prefix [NA12878_reduced_ref]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_idx_prefix [NA12878_reduced_ref]
 
 Index database sequences, using known variant sites to anchor informative region.
 
     OPTIONS
-    --hapmap	STR	path of input hapmap site vcf file 
-    --dbsnp	STR	path of input dbsnp site vcf file
+    --siteVCF	STR	path of input hapmap site vcf file 
+    --dbsnpVCF	STR	path of input dbsnp site vcf file
     --ref	STR	path of reference genome fasta file
     --mask	STR	path of repetitive region  mask fasta file
     --flank_len	INT	flanking region length of short-flanking-region variant
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
     --var_long	INT	number of long-flanking-region variant
-    --index_prefix   STR   Prefix of all the output index files
+    --out_idx_prefix   STR   Prefix of all the output index files
 
 **align**
 
-    FASTQuick align --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0] 
+    FASTQuick align --in_idx_prefix [NA12878_index] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --out_prefix [NA12878] --frac_samp [1.0] 
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
     
     OPTIONS
-    --ref	STR	path of reference genome fasta file
+    
     --fq_list	STR path of fastq file list, format: [path of pair-end 1]\t[path of pair-end]
     --fastq_1	STR path of pair end 1 fastq file
     --fastq_2	STR path of pair end 2 fastq file
     --bam_in	STR path of already aligned bam file
      --sam_out Bool  If output sam file[default output bam file]
-    --prefix	STR	prefix of variety of output files
-    --index_prefix   STR   Prefix of all the index files
+     --in_idx_prefix	STR	Input prefix of all the index files
+    --out_prefix	STR	prefix of variety of output files
     --flank_len	INT	flanking region length of short-flanking-region variant
     --var_short	INT	number of short-flanking-region variant
     --flank_long_len	INT flanking region length of long-flanking-region variant
@@ -99,11 +103,11 @@ Identify individual’s population identity, ancestry information. The geometric
     --bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 **con**
 
-    FASTQuick con --prefix [NA12878]
+    FASTQuick con --in_prefix [NA12878]
 Estimate the probability that this sample is contaminated with other genomic material.
 
     OPTIONS
-    --prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
+    --in_prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
 ###EXAMPLES
    Some examples of common usage.
    See wiki page tutorial.
