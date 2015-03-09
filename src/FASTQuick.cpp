@@ -603,7 +603,7 @@ int runVerify(int argc, char ** argv)
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
-		LONG_STRING_PARAM("prefix", &Prefix, "[String] Prefix of all the output files[Required]")
+		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 
 
@@ -614,7 +614,7 @@ int runVerify(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--prefix is required");
+		error("--in_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 
