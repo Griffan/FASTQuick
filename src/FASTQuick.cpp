@@ -587,7 +587,7 @@ int runPop(int argc, char ** argv)
 	notice("Real time: %.3f sec; CPU: %.3f sec\n",realtime() - t_real, cputime());
 	return 0;
 }
-int runVerify(int argc, char ** argv)
+int runCon(int argc, char ** argv)
 {
 
 	double t_real;
@@ -597,7 +597,7 @@ int runVerify(int argc, char ** argv)
 	*
 	*/
 
-	std::string  ReadGroup("default"),Prefix("Empty");
+	/*std::string  ReadGroup("default"),Prefix("Empty");
 
 	paramList pl;
 
@@ -629,8 +629,8 @@ int runVerify(int argc, char ** argv)
 		ss >> para;
 		params[i] = new char[128];
 		strcpy(params[i], para.c_str());
-	}
-	runVerify(9, (char**)(params));
+	}*/
+	runVerify(argc,argv);
 	notice("Version: %s\n", PACKAGE_VERSION);
 	notice("Real time: %.3f sec; CPU: %.3f sec\n",	realtime() - t_real, cputime());
 	return 0;
@@ -659,7 +659,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "index") == 0) return runIndex(argc - 1, argv + 1);
 	else if (strcmp(argv[1], "align") == 0) return runAlign(argc - 1, argv + 1);
 	else if (strcmp(argv[1], "pop") == 0) return runPop(argc - 1, argv + 1);
-	else if (strcmp(argv[1], "con") == 0) return runVerify(argc - 1, argv + 1);
+	else if (strcmp(argv[1], "con") == 0) return runCon(argc - 1, argv + 1);
 
 	else {
 		warning("unrecognized command '%s'\n", argv[1]);
