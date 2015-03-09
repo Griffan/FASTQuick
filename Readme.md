@@ -24,7 +24,7 @@ FASTQuick align  --in_idx_prefix NA12878_index --fq_list NA12878.fq.list --out_p
 
 FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
 
-FASTQuick con --in_prefix NA12878
+FASTQuick con --in_idx_prefix NA12878_index --in_prefix NA12878 
 ```
 ###DESCRIPTION
    FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
@@ -103,11 +103,12 @@ Identify individual’s population identity, ancestry information. The geometric
     --bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 **con**
 
-    FASTQuick con --in_prefix [NA12878]
+    FASTQuick con --in_idx_prefix NA12878_index --in_prefix [NA12878]
 Estimate the probability that this sample is contaminated with other genomic material.
 
     OPTIONS
-    --in_prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
+    --in_prefix STR Specify the prefix used by output in step of align.
+    --in_idx_prefix STR Specify the prefix used by index output files.
 ###EXAMPLES
    Some examples of common usage.
    See wiki page tutorial.
