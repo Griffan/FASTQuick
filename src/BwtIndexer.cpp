@@ -254,8 +254,11 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	v16qi mmx8 = { S[67], S[71], S[75], S[79], S[83], S[87], S[91], S[95], 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
-#if defined(GCC_VERSION)&& GCC_VERSION > 40700//4.7#endif
-
+#define GCC_VERSION (__GNUC__ * 10000 \
+               + __GNUC_MINOR__ * 100 \
+                + __GNUC_PATCHLEVEL__)	
+#if defined(GCC_VERSION)&& GCC_VERSION >= 40700//4.7#endif
+//fprintf(stderr,"GCC_VERSION is about 4.7");
 	mmx1 = mmx1 << 6;
 	mmx1 = mmx1 | (mmx2 << 4);
 	mmx1 = mmx1 | (mmx3 << 2);
