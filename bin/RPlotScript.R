@@ -37,7 +37,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 args=commandArgs(trailingOnly = TRUE);
 input=args[1]
-input="C:\\Users\\PC\\Dropbox\\workingspace\\FastqA\\FastPopCon\\FastqA\\bin\\HG00553"
+#input="C:\\Users\\PC\\Dropbox\\workingspace\\FastqA\\FastPopCon\\FastqA\\bin\\HG00553"
 print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
@@ -83,18 +83,18 @@ q5=ggplot(mydata,aes(x=InsertSize,y=IS_Count))+geom_line()+ggtitle("InsertSizeDi
 
 
 mydata <- scan(paste(input,".summary",sep=""), what="", sep="\n")
-ExpectedDepth=as.numeric(strsplit(mydata[14]," ")[[1]][5])
-EstimatedDepth=as.numeric(strsplit(mydata[14]," ")[[1]][5])
-AccessibleFraction=as.numeric(strsplit(strsplit(mydata[16]," ")[[1]][8],"/")[[1]][1]);
-EstimatedQ20Depth=as.numeric(strsplit(mydata[17]," ")[[1]][7]);
-EstimatedQ30Depth=as.numeric(strsplit(mydata[18]," ")[[1]][7]);
+ExpectedDepth=as.numeric(strsplit(mydata[length(mydata)-12]," ")[[1]][5])
+EstimatedDepth=as.numeric(strsplit(mydata[length(mydata)-11]," ")[[1]][4])
+AccessibleFraction=as.numeric(strsplit(strsplit(mydata[length(mydata)-10]," ")[[1]][8],"/")[[1]][1]);
+EstimatedQ20Depth=as.numeric(strsplit(mydata[length(mydata)-9]," ")[[1]][7]);
+EstimatedQ30Depth=as.numeric(strsplit(mydata[length(mydata)-8]," ")[[1]][7]);
 
-Q20BaseFraction=as.numeric(strsplit(mydata[21],":")[[1]][2]);
-Q30BaseFraction=as.numeric(strsplit(mydata[22],":")[[1]][2]);
-Depth1=as.numeric(strsplit(mydata[23],":")[[1]][2]);
-Depth2=as.numeric(strsplit(mydata[24],":")[[1]][2]);
-Depth5=as.numeric(strsplit(mydata[25],":")[[1]][2]);
-Depth10=as.numeric(strsplit(mydata[26],":")[[1]][2]);
+Q20BaseFraction=as.numeric(strsplit(mydata[length(mydata)-5],":")[[1]][2]);
+Q30BaseFraction=as.numeric(strsplit(mydata[length(mydata)-4],":")[[1]][2]);
+Depth1=as.numeric(strsplit(mydata[length(mydata)-3],":")[[1]][2]);
+Depth2=as.numeric(strsplit(mydata[length(mydata)-2],":")[[1]][2]);
+Depth5=as.numeric(strsplit(mydata[length(mydata)-1],":")[[1]][2]);
+Depth10=as.numeric(strsplit(mydata[length(mydata)],":")[[1]][2]);
 
 plotdata=c(ExpectedDepth,EstimatedDepth,EstimatedQ20Depth,EstimatedQ30Depth)
 plotname=c("ExpectedDepth","EstimatedDepth","EstimatedQ20Depth","EstimatedQ30Depth")
