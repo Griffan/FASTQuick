@@ -604,7 +604,7 @@ int runCon(int argc, char ** argv)
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
 		LONG_STRING_PARAM("in_idx_prefix", &idx_Prefix, "[String] Specify the prefix used by index files.[Required]")
-		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used as output prefix in step of aling.[Required]")
+		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used as output prefix in step of align.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 
 
