@@ -2048,11 +2048,15 @@ int StatCollector::getGenomeSize(std::string RefPath)
 	fin.close();
 	return 0;
 }
-/*converse lambda function into regular functions*/
+/*convert lambda function into regular functions*/
 double StatCollector::Q20AvgDepth()
-{	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; }
+{
+	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / NumPositionCovered;
+}
 double StatCollector::Q30AvgDepth()
-{	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / total_region_size; }
+{
+	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return double(tmp) / NumPositionCovered;
+}
 size_t StatCollector::MIS500()
 {	long long tmp(0), total(0);
 for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i];
