@@ -557,7 +557,13 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
 
 	//ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
-	string RefSeq(seq), MD(p.getStringTag("MD")->c_str());
+	string RefSeq(seq), MD;
+	if (p.getStringTag("MD") != 0)
+	{
+		MD = string(p.getStringTag("MD")->c_str());
+	}
+	else
+		return 0;
 	int last(0), total_len(0);
 	for (uint32_t i = 0; i != MD.size(); ++i)
 		if (isdigit(MD[i]))
@@ -1372,6 +1378,11 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 	SamRecord* q, const gap_opt_t* opt, ofstream & fout, int &total_add)
 {
+	SamValidator Validator;
+	SamValidationErrors VErrors;
+	Validator.isValid(SFH, *p, VErrors);
+	if (VErrors.numErrors()>0)
+	fprintf(stderr, "%s", VErrors.getNextError()->getMessage());
 	//CycleDist[p->getReadLength()]++;
 	//CycleDist[q->getReadLength()]++;
 	//	if (p->type == BWA_TYPE_NO_MATCH)

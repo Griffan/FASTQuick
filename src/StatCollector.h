@@ -15,6 +15,7 @@
 #include "../libStatGen/bam/SamRecord.h"
 #include "../libStatGen/bam/BamInterface.h"
 #include "../libStatGen/bam/SamFile.h"
+#include "../libStatGen/bam/SamValidation.h"
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 
