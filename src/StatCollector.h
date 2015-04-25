@@ -59,7 +59,7 @@ private:
 	uint64_t NumPositionCovered2;//larger than 1
 	uint64_t NumPositionCovered5;//larger than 4
 	uint64_t NumPositionCovered10;// larger than 9
-	unsort_map PositionTable;
+	unsort_map PositionTable;//chrom pos absolute index of the site
 	unsigned int index;
 	//nsigned int vcf_index;
 	std::vector<uint32_t> DepthVec;
@@ -171,40 +171,43 @@ public:
 				 default:
 					 break;
 				}
-
-	/*	std::string MD(md);
-		last=0;
-
-
-		int total_len=0;
-		for(int i=0;i!=MD.size();++i)
-			if(isdigit(MD[i])) continue;
-			else if(MD[i]=='^')
+		}
+		return true;
+	}
+	int updateRefseqByMD(std::string&RefSeq, std::string&MD)
+	{
+		int last(0), total_len(0)/*pos on seq*/;
+		for (uint32_t i = 0; i != MD.size(); ++i)//remember we are making reference sequence
+			if (isdigit(MD[i]))
+				continue;
+			else if (MD[i] == '^')
 			{
+				int len = atoi(MD.substr(last, i - last).c_str());//len from last to current deletion, '^' not included
+				total_len += len;
+				int start_on_read = total_len;//1 based
 				i++;
-				while(!isdigit(MD[i]))
+				std::string tmp;
+				while (!isdigit(MD[i])) // we don't need to take care of Deletion
 				{
 					i++;
 					total_len++;
+					tmp += MD[i];
 				}
-				last=i;
-
-			}else
-			{
-				impeccable=false;
-				int len=atoi(MD.substr(last,i-last).c_str())+1;
-				total_len+=len;
-				count+=newQual[total_len-1]-33;
-				last=i+1;
+				std::string left = RefSeq.substr(0, start_on_read);
+				std::string right = RefSeq.substr(start_on_read, RefSeq.length() - start_on_read + 1);
+				RefSeq = left + tmp + right;
+				total_len--;
+				last = i;
 			}
-
-	}
-
-		if(impeccable||count >50) return false;
-		else return true;
-		*/
-		}
-		return true;
+			else
+			{
+				int len = atoi(MD.substr(last, i - last).c_str()) + 1;//len from last to current mismatch, include mismatch
+				total_len += len;
+				//if (strcmp(p.getReadName(),"WTCHG_8105:7:66:5315:89850#0")==0){ fprintf(stderr, "we see strange i:%dth out of %d char of MD tag %s, %d out of %d on read:%s", i,MD.length(),MD.c_str(),total_len-1,RefSeq.length(), p.getReadName()); exit(EXIT_FAILURE); }
+				RefSeq[total_len - 1] = MD[i];
+				last = i + 1;
+			}
+		return 0;
 	}
 
 	int addFSC(FileStatCollector a);
