@@ -1219,6 +1219,8 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 				else
 					contigStatusTable[qname].addNumOverlappedReads();
 			}
+			//TO-DO: adding IsDup function here to generate single end MAX insersize info
+			IsDuplicated(bns, p, q, opt, 1, fout);//only q
 			total_add++;
 			return 2;
 		}
@@ -1249,6 +1251,8 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 				else
 					contigStatusTable[pname].addNumOverlappedReads();
 			}
+			//TO-DO:adding IsDup function here to generate single end MAX insersize info
+			IsDuplicated(bns, p, q, opt, 3, fout);//only p
 			total_add++;
 			return 2;
 		}
@@ -1389,7 +1393,7 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 	{
 		if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
 			return 0;
-		else if (isPartialAlign(*q))  //only one pair partially mapped
+		else if (isPartialAlign(*q))  //q is partially mapped, p is not
 		{
 			string qname(q->getReferenceName());
 			if (string(qname).find("Y") != string::npos
@@ -1397,8 +1401,10 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 			{
 				contigStatusTable[qname].addNumOverlappedReads();
 			}
-			if (p == 0 && addSingleAlignment(*q, opt)) //adding single via pair interface
+			if (addSingleAlignment(*q, opt)) //adding single via pair interface
 			{
+				//TO-DO:adding IsDup function here to generate single end MAX insersize info
+				IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
 				total_add++;
 				return 2;
 			}
@@ -1415,6 +1421,8 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 			}
 			if (addSingleAlignment(*q, opt)) //adding single via pair interface
 			{
+				//TO-DO:adding IsDup function here to generate single end MAX insersize info
+				IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
 				total_add++;
 				return 2;
 			}
@@ -1434,6 +1442,8 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 			}
 			if (addSingleAlignment(*p, opt)) //adding single via pair interface
 			{
+				//TO-DO:adding IsDup function here to generate single end MAX insersize info
+				IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
 				total_add++;
 				return 2;
 			}
@@ -1503,6 +1513,8 @@ int StatCollector::addAlignment(SamFileHeader & SFH, SamRecord * p,
 			}
 			if (addSingleAlignment(*p, opt)) //adding single via pair interface
 			{
+				//TO-DO:adding IsDup function here to generate single end MAX insersize info
+				IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
 				total_add++;
 				return 2;
 			}
