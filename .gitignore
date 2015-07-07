@@ -3,8 +3,9 @@
 .deps/
 .project
 .settings/
+.idea/
 FastPopCon*
-
+CMakeLists.txt
 #files being edited
 *~
 
