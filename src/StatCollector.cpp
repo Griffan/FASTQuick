@@ -1,11 +1,12 @@
 /*
  * StatCollector.cpp
  *
- *  Created on: 2014Äê7ÔÂ20ÈÕ
+ *  Created on: 2014ï¿½ï¿½7ï¿½ï¿½20ï¿½ï¿½
  *      Author: Administrator
  */
 
 #include "StatCollector.h"
+#include "InsertSizeEstimator.h"
 #include "../libbwa/bwase.h"
 #include "../libbwa/bamlite.h"
 #include <fstream>
@@ -1814,12 +1815,21 @@ int StatCollector::getEmpCycleDist(const string & outputPath)
 }
 int StatCollector::getInsertSizeDist(const string & outputPath)
 {
-	ofstream fout(outputPath + ".InsertSizeDist");
-	for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
-	{
-		fout << i << "\t" << InsertSizeDist[i] << endl;
-	}
-	fout.close();
+
+	std::string InFileName(outputPath+".InsertSizeTable");
+	std::string OutFileName(outputPath+".InsertSizeDist");
+	InsertSizeEstimator Estimator;
+	Estimator.InputInsertSizeTable(InFileName);
+	Estimator.Sort();
+	Estimator.UpdateWeight();
+	Estimator.UpdateInsertDist();
+	Estimator.GetInsertDist(OutFileName);
+	//ofstream fout(outputPath + ".InsertSizeDist");
+	//	for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
+	//	{
+	//		fout << i << "\t" << InsertSizeDist[i] << endl;
+	//	}
+	//	fout.close();
 	return 0;
 }
 int StatCollector::getSexChromInfo(const string & outputPath)
