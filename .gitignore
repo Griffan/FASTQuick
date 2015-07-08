@@ -1,4 +1,5 @@
 #Some of these are related to eclipse. So i keep them out of my repo
+.DS_Store
 .cproject
 .deps/
 .project
