@@ -34,7 +34,7 @@ echo "selected vcf file: $1
 resource directory: $2
 auxilary tools directory $3"
 gzip -dc $1 |grep -P -v "^#|^Y|^X"|awk '{print $1"\t"$2-1"\t"$2"\t"$4"\t"$5}' >$2/choose.bed
-./vcfast convert --bedf $2/choose.bed --vcf $4 --out $2/hapmap_3.3.b37.dat --minMAF 0.01
+$3/vcfast convert --bedf $2/choose.bed --vcf $4 --out $2/hapmap_3.3.b37.dat --minMAF 0.01
 tail -n +2 $2/hapmap_3.3.b37.dat |cut -f1|cut -f1 -d "_"|awk -F ":" '{print $1"\t"$2-1"\t"$2}' >$2/choose.bed.post.bed
 tail -n +2 $2/hapmap_3.3.b37.dat |cut -f1|cut -d "_" -f2-3|cut -f1 -d "_"|awk -F "/" '{print $1"\t"$2}' >$2/choose.bed.allele
 paste $2/choose.bed.post.bed $2/choose.bed.allele >$2/choose.bed.post.bed.allele.bed
