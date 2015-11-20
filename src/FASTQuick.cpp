@@ -14,10 +14,9 @@
 #include "../libbwa/utils.h"
 #include "BwtIndexer.h"
 #include "BwtMapper.h"
-#include "PopulationIdentifier.cpp"
+#include "PopulationIdentifier.h"
 #include "../misc/params.h"
-#include "../libmpu/mpuTool.h"
-#include "../libmpu/Error.h"
+#include "ContaminationEstimator.h"
 //#include <gperftools/profiler.h>
 using namespace std;
 
@@ -25,9 +24,7 @@ using namespace std;
 #ifndef PACKAGE_VERSION
 #define PACKAGE_VERSION "0.0.1"
 #endif
-#ifndef MPU_PATH
-#define MPU_PATH "mpuTools"
-#endif
+
 extern void notice(const char*,...);
 extern void warning(const char*,...);
 extern void error(const char*,...);
@@ -340,6 +337,7 @@ int runAlign(int argc, char ** argv)
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
+	int kmer_thresh(0);
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
@@ -367,7 +365,8 @@ int runAlign(int argc, char ** argv)
 		//LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
 		//LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
 
-		LONG_PARAM_GROUP("Parameters for Alignment ", "Parameters the are universal for both single end and pair end alignment.[Optional]")
+		LONG_PARAM_GROUP("Parameters for Alignment ", "Parameters the are universal for both single end and pair end alignment.")
+		LONG_INT_PARAM("kmer_thresh", &kmer_thresh, "[INT] Out of 6 kmer masking tests, number of masking kmer test need to pass[Optional,Default:3]")
 		LONG_DOUBLE_PARAM("n", &opt->fnr, "[INT or Float] Max #diff (int) or missing prob under 0.02 error rate")
 		LONG_INT_PARAM("o", &opt->max_gapo, "[INT] maximum number or fraction of gap opens")
 		LONG_INT_PARAM("e", &opte, "[INT] maximum number of gap extensions, -1 for disabling long gaps [-1]")
@@ -388,7 +387,7 @@ int runAlign(int argc, char ** argv)
 		EXCLUSIVE_PARAM("NonI", &NonIL13, "[Bool] the input is not in the Illumina 1.3+ FASTQ-like format")
 		LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
-		LONG_PARAM_GROUP("Parameters for PairEnd ", "Parameters specified for Pair end mapping.[Optional]")
+		LONG_PARAM_GROUP("Additional Parameters for PairEnd ", "Additional parameters specified for Pair end mapping.[Optional]")
 		LONG_INT_PARAM("max_isize", &popt->max_isize, "[INT] maximum insert size")
 		LONG_INT_PARAM("max_occ", &popt->max_occ, "[INT] maximum occurrences for one end ")
 		LONG_PARAM("is_sw", &popt->is_sw, "[Bool] disable Smith-Waterman for the unmapped mate")
@@ -464,13 +463,14 @@ int runAlign(int argc, char ** argv)
 	//Extract ref seqs from VCF and Ref
 
 	struct stat sb;
-	BwtIndexer Indexer;
+	BwtIndexer Indexer(kmer_thresh);
 	std::string NewRef = IndexPrefix + ".FASTQuick.fa";
 
 	ifstream ParamIn(NewRef + ".param");
 	if (!ParamIn.is_open())
 	{
-		cerr << "Open file :" << NewRef + ".param" << "failed!" << endl;
+		cerr << "Open file :" << NewRef + ".param" << "\tfailed!" << endl;
+		exit(EXIT_FAILURE);
 	}
 	std::string ParaStr,TmpStr;
 	std::getline(ParamIn, ParaStr);//RefPath
@@ -539,25 +539,27 @@ int runPop(int argc, char ** argv)
 
 	double t_real;
 	t_real = realtime();
-	std::string UDPath("Empty"), PCPath("Empty"), muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty");
+	std::string SVD_Prefix("Empty"),UDPath("Empty"), PCPath("Empty"), muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty"),pileup("Empty");
 
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD matrix file in resource directory[Required]")
-		LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource directory[Required]")
-		LONG_STRING_PARAM("mu", &muPath, "[String] Input mu matrix file in resource directory[Required]")
+//		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD matrix file in resource directory[Required]")
+//		LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource directory[Required]")
+//		LONG_STRING_PARAM("mu", &muPath, "[String] Input mu matrix file in resource directory[Required]")
+		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]")
 		LONG_STRING_PARAM("gl", &glPath, "[String] Input genotype likelihood file generated from align[Required]")
-		LONG_STRING_PARAM("bed", &bedPath, "[String] Input choose.bed.post.bed.allele.bed file in resource directory[Required]")
+		LONG_STRING_PARAM("pileup", &pileup, "[String] Input pileup file generated from align[Required]")
+		LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed.post.bed.allele.bed file in resource directory[Required]")
 		LONG_STRING_PARAM("out", &output, "[String] Specify output file[Required]")
 	END_LONG_PARAMS();
 
 	pl.Add(new longParams("Available Options", longParameters));
 	pl.Read(argc, argv);
 	pl.Status();
-	if (UDPath == "Empty")
+	if (SVD_Prefix == "Empty")
 	{
-		error("--UD is required");
+		error("--SVD_prefix is required, if you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
 		exit(EXIT_FAILURE);
 	}
 	if (PCPath == "Empty")
@@ -570,17 +572,17 @@ int runPop(int argc, char ** argv)
 		error("--mu is required");
 		exit(EXIT_FAILURE);
 	}
-	if (glPath == "Empty")
+	if (pileup == "Empty")
 	{
-		error("--gl is required");
+		error("--pileup is required");
 		exit(EXIT_FAILURE);
 	}
 	if (bedPath == "Empty")
 	{
-		error("--bed is required");
+		error("--BED is required");
 		exit(EXIT_FAILURE);
 	}
-	PopulationIdentifier pop(UDPath, PCPath, muPath, glPath, bedPath);
+	PopulationIdentifier pop(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu", pileup, bedPath);
 	pop.OptimizeLLK();
 
 	notice("Version: %s\n", PACKAGE_VERSION);
@@ -596,16 +598,21 @@ int runCon(int argc, char ** argv)
 	* Parameters
 	*
 	*/
-
-	std::string  ReadGroup("default"),Prefix("Empty"),idx_Prefix("Empty");
-
+	ContaminationEstimator CE;
+	std::string  ReadGroup("default"),Prefix("Empty"),SVD_Prefix("Empty");
+	std::string VcfSiteAFFile("Empty"), MPUpath("Empty"), BEDpath("Empty");
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
-		LONG_STRING_PARAM("in_idx_prefix", &idx_Prefix, "[String] Specify the prefix used by index files.[Required]")
-		LONG_STRING_PARAM("in_prefix", &Prefix, "[String] Specify the prefix used as output prefix in step of align.[Required]")
+		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file that contains site allele frequency doesn't exist]")
+		LONG_STRING_PARAM("VCF", &VcfSiteAFFile, "[String] Specify VCF file that contains site allele frequency.[Required if SVD matrix doesn't exist]")
+		LONG_STRING_PARAM("pileup", &MPUpath, "[String] Specify pileup file for current individual, could be the one generated from align step.[Required]")
+		LONG_STRING_PARAM("out", &Prefix, "[String] Specify the output prefix.[Required]")
+		LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
+
+
 
 
 		END_LONG_PARAMS();
@@ -615,29 +622,33 @@ int runCon(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--in_prefix is required");
+		error("--out is required");
 		exit(EXIT_FAILURE);
 	}
-	if (idx_Prefix == "Empty")
+	if (MPUpath == "Empty")
 	{
-		error("--in_idx_prefix is required");
+		error("--MPUpath is required");
 		exit(EXIT_FAILURE);
+	}
+	if (BEDpath == "Empty")
+	{
+		error("--BEDpath is required, if you are using FASTQuick default marker set, you should find choose.bed in resource directory.");
+		exit(EXIT_FAILURE);
+	}
+	if (SVD_Prefix == "Empty" && VcfSiteAFFile =="Empty")
+	{
+		error("Either --SVD_prefix or --VCF should be specified, If you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
+	}
+	if(VcfSiteAFFile!="Empty")
+	{
+		CE.RunFromVCF(VcfSiteAFFile,MPUpath,ReadGroup,Prefix);
+	}
+	else
+	{
+		CE.RunFromSVDMatrix(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu",MPUpath,BEDpath,Prefix,ReadGroup);
 	}
 
-	char cmdline[1024];
-	char** params = new char*[9];
-	sprintf(cmdline, MPU_PATH " verify --vcf %s.FASTQuick.fa.SelectedSite.vcf.gz --mpu %s.Pileup.gz --smID %s --out %s.ctm", idx_Prefix.c_str(), Prefix.c_str(), ReadGroup.c_str(), Prefix.c_str());//TODO:need to change SelectedSite.vcf.gz into vcf print by PCA mapping
-	stringstream ss(cmdline);
-	string para;
-	ss >> para;
-	for (int i = 0; i != 9; ++i)
-	{
-		ss >> para;
-		params[i] = new char[128];
-		strcpy(params[i], para.c_str());
-	}
-	//runVerify(argc,argv);
-	runVerify(9, params);
+
 	notice("Version: %s\n", PACKAGE_VERSION);
 	notice("Real time: %.3f sec; CPU: %.3f sec\n",	realtime() - t_real, cputime());
 	return 0;

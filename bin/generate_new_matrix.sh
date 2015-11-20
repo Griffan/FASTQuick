@@ -47,3 +47,4 @@ echo "Finish updating 1kg.phase1.selected.GLs.dat file\n"
 Rscript $3/run.SVD.r $2/hapmap_3.3.b37.dat $2
 echo "Finish updating SVD matrices\n"
 echo "Update all the files successfully! Now you can proceed using FastPopCon pop function to predict population identification now."
+le hapmap_3.3.b37.dat|tail -n +2|cut -f1|awk -F_ '{print $1,$2}'|awk -F: '{print $1,$2,$3}'|awk -F/ '{print $1,$2}'|awk  '{print $1,$2-1,$2,$3,$4}' >choose.bed

@@ -1,7 +1,7 @@
 /*
  * BwtIndexer.cpp
  *
- *  Created on: 2014Äê7ÔÂ9ÈÕ
+ *  Created on: 2014ï¿½ï¿½7ï¿½ï¿½9ï¿½ï¿½
  *      Author: Administrator
  */
 
@@ -59,6 +59,9 @@ const uint64_t mask[6] =
 { 0xffffffff00000000, 0xffffffff, 0xffff00000000ffff, 0xffffffff0000, 0xffff0000ffff0000, 0xffff0000ffff };
 #endif
 
+#define NST_NT4_TABLE(X) (nst_nt4_table[(unsigned char)X]<4?nst_nt4_table[(unsigned char)X]:rand()%4)
+
+
 struct stat sb;
 
 extern int is_bwt(ubyte_t *T, int n);
@@ -93,7 +96,39 @@ BwtIndexer::BwtIndexer() :RefPath(),
 	//***bloom filter initialization end
 #endif
 
-	InitializeRollHashTable();
+	InitializeRollHashTable(3);
+
+}
+
+BwtIndexer::BwtIndexer(int thresh) :RefPath(),
+		pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
+				0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
+				0)
+{
+	//***bloom filter initialization
+#ifdef BLOOM_FPP
+	// How many elements roughly do we expect to insert?
+	parameters.projected_element_count = VCF_SITES *( WINDOW_SIZE-KMER_SIZE+1+KMER_SIZE) * 2;
+
+	// Maximum tolerable false positive probability? (0,1)
+	parameters.false_positive_probability = BLOOM_FPP;// 1 in 10000
+
+	// Simple randomizer (optional)
+	parameters.random_seed = 0xA5A5A5A5;
+
+	if (!parameters)
+	{
+		std::cout << "Error - Invalid set of bloom filter parameters!" << std::endl;
+		exit(1);
+	}
+	parameters.compute_optimal_parameters();
+
+	filter.set_param(parameters);
+
+	//***bloom filter initialization end
+#endif
+
+	InitializeRollHashTable(thresh);
 
 }
 BwtIndexer::BwtIndexer(RefBuilder & ArtiRef, string & prefix) :RefPath(prefix),
@@ -124,7 +159,7 @@ BwtIndexer::BwtIndexer(RefBuilder & ArtiRef, string & prefix) :RefPath(prefix),
 
 	//***bloom filter initialization end
 #endif
-	InitializeRollHashTable();
+	InitializeRollHashTable(3);
 }
 
 BwtIndexer::BwtIndexer(string & prefix) :RefPath(prefix),
@@ -155,7 +190,7 @@ BwtIndexer::BwtIndexer(string & prefix) :RefPath(prefix),
 
 	//***bloom filter initialization end
 #endif
-	InitializeRollHashTable();
+	InitializeRollHashTable(3);
 }
 
 /******************************/
@@ -205,10 +240,49 @@ inline bool BwtIndexer::IsKmerInHash(uint64_t kmer)const
 	//fprintf(stderr, "After the mask 0xffff0000ffff of %016llx \n", shrinked);
 	if (roll_hash_table[5][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
 	//fprintf(stderr,"The counter of %016llx is %d\n",kmer,counter);
-	if (counter > RollParam.thresh)
+	if (counter >= RollParam.thresh)
 		return true;
 	else
 		return false;
+}
+inline int BwtIndexer::CountKmerHitInHash(uint64_t kmer)const
+{
+	int counter(0);
+	uint64_t shrinked(0);
+	/*0xffffffff00000000*/
+	shrinked |= (kmer & 0xffffffff00000000) >> 32;
+	//fprintf(stderr, "After the mask 0xffffffff00000000 of %016llx \n", shrinked);
+	if (roll_hash_table[0][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	/*0xffffffff*/
+	shrinked = 0;
+	shrinked |= kmer & 0xffffffff;
+	//fprintf(stderr, "After the mask 0xffffffff of %016llx \n", shrinked);
+	if (roll_hash_table[1][shrinked / 8] & (1 << (shrinked % 8))) { counter++;}
+	/*0xffff00000000ffff*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff000000000000) >> 32;
+	shrinked |= (kmer & 0xffff);
+	//fprintf(stderr, "After the mask 0xffff00000000ffff of %016llx \n", shrinked);
+	if (roll_hash_table[2][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	/*0xffffffff0000*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffffffff0000)>>16;
+	//fprintf(stderr, "After the mask 0xffffffff0000 of %016llx \n", shrinked);
+	if (roll_hash_table[3][shrinked / 8] & (1 << (shrinked % 8))) { counter++;  }
+	/*0xffff0000ffff0000*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff000000000000) >> 32;
+	shrinked |= (kmer & 0xffff0000)>>16;
+	//fprintf(stderr, "After the mask 0xffff0000ffff0000 of %016llx \n", shrinked);
+	if (roll_hash_table[4][shrinked / 8] & (1 << (shrinked % 8))) { counter++;  }
+	/*0xffff0000ffff*/
+	shrinked = 0;
+	shrinked |= (kmer & 0xffff00000000) >> 16;
+	shrinked |= (kmer & 0xffff);
+	//fprintf(stderr, "After the mask 0xffff0000ffff of %016llx \n", shrinked);
+	if (roll_hash_table[5][shrinked / 8] & (1 << (shrinked % 8))) { counter++; }
+	//fprintf(stderr,"The counter of %016llx is %d\n",kmer,counter);
+	return counter;
 }
 uint64_t swap_uint64(uint64_t val)
 {
@@ -218,31 +292,33 @@ uint64_t swap_uint64(uint64_t val)
 }
 typedef uint8_t v16qi __attribute__((vector_size(16)));
 //typedef uint64_t v2li __attribute__((vector_size(16)));
+bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len, bool more_chunck)const
+{
+	//	for (int i = 0; i != len;++i)
+	//	fprintf(stderr, "%c\t", "ACGT"[S[i]]);
+	//	fprintf(stderr, "\n");
+	//	double enter_time=realtime();
+		//for debug use
+		int n_chunk=len/32;
+		uint64_t *kmer=new uint64_t [n_chunk];
+		for (int i=0;i!=n_chunk;++i)
+		{
+			kmer[i]=0;
+			for (int j = 0; j != 32; ++j)
+			{
+				kmer[i] = ((kmer[i] << 2) | S[32*i + j]);
+			}
+			if(IsKmerInHash(kmer[i]))
+			{
+				return true;
+			}
+		}
+
+		return false;
+
+}
 bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 {	
-	//for (int i = 0; i != len;++i)
-	//fprintf(stderr, "%c\t", "ACGT"[S[i]]);
-	//fprintf(stderr, "\n");
-	//double enter_time=realtime();
-
-	//uint64_t kmer[3] = { 0, 0, 0 };
-	//for (int i = 0; i != 32; ++i)
-	//{
-	//	kmer[0] = ((kmer[0] << 2) | S[0 + i]);
-	//	kmer[1] = ((kmer[1] << 2) | S[32 + i]);
-	//	kmer[2] = ((kmer[2] << 2) | S[64 + i]);
-	//}
-	//if (IsKmerInHash(kmer[0]) || IsKmerInHash(kmer[1])||IsKmerInHash(kmer[2]))
-	//{
-	//	//fprintf(stderr, "Real time: %.3f sec; CPU: %.3f sec\n",
-	//	//	realtime() - enter_time, cputime());
-	//	return true;
-	//}
-	//else
-	//{
-	//		return false;
-	//}
-
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
 	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
@@ -286,8 +362,6 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	mmx5 = mmx5 | mmx8;
 	memcpy(&kmer3,&mmx1,16);
 
-
-
 	//for (int i = 0; i != 32; ++i)
 	//	fprintf(stderr, "%c\t", "ACGT"[(swap_uint64(kmer3[0])>> ((31 - i) * 2)) & 3]);
 	////fprintf(stderr, "\n");
@@ -318,8 +392,7 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 	////exit(EXIT_FAILURE);
 	if (IsKmerInHash(swap_uint64(kmer3[0])) || IsKmerInHash(swap_uint64(kmer3[1])))
 	{
-	//fprintf(stderr, "Real time: %.3f sec; CPU: %.3f sec\n",
-	//	realtime() - enter_time, cputime());
+
 		return true;
 	}
 	else
@@ -327,12 +400,88 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 		memcpy(&kmer3, &mmx5, 16);
 		if (IsKmerInHash(swap_uint64(kmer3[0])))
 		{
+
 			return true;
 		}
 		else
 			return false;
 	}
 
+
+}
+bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck)const
+{
+	int n_chunk=len/32;
+	int count=0;
+	uint64_t *kmer=new uint64_t [n_chunk];
+	for (int i=0;i!=n_chunk;++i)
+	{
+		kmer[i]=0;
+		for (int j = 0; j != 32; ++j)
+		{
+			kmer[i] = ((kmer[i] << 2) | S[32*i + j]);
+		}
+		count+=IsKmerInHash(kmer[i]);
+	}
+	if (count >= RollParam.thresh)
+		return true;
+	else
+		return false;
+}
+bool BwtIndexer::IsReadInHashByCount(const ubyte_t * S, int len)const
+{
+	uint64_t kmer3[2];
+	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
+	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
+	v16qi mmx3 = { S[2], S[6], S[10], S[14], S[18], S[22], S[26], S[30], S[34], S[38], S[42], S[46], S[50], S[54], S[58], S[62] };
+	v16qi mmx4 = { S[3], S[7], S[11], S[15], S[19], S[23], S[27], S[31], S[35], S[39], S[43], S[47], S[51], S[55], S[59], S[63] };
+	v16qi mmx5 = { S[64], S[68], S[72], S[76], S[80], S[84], S[88], S[92], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx6 = { S[65], S[69], S[73], S[77], S[81], S[85], S[89], S[93], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx7 = { S[66], S[70], S[74], S[78], S[82], S[86], S[90], S[94], 0, 0, 0, 0, 0, 0, 0, 0 };
+	v16qi mmx8 = { S[67], S[71], S[75], S[79], S[83], S[87], S[91], S[95], 0, 0, 0, 0, 0, 0, 0, 0 };
+
+
+#define GCC_VERSION (__GNUC__ * 10000 \
+               + __GNUC_MINOR__ * 100 \
+                + __GNUC_PATCHLEVEL__)
+#if defined(GCC_VERSION)&& GCC_VERSION >= 40700//4.7#endif
+//fprintf(stderr,"GCC_VERSION is about 4.7");
+	mmx1 = mmx1 << 6;
+	mmx1 = mmx1 | (mmx2 << 4);
+	mmx1 = mmx1 | (mmx3 << 2);
+#else
+	v16qi mul64 = {64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64};
+	v16qi mul16 = {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16};
+	v16qi mul4 = {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
+	mmx1 = mmx1 * mul64;
+	mmx1 = mmx1 | (mmx2 * mul16);
+	mmx1 = mmx1 | (mmx3 * mul4);
+#endif
+
+	mmx1 = mmx1 | mmx4;
+
+#if defined(GCC_VERSION)&& GCC_VERSION > 40700//4.7#endif
+	mmx5 = mmx5 << 6;
+	mmx5 = mmx5 | (mmx6 << 4);
+	mmx5 = mmx5 | (mmx7 << 2);
+#else
+	mmx5 = mmx5 * mul64;
+	mmx5 = mmx5 | (mmx6 *mul16);
+	mmx5 = mmx5 | (mmx7 *mul4);
+#endif
+
+	mmx5 = mmx5 | mmx8;
+	memcpy(&kmer3,&mmx1,16);
+
+	int count=CountKmerHitInHash(swap_uint64(kmer3[0]))+ CountKmerHitInHash(swap_uint64(kmer3[1]));
+
+	memcpy(&kmer3, &mmx5, 16);
+	count+=CountKmerHitInHash(swap_uint64(kmer3[0]));
+
+	if (count >= RollParam.thresh)
+		return true;
+	else
+		return false;
 }
 bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const
 {
@@ -342,19 +491,27 @@ bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)co
 		return true;
 	}*/
 	//fprintf(stderr, "enter IsReadFiltered\n");
-	if (IsReadHighQ(Q, len)) //pass error
+	//if (IsReadHighQ(Q, len)) //pass error
 	{
-		if (IsReadInHash(S, len))
+		//if (IsReadInHash(S, len))
+		if ((len>200?IsReadInHashByCount(S, len, true):IsReadInHashByCount(S, len)))
 		{
+//			if (strncmp(name, "ERR015764.2262",14) == 0)
+//				fprintf(stderr, "%s not filtered because of kmer hit\n",name);
 			return false;
 		}
 		else
+		{
+//			if (strncmp(name, "ERR015764.2262",14) == 0)
+//							fprintf(stderr, "%s is indeed filtered because of kmer hit\n",name);
 			return true;
+		}
 	}
-	else
+	//else
 	{
-		//fprintf(stderr,"low qual\n");
-		return false;
+//		if (strncmp(name,"ERR015764.2262",14)==0)
+//		fprintf(stderr,"%s not filtered because of low qual\n",name);
+	//	return false;
 	}
 }
 std::string BwtIndexer::ReverseComplement(const std::string & a)
@@ -369,11 +526,11 @@ std::string BwtIndexer::ReverseComplement(const std::string & a)
 	return b;
 }
 
-void BwtIndexer::InitializeRollHashTable()
+void BwtIndexer::InitializeRollHashTable(int thresh=3)
 {
 	RollParam.kmer_size = KMER_SIZE;
 	RollParam.read_step_size = READ_STEP_SIZE;
-	RollParam.thresh = 3;
+	RollParam.thresh = thresh;
 	clock_t t = clock();
 
 	hash_table_size = pow(4, 16) / 8;
@@ -420,7 +577,18 @@ void BwtIndexer::DestroyRollHashTable()
 	for (int i = 0; i != 6; ++i)
 		free(roll_hash_table[i]);
 }
-void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
+
+int BwtIndexer::AddSeq2DebugHash(int shrinked)
+{
+	if(debug_hash.find(shrinked)==debug_hash.end())
+	{
+		debug_hash[shrinked]=1;
+	}
+	else
+		debug_hash[shrinked]++;
+	return 0;
+}
+void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter, const std::vector<char>& alleles )
 {
 
 	uint64_t datum(0);
@@ -430,12 +598,13 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	//uint32_t test = 0x00000000903b7458;
 	for (; i != 32; ++i)
 	{
-		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
+		datum = ((datum << 2) | NST_NT4_TABLE((unsigned char)Seq[i]));/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)); */ // N not considered
 	}
 	shrinked = KmerShrinkage(datum, iter);
 	roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
+	//AddSeq2DebugHash(shrinked);
 	//if (debug_flag)
 	//{
 	//	fprintf(stderr, "I found it!!!!!\t"); 
@@ -449,7 +618,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 	for (; i != Seq.length() / 2/*last one considered*/; ++i)
 	{
 		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
+		datum = ((datum << 2) | NST_NT4_TABLE((unsigned char)Seq[i]));/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
 		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
@@ -465,19 +634,20 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 		//	fprintf(stderr, "\t%llx\n", mask[iter]);
 		//}
 		roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
+		//AddSeq2DebugHash(shrinked);
 	}
 	//printf("the DATUM is : %016llx    masked DATUM:%x    the hash value is :%d as well as mask:%x\n",datum,KmerShrinkage(datum, iter),roll_hash_table[iter][KmerShrinkage(datum, iter)/8]&(1<<(shrinked%8)), iter);
 
 	uint64_t tmp = datum;
-	for (unsigned int j = i, let = 0; let != 4; ++let, j = i)
+	for (unsigned int j = i, let = 0; let != alleles.size(); ++let, j = i)
 	{
 		tmp = datum;
 		for (; j != Seq.length() / 2 + 32; ++j)
 		{
 			if (j==Seq.length()/2)
-				tmp = ((tmp << 2) | nst_nt4_table[(unsigned char)"ACGT"[let]]);
+				tmp = ((tmp << 2) | NST_NT4_TABLE((unsigned char)alleles[let]));
 			else
-				tmp = ((tmp << 2) | nst_nt4_table[(unsigned char)Seq[j]]);
+				tmp = ((tmp << 2) | NST_NT4_TABLE((unsigned char)Seq[j]));
 			shrinked = KmerShrinkage(tmp, iter);
 			//if (debug_flag)
 			//{
@@ -490,6 +660,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 			//	fprintf(stderr, "\t%llx\n", mask[iter]);
 			//}
 			roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
+			//AddSeq2DebugHash(shrinked);
 		}
 	}
 	datum = tmp;
@@ -497,7 +668,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 			++i)
 	{
 		//std::cerr<<"number:"<<i<<"COmparing length:"<<KMER_SIZE<<"and"<<Seq.length()<<"while max:"<<Seq.max_size()<<std::endl;
-		datum = ((datum << 2) | nst_nt4_table[(unsigned char)Seq[i]]);/*
+		datum = ((datum << 2) | NST_NT4_TABLE((unsigned char)Seq[i]));/*
 		 & LOMEGA(
 		 min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE));*/ // N not considered
 		//roll_hash_table[iter][KmerShrinkage(datum, iter)]++;
@@ -513,6 +684,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter)
 		//	fprintf(stderr, "\t%llx\n", mask[iter]);
 		//}
 		roll_hash_table[iter][shrinked / 8] |= (1 << (shrinked % 8));
+		//AddSeq2DebugHash(shrinked);
 	}
 	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
 }
@@ -524,13 +696,17 @@ bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & OldRef,string & NewRe
 	RefPath = OldRef;
 	string str;
 	Fa2Pac(ArtiRef, NewRef.c_str(), opt); //dump .pac
+
+	/*debug hash print*/
+	//DebugHashPrint();
+	/*debug hash print end*/
 	Fa2RevPac(NewRef.c_str()); //dump .rpac
 
 	DumpRollHashTable(NewRef);
 	//str=NewRef+".pac";
 	//std::cerr<<"The bwa seq len is:"<<bwa_seq_len(str.c_str())<<std::endl;
 	bns_dump(bns, NewRef.c_str());
-	notice(" Building Pac from Bwt...\n");
+	notice("Building Pac from Bwt...\n");
 	bwt_d = Pac2Bwt(pac_buf);
 	//cerr<<"Pac2Bwt..."<<bwt_d->bwt_size<<endl;
 	rbwt_d = Pac2Bwt(rpac_buf);
@@ -634,18 +810,22 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	{
 
 		string CurrentSeqName(iter->first.c_str());
+		std::vector<char> alleles;
+		alleles.push_back(CurrentSeqName[CurrentSeqName.find('@')+1]);
+		alleles.push_back(CurrentSeqName[CurrentSeqName.find('@')+3]);
+
 		//if (CurrentSeqName == "8:32617714@G/A") debug_flag = true;
 		//if(ArtiRef.longRefTable[CurrentSeqName]==true) continue;// long ref seq would not be indexed
 		string CurrentSeq = ArtiRef.SeqVec[iter->second];
 		//if (debug_flag) std::cerr << CurrentSeq << endl;
-		AddSeq2Hash(CurrentSeq, opt);
+		AddSeq2Hash(CurrentSeq, alleles);
 		//if (debug_flag) std::cerr << string(CurrentSeq.rbegin(), CurrentSeq.rend()) << endl;
-		AddSeq2Hash(string(CurrentSeq.rbegin(), CurrentSeq.rend()), opt);
+		//AddSeq2Hash(string(CurrentSeq.rbegin(), CurrentSeq.rend()), alleles);
 		string tmp_rev_cmp = ReverseComplement(CurrentSeq);
 		//if (debug_flag) std::cerr << tmp_rev_cmp << endl;
-		AddSeq2Hash(tmp_rev_cmp, opt);
+		AddSeq2Hash(tmp_rev_cmp, alleles);
 		//if (debug_flag) std::cerr << string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()) << endl;
-		AddSeq2Hash(string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()), opt);
+		//AddSeq2Hash(string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()), alleles);
 		Fout << ">" << CurrentSeqName << "\n" << CurrentSeq << "\n";
 		//if (debug_flag) exit(EXIT_FAILURE);
 		//DBG(fprintf(stderr,"Come into outer loop...%s\n%s\n",CurrentSeqName.c_str(),CurrentSeq.c_str());)

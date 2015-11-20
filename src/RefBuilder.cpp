@@ -1,7 +1,7 @@
 /*
  * RefBuilder.cpp
  *
- *  Created on: 2014Äê7ÔÂ9ÈÕ
+ *  Created on: 2014ï¿½ï¿½7ï¿½ï¿½9ï¿½ï¿½
  *      Author: Administrator
  */
 #include "algorithm"
@@ -136,8 +136,8 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
 
       if(DEBUG)
         {
-          string AltAllele(VcfLine.getAlleles(0));
-          string RefSeq=FetchedSeq.substr(0,opt->flank_len)+AltAllele+FetchedSeq.substr(opt->flank_len+1,opt->flank_len);
+          string RefAllele(VcfLine.getAlleles(0));
+          string RefSeq=FetchedSeq.substr(0,opt->flank_len)+RefAllele+FetchedSeq.substr(opt->flank_len+1,opt->flank_len);
           if(RefSeq != FetchedSeq)
             {
               cerr<<"WARNING:Coordinate problem!!!!!!"<<endl<<"Number of Alt:"<<VcfLine.getNumAlts()<<endl;
@@ -150,12 +150,23 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
             }
         }
 
-      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string("N")+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));// position 500 was replaced by AltAllele
+//      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string("N")+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));// position 500 was replaced by AltAllele
+      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));
+//      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));//the reason why I leave only alt allele is because the alleles will be taken care of later
+////      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_len+1,opt->flank_len));//the reason why I leave only alt allele is because the alleles will be taken care of later
+////            sprintf(region, "%s:%d@%s/%s#0", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+////            RefTableIndex.insert( make_pair(string(region),nseqs));
+////            nseqs++;
+//      sprintf(region, "%s:%d@%s/%s#1", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+//      RefTableIndex.insert( make_pair(string(region),nseqs));
+//      nseqs++;
       sprintf(region, "%s:%d@%s/%s", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
       RefTableIndex.insert( make_pair(string(region),nseqs));
+      nseqs++;
+
       sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_len, Position+opt->flank_len);
       BedFile<<region<<endl;
-      nseqs++;
+
       nmarker++;
       last_pos=Position;
       last_chr=Chrom;
@@ -229,15 +240,23 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
         GCstruct.write(FGC);
       }
 
-      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string("N")+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));// position 500 was replaced by AltAllele
+      //SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string("N")+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));// position 500 was replaced by AltAllele
+      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));
+//      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));
+////      SeqVec.push_back(FetchedSeq.substr(0,opt->flank_long_len)+string(VcfLine.getAltStr())+FetchedSeq.substr(opt->flank_long_len+1,opt->flank_long_len));
+////            sprintf(region, "%s:%d@%s/%s|L#0", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+////            RefTableIndex.insert( make_pair(string(region),nseqs));
+////            nseqs++;
+//      sprintf(region, "%s:%d@%s/%s|L#1", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+//      RefTableIndex.insert( make_pair(string(region),nseqs));
+//      nseqs++;
       sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
       RefTableIndex.insert( make_pair(string(region),nseqs));
-      //sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
-      //longRefTable.insert(make_pair(string(region),true));
-      //VariantLongTable[string(region)]=1;
+      nseqs++;
+
       sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-opt->flank_long_len, Position+opt->flank_long_len);
       BedFile<<region<<endl;
-      nseqs++;
+
       nmarker++;
       last_pos=Position;
       last_chr=Chrom;
@@ -331,15 +350,23 @@ RefBuilder::RefBuilder(const string& VcfPath, const string& RefPath, const strin
         GCstruct.write(FGC);
       }
 
-      SeqVec.push_back(FetchedSeq.substr(0,250)+string("N")+FetchedSeq.substr(250+1,250));// position 500 was replaced by AltAllele
-      sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+      //SeqVec.push_back(FetchedSeq.substr(0,250)+string("N")+FetchedSeq.substr(250+1,250));// position 500 was replaced by AltAllele
+      SeqVec.push_back(FetchedSeq.substr(0,250)+string(VcfLine.getAltStr())+FetchedSeq.substr(250+1,250));
+//      SeqVec.push_back(FetchedSeq.substr(0,250)+string(VcfLine.getAltStr())+FetchedSeq.substr(250+1,250));
+////      SeqVec.push_back(FetchedSeq.substr(0,250)+string(VcfLine.getAltStr())+FetchedSeq.substr(250+1,250));
+////            sprintf(region, "%s:%d@%s/%s|L#0", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+////            RefTableIndex.insert( make_pair(string(region),nseqs));
+////            nseqs++;
+//      sprintf(region, "%s:%d@%s/%s|L#1", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
+//      RefTableIndex.insert( make_pair(string(region),nseqs));
+//      nseqs++;
+      sprintf(region, "%s:%d@%s/%s", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
       RefTableIndex.insert( make_pair(string(region),nseqs));
-      //sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(),Position, VcfLine.getRefStr(),VcfLine.getAltStr());
-      //longRefTable.insert(make_pair(string(region),true));
-      //VariantLongTable[string(region)]=1;
+      nseqs++;
+
       sprintf(region, "%s\t%d\t%d", Chrom.c_str(),Position-250, Position+250);
       BedFile<<region<<endl;
-      nseqs++;
+
       if(chr_flag==0)
         Xnmarker++;
       else
