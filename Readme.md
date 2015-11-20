@@ -22,9 +22,9 @@ FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref 
 
 FASTQuick align  --in_idx_prefix NA12878_index --fq_list NA12878.fq.list --out_prefix NA12878 
 
-FASTQuick pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
+FASTQuick pop --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed.post.bed.allele.bed
 
-FASTQuick con --in_idx_prefix NA12878_index --in_prefix NA12878 
+FASTQuick con --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed.post.bed.allele.bed
 ```
 ###DESCRIPTION
    FASTQuick is short for fastq file based population identification and contamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
@@ -92,23 +92,24 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --frac_samp	FLOAT	Overall reads downsampling rate.[1]
 **pop**
 
-    FASTQuick pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
+    FASTQuick pop --SVD_prefix [resource/hapmap.dat] --pileup [NA12878.Pileup.gz] --BED [resource/choose.bed.post.bed.allele.bed]
 Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.
 
     OPTIONS
-    --UD	STR	Path of UD matrix in resource directory
-    --PC	STR	Path of V matrix in resource directory
-    --mu	STR	Path of mu matrix in resource directory
+    --SVD_prefix	STR	Path of SVD matrices in resource directory
     --gl	STR	Path of output likelihood file in align step, with prefix specified in align step and suffix likelihood.
-    --bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
+    --pileup STR Path of output pileup file in align step, with prefix specified in align step and suffix likelihood.
+    --BED	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 **con**
 
-    FASTQuick con --in_idx_prefix NA12878_index --in_prefix [NA12878]
+    FASTQuick con --SVD_prefix [resource/hapmap.dat] --pileup [NA12878.Pileup.gz] --BED [resource/choose.bed.post.bed.allele.bed]
 Estimate the probability that this sample is contaminated with other genomic material.
 
     OPTIONS
-    --in_prefix STR Specify the prefix used by output in step of align.
-    --in_idx_prefix STR Specify the prefix used by index output files.
+    --SVD_prefix	STR	Path of SVD matrices in resource directory
+    --gl	STR	Path of output likelihood file in align step, with prefix specified in align step and suffix likelihood.
+    --pileup STR Path of output pileup file in align step, with prefix specified in align step and suffix likelihood.
+    --BED	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
 ###EXAMPLES
    Some examples of common usage.
    See wiki page tutorial.
@@ -124,6 +125,6 @@ Estimate the probability that this sample is contaminated with other genomic mat
 ###AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
 ###COPYRIGHT
-   The full FASTQuick package is distributed under GPLv3.
+   The full FASTQuick package is distributed under MIT License.
 
 
