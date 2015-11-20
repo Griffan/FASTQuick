@@ -18,9 +18,9 @@
 
 ###SYNOPSIS
 ```
-FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_idx_prefix NA12878_index
+FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_idx_prefix reduced_ref_index
 
-FASTQuick align  --in_idx_prefix NA12878_index --fq_list NA12878.fq.list --out_prefix NA12878 
+FASTQuick align  --in_idx_prefix reduced_ref_index --fq_list NA12878.fq.list --out_prefix NA12878 
 
 FASTQuick pop --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed.post.bed.allele.bed
 
@@ -32,7 +32,7 @@ FASTQuick con --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED 
 
 **index**	
 
-    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_idx_prefix [NA12878_reduced_ref]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_idx_prefix [reduced_ref_index]
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -49,7 +49,7 @@ Index database sequences, using known variant sites to anchor informative region
 
 **align**
 
-    FASTQuick align --in_idx_prefix [NA12878_index] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --out_prefix [NA12878] --frac_samp [1.0] 
+    FASTQuick align --in_idx_prefix [reduced_ref_index] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --out_prefix [NA12878] --frac_samp [1.0] 
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
     
