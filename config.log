@@ -160,7 +160,7 @@ configure:3945: gcc -c -g  conftest.c >&5
 configure:3945: $? = 0
 configure:3986: result: yes
 configure:4003: checking for gcc option to accept ISO C89
-configure:4067: gcc  -c -g -O4  conftest.c >&5
+configure:4067: gcc  -c -g -O2  conftest.c >&5
 configure:4067: $? = 0
 configure:4080: result: none needed
 configure:4102: checking dependency style of gcc
@@ -169,7 +169,7 @@ configure:4271: checking for ranlib
 configure:4287: found /usr/bin/ranlib
 configure:4298: result: ranlib
 configure:4323: checking for main in -lStatGen
-configure:4342: gcc -o conftest -g -O4   conftest.c -lStatGen   >&5
+configure:4342: gcc -o conftest -g -O2   conftest.c -lStatGen   >&5
 /usr/bin/ld: cannot find -lStatGen
 collect2: error: ld returned 1 exit status
 configure:4342: $? = 1
@@ -195,11 +195,11 @@ configure: failed program was:
 | }
 configure:4351: result: no
 configure:4363: checking for main in -lpthread
-configure:4382: gcc -o conftest -g -O4   conftest.c -lpthread   >&5
+configure:4382: gcc -o conftest -g -O2   conftest.c -lpthread   >&5
 configure:4382: $? = 0
 configure:4391: result: yes
 configure:4403: checking for main in -lz
-configure:4422: gcc -o conftest -g -O4   conftest.c -lz  -lpthread  >&5
+configure:4422: gcc -o conftest -g -O2   conftest.c -lz  -lpthread  >&5
 configure:4422: $? = 0
 configure:4431: result: yes
 configure:4449: checking how to run the C preprocessor
@@ -253,51 +253,51 @@ configure:4640: result: /bin/grep
 configure:4645: checking for egrep
 configure:4707: result: /bin/grep -E
 configure:4712: checking for ANSI C header files
-configure:4732: gcc -c -g -O4  conftest.c >&5
+configure:4732: gcc -c -g -O2  conftest.c >&5
 configure:4732: $? = 0
-configure:4805: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:4805: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:4805: $? = 0
 configure:4805: ./conftest
 configure:4805: $? = 0
 configure:4816: result: yes
 configure:4829: checking for sys/types.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for sys/stat.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for stdlib.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for string.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for memory.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for strings.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for inttypes.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for stdint.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4829: checking for unistd.h
-configure:4829: gcc -c -g -O4  conftest.c >&5
+configure:4829: gcc -c -g -O2  conftest.c >&5
 configure:4829: $? = 0
 configure:4829: result: yes
 configure:4844: checking fcntl.h usability
-configure:4844: gcc -c -g -O4  conftest.c >&5
+configure:4844: gcc -c -g -O2  conftest.c >&5
 configure:4844: $? = 0
 configure:4844: result: yes
 configure:4844: checking fcntl.h presence
@@ -307,7 +307,7 @@ configure:4844: result: yes
 configure:4844: checking for fcntl.h
 configure:4844: result: yes
 configure:4844: checking limits.h usability
-configure:4844: gcc -c -g -O4  conftest.c >&5
+configure:4844: gcc -c -g -O2  conftest.c >&5
 configure:4844: $? = 0
 configure:4844: result: yes
 configure:4844: checking limits.h presence
@@ -317,7 +317,7 @@ configure:4844: result: yes
 configure:4844: checking for limits.h
 configure:4844: result: yes
 configure:4844: checking stddef.h usability
-configure:4844: gcc -c -g -O4  conftest.c >&5
+configure:4844: gcc -c -g -O2  conftest.c >&5
 configure:4844: $? = 0
 configure:4844: result: yes
 configure:4844: checking stddef.h presence
@@ -333,7 +333,7 @@ configure:4844: result: yes
 configure:4844: checking for string.h
 configure:4844: result: yes
 configure:4844: checking sys/time.h usability
-configure:4844: gcc -c -g -O4  conftest.c >&5
+configure:4844: gcc -c -g -O2  conftest.c >&5
 configure:4844: $? = 0
 configure:4844: result: yes
 configure:4844: checking sys/time.h presence
@@ -345,13 +345,13 @@ configure:4844: result: yes
 configure:4844: checking for unistd.h
 configure:4844: result: yes
 configure:4856: checking for stdbool.h that conforms to C99
-configure:4923: gcc -c -g -O4  conftest.c >&5
+configure:4923: gcc -c -g -O2  conftest.c >&5
 configure:4923: $? = 0
 configure:4930: result: yes
 configure:4932: checking for _Bool
-configure:4932: gcc -c -g -O4  conftest.c >&5
+configure:4932: gcc -c -g -O2  conftest.c >&5
 configure:4932: $? = 0
-configure:4932: gcc -c -g -O4  conftest.c >&5
+configure:4932: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:67:20: error: expected expression before ')' token
  if (sizeof ((_Bool)))
@@ -431,13 +431,13 @@ configure: failed program was:
 | }
 configure:4932: result: yes
 configure:4948: checking for inline
-configure:4964: gcc -c -g -O4  conftest.c >&5
+configure:4964: gcc -c -g -O2  conftest.c >&5
 configure:4964: $? = 0
 configure:4972: result: inline
 configure:4990: checking for int32_t
-configure:4990: gcc -c -g -O4  conftest.c >&5
+configure:4990: gcc -c -g -O2  conftest.c >&5
 configure:4990: $? = 0
-configure:4990: gcc -c -g -O4  conftest.c >&5
+configure:4990: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:71:53: warning: integer overflow in expression [-Woverflow]
     < (int32_t) (((((int32_t) 1 << N) << N) - 1) * 2 + 2))];
@@ -525,9 +525,9 @@ configure: failed program was:
 | }
 configure:4990: result: yes
 configure:5001: checking for int64_t
-configure:5001: gcc -c -g -O4  conftest.c >&5
+configure:5001: gcc -c -g -O2  conftest.c >&5
 configure:5001: $? = 0
-configure:5001: gcc -c -g -O4  conftest.c >&5
+configure:5001: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:71:53: warning: integer overflow in expression [-Woverflow]
     < (int64_t) (((((int64_t) 1 << N) << N) - 1) * 2 + 2))];
@@ -615,9 +615,9 @@ configure: failed program was:
 | }
 configure:5001: result: yes
 configure:5012: checking for off_t
-configure:5012: gcc -c -g -O4  conftest.c >&5
+configure:5012: gcc -c -g -O2  conftest.c >&5
 configure:5012: $? = 0
-configure:5012: gcc -c -g -O4  conftest.c >&5
+configure:5012: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:69:20: error: expected expression before ')' token
  if (sizeof ((off_t)))
@@ -699,9 +699,9 @@ configure: failed program was:
 | }
 configure:5012: result: yes
 configure:5023: checking for size_t
-configure:5023: gcc -c -g -O4  conftest.c >&5
+configure:5023: gcc -c -g -O2  conftest.c >&5
 configure:5023: $? = 0
-configure:5023: gcc -c -g -O4  conftest.c >&5
+configure:5023: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:69:21: error: expected expression before ')' token
  if (sizeof ((size_t)))
@@ -783,9 +783,9 @@ configure: failed program was:
 | }
 configure:5023: result: yes
 configure:5034: checking for ssize_t
-configure:5034: gcc -c -g -O4  conftest.c >&5
+configure:5034: gcc -c -g -O2  conftest.c >&5
 configure:5034: $? = 0
-configure:5034: gcc -c -g -O4  conftest.c >&5
+configure:5034: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:69:22: error: expected expression before ')' token
  if (sizeof ((ssize_t)))
@@ -867,33 +867,33 @@ configure: failed program was:
 | }
 configure:5034: result: yes
 configure:5045: checking for uint16_t
-configure:5045: gcc -c -g -O4  conftest.c >&5
+configure:5045: gcc -c -g -O2  conftest.c >&5
 configure:5045: $? = 0
 configure:5045: result: yes
 configure:5057: checking for uint32_t
-configure:5057: gcc -c -g -O4  conftest.c >&5
+configure:5057: gcc -c -g -O2  conftest.c >&5
 configure:5057: $? = 0
 configure:5057: result: yes
 configure:5071: checking for uint64_t
-configure:5071: gcc -c -g -O4  conftest.c >&5
+configure:5071: gcc -c -g -O2  conftest.c >&5
 configure:5071: $? = 0
 configure:5071: result: yes
 configure:5085: checking for uint8_t
-configure:5085: gcc -c -g -O4  conftest.c >&5
+configure:5085: gcc -c -g -O2  conftest.c >&5
 configure:5085: $? = 0
 configure:5085: result: yes
 configure:5101: checking for error_at_line
-configure:5117: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5117: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5117: $? = 0
 configure:5125: result: yes
 configure:5136: checking for _LARGEFILE_SOURCE value needed for large files
-configure:5155: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5155: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5155: $? = 0
 configure:5183: result: no
 configure:5206: checking for stdlib.h
 configure:5206: result: yes
 configure:5216: checking for GNU libc compatible malloc
-configure:5240: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5240: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5240: $? = 0
 configure:5240: ./conftest
 configure:5240: $? = 0
@@ -901,36 +901,36 @@ configure:5250: result: yes
 configure:5273: checking for stdlib.h
 configure:5273: result: yes
 configure:5283: checking for GNU libc compatible realloc
-configure:5307: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5307: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5307: $? = 0
 configure:5307: ./conftest
 configure:5307: $? = 0
 configure:5317: result: yes
 configure:5341: checking for gettimeofday
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5341: $? = 0
 configure:5341: result: yes
 configure:5341: checking for memmove
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:62:6: warning: conflicting types for built-in function 'memmove' [enabled by default]
  char memmove ();
       ^
 configure:5341: $? = 0
 configure:5341: result: yes
 configure:5341: checking for memset
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:63:6: warning: conflicting types for built-in function 'memset' [enabled by default]
  char memset ();
       ^
 configure:5341: $? = 0
 configure:5341: result: yes
 configure:5341: checking for pow
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:64:6: warning: conflicting types for built-in function 'pow' [enabled by default]
  char pow ();
       ^
-/tmp/ccd8GFZH.o: In function `main':
-/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/conftest.c:75: undefined reference to `pow'
+/tmp/ccBCSOGf.o: In function `main':
+/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/conftest.c:75: undefined reference to `pow'
 collect2: error: ld returned 1 exit status
 configure:5341: $? = 1
 configure: failed program was:
@@ -1014,18 +1014,18 @@ configure: failed program was:
 | }
 configure:5341: result: no
 configure:5341: checking for strdup
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:64:6: warning: conflicting types for built-in function 'strdup' [enabled by default]
  char strdup ();
       ^
 configure:5341: $? = 0
 configure:5341: result: yes
 configure:5341: checking for strerror
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 configure:5341: $? = 0
 configure:5341: result: yes
 configure:5341: checking for strstr
-configure:5341: gcc -o conftest -g -O4   conftest.c -lz -lpthread  >&5
+configure:5341: gcc -o conftest -g -O2   conftest.c -lz -lpthread  >&5
 conftest.c:66:6: warning: conflicting types for built-in function 'strstr' [enabled by default]
  char strstr ();
       ^
@@ -1066,23 +1066,23 @@ config.status:1124: executing depfiles commands
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11'
+ACLOCAL='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run aclocal-1.11'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
 AMTAR='$${TAR-tar}'
-AUTOCONF='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf'
-AUTOHEADER='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader'
-AUTOMAKE='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11'
+AUTOCONF='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoconf'
+AUTOHEADER='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoheader'
+AUTOMAKE='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run automake-1.11'
 AWK='gawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
-CFLAGS='-g -O4'
+CFLAGS='-g -O2'
 CPP='gcc -E'
 CPPFLAGS=''
 CXX='g++'
 CXXDEPMODE='depmode=gcc3'
-CXXFLAGS='-g -O4'
+CXXFLAGS='-g -O2'
 CYGPATH_W='echo'
 DEFS='-DHAVE_CONFIG_H'
 DEPDIR='.deps'
@@ -1100,7 +1100,7 @@ LDFLAGS=''
 LIBOBJS=''
 LIBS='-lz -lpthread '
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo'
+MAKEINFO='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run makeinfo'
 MKDIR_P='/bin/mkdir -p'
 OBJEXT='o'
 PACKAGE='full-package-name'
@@ -1113,7 +1113,7 @@ PACKAGE_VERSION='VERSION'
 PATH_SEPARATOR=':'
 RANLIB='ranlib'
 SET_MAKE=''
-SHELL='/bin/bash'
+SHELL='/bin/sh'
 STRIP=''
 VERSION='VERSION'
 ac_ct_CC='gcc'
@@ -1142,7 +1142,7 @@ host_alias=''
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh'
+install_sh='${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
@@ -1208,3 +1208,20 @@ target_alias=''
 #define HAVE_STRSTR 1
 
 configure: exit 0
+
+## ---------------------- ##
+## Running config.status. ##
+## ---------------------- ##
+
+This file was extended by FULL-PACKAGE-NAME config.status VERSION, which was
+generated by GNU Autoconf 2.68.  Invocation command line was
+
+  CONFIG_FILES    = 
+  CONFIG_HEADERS  = 
+  CONFIG_LINKS    = 
+  CONFIG_COMMANDS = 
+  $ ./config.status Makefile
+
+on 1000g
+
+config.status:895: creating Makefile

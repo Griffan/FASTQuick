@@ -474,7 +474,7 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 	}
 	else pacseq = (ubyte_t*)_pacseq;
 	if (!popt->is_sw || ii->avg < 0.0) return pacseq;
-
+	fprintf(stderr, "NOTICE - align unmapped mate...\n");
 	// perform mate alignment
 	n_tot[0] = n_tot[1] = n_mapped[0] = n_mapped[1] = 0;
 	for (i = 0; i != n_seqs; ++i) {

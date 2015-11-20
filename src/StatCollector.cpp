@@ -19,6 +19,23 @@ extern void notice(const char*, ...);
 extern void warning(const char*, ...);
 extern void error(const char*, ...);
 
+static std::string cigar_output(int n_cigar,bwa_cigar_t* cigar, int len)
+{
+	std::string tmp;
+	int cl;
+	char cop;
+	for (int k = 0; k < n_cigar; ++k)
+	{
+		cl = __cigar_len(cigar[k]);
+		cop = "MIDS"[__cigar_op(cigar[k])];
+		tmp+=to_string(cl);
+		tmp.push_back(cop);
+	}
+	if(!cigar)
+		tmp=to_string(len)+"M";
+	return tmp;
+}
+
 #define INSERT_SIZE_LIMIT 2048
 StatCollector::StatCollector()
 {
@@ -933,18 +950,58 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	const bwa_seq_t *q, const gap_opt_t* opt, int type, ofstream & fout)
 {
 	int MaxInsert(-1), MaxInsert2(-1);
-	;
 	int j(0), seqid_p(-1), seqid_q(-1);
+	int flag1=0;
+	int flag2=0;
+	if(p)
+	{
+		flag1 = p->extra_flag;
+		if (p->type == BWA_TYPE_NO_MATCH) {
+			flag1 |= SAM_FSU;
+		}
+		if (p->strand) flag1 |= SAM_FSR;
+	}
+	if (q) {
+		flag2 = q->extra_flag;
+		if (q->type != BWA_TYPE_NO_MATCH) {
+			if (q->strand) flag2 |= SAM_FMR;
+		}
+		else flag2 |= SAM_FMU;
+	}
 	//cerr<<"Duplicate function entered"<<endl;
 	if (type == 1) //q is aligned only
 	{
 		j = pos_end(q) - q->pos; //length of read
 		bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-		MaxInsert = q->pos + j - bns->anns[seqid_q].offset;
+		j = q->len;
+		if(q->strand)//if q is on reverse strand
+			MaxInsert2 = q->pos + j - bns->anns[seqid_q].offset;
+		else
+			MaxInsert2 = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - q->pos;
+
+		int cl2(0),op2(0);
+		if(q->cigar)
+		{
+
+			op2="MIDS"[__cigar_op(q->cigar[0])];
+			if(op2=='S')
+				cl2=__cigar_len(q->cigar[0]);
+
+			if(q->strand)
+			{
+				MaxInsert2-=cl2;
+			}
+			else
+			{
+				MaxInsert2+=cl2;
+			}
+		}
+
 		//cerr<<"Duplicate function exit single q"<<endl;
-		fout << q->name << "\t" << MaxInsert << "\t" << 0 << "\t" << "*" << "\t"
-			<< "*" << "\t" << bns->anns[seqid_q].name << "\t"
-			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tRevOnly"
+		fout << q->name << "\t" << -1 << "\t" <<MaxInsert2<<"\t"<< -1
+			<< "\t" << "*" << "\t"<< "*"<<"\t" <<flag1<<"\t"<<0<<"\t"<<"*"
+			<< "\t" << bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1<<"\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
+			<< "\tRevOnly"
 			<< endl;
 		return 0;
 	}
@@ -952,35 +1009,61 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	{
 		j = pos_end(p) - p->pos; //length of read
 		bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-		MaxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+		j= p->len;
+		if(p->strand)//on reverse strand
+			MaxInsert = p->pos + j - bns->anns[seqid_p].offset;
+		else
+			MaxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+
+		int cl2(0),op2(0);
+		if(p->cigar)
+		{
+			op2="MIDS"[__cigar_op(p->cigar[0])];
+			if(op2=='S')
+				cl2=__cigar_len(p->cigar[0]);
+
+			if(p->strand)
+			{
+				MaxInsert-=cl2;
+			}
+			else
+			{
+				MaxInsert+=cl2;
+			}
+		}
 		//cerr<<"Duplicate function exit single p"<<endl;
-		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< bns->anns[seqid_p].name << "\t"
-			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t" << "*" << "\t"
-			<< "*" << "\tFwdOnly" << endl;
+		fout << p->name << "\t" << MaxInsert << "\t"<<-1<<"\t"<< -1
+			<< "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1<<"\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
+			<< "\t" << "*" << "\t"<< "*"<<"\t"<<flag2<<"\t"<<0<<"\t"<<"*"
+			<< "\tFwdOnly" << endl;
 		return 0;
 	}
 	else if (type == 2) // both aligned
 	{
+
+
 		if (p->pos < q->pos)
 		{
-			j = pos_end(q) - q->pos; //length of read
-			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-			MaxInsert = q->pos + j - bns->anns[seqid_q].offset;
+
 			j = pos_end(p) - p->pos; //length of read
 			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-			MaxInsert2 = bns->anns[seqid_p].offset + bns->anns[seqid_p].len
-				- p->pos;
+			j = p->len;
+			MaxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+			j = pos_end(q) - q->pos; //length of read
+			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
+			j = q->len;
+			MaxInsert2 = q->pos + j - bns->anns[seqid_q].offset;
 		}
 		else
 		{
 			j = pos_end(q) - q->pos; //length of read
 			bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-			MaxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len
-				- q->pos;
+			j = q->len;
+			MaxInsert2 = bns->anns[seqid_q].offset + bns->anns[seqid_q].len	- q->pos;
 			j = pos_end(p) - p->pos; //length of read
 			bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-			MaxInsert2 = p->pos + j - bns->anns[seqid_p].offset;
+			j = p->len;
+			MaxInsert = p->pos + j - bns->anns[seqid_p].offset;
 		}
 	}
 	else
@@ -989,22 +1072,24 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		exit(1);
 	}
 
-	if (MaxInsert2 > MaxInsert)
-		MaxInsert = MaxInsert2;
+//	if (MaxInsert2 > MaxInsert)
+//		MaxInsert = MaxInsert2;
 	if (MaxInsert >= INSERT_SIZE_LIMIT)
 		MaxInsert = INSERT_SIZE_LIMIT-1;
+	if (MaxInsert2 >= INSERT_SIZE_LIMIT)
+		MaxInsert2 = INSERT_SIZE_LIMIT-1;
 	MaxInsertSizeDist[MaxInsert]++;
+	MaxInsertSizeDist[MaxInsert2]++;
 	if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1)
 	{
 		//int ActualInsert(-1);
 		//	ActualInsert=0;
 		InsertSizeDist[0]++;
 		//cerr<<"Duplicate function exit from diff chrom"<<endl;
-		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< bns->anns[seqid_p].name << "\t"
-			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-			<< bns->anns[seqid_q].name << "\t"
-			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tDiffChrom"
+		fout << p->name << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" << -1
+			<< "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
+			<< "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
+			<< "\tDiffChrom"
 			<< endl;
 		return 0;
 	}
@@ -1023,16 +1108,58 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 			start = q->pos;
 			end = p->pos + p->len;
 			ActualInsert = end - start;
+
 		}
 		if (ActualInsert < INSERT_SIZE_LIMIT)
 		{
-			InsertSizeDist[ActualInsert]++;
-			fout << p->name << "\t" << MaxInsert << "\t" << ActualInsert << "\t"
-				<< bns->anns[seqid_p].name << "\t"
-				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tPropPair"
+
+			string cigar1=cigar_output(p->n_cigar,p->cigar,p->len);
+			string cigar2=cigar_output(q->n_cigar,q->cigar,q->len);
+			if(cigar1.find('S')==cigar1.npos&&cigar2.find('S')==cigar2.npos)//perfect match
+			{
+				InsertSizeDist[ActualInsert]++;
+			fout << p->name << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" << ActualInsert
+				<< "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar1
+				<< "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar2
+				<< "\tPropPair"
 				<< endl;
+			}
+			else
+			{
+				int cl1(0),cl2(0),op1(0),op2(0);
+				if(p->cigar)
+				{
+					op1="MIDS"[__cigar_op(p->cigar[0])];
+					if(op1=='S')
+						cl1=__cigar_len(p->cigar[0]);
+				}
+				if(q->cigar)
+				{
+					op2="MIDS"[__cigar_op(q->cigar[0])];
+					if(op2=='S')
+						cl2=__cigar_len(q->cigar[0]);
+				}
+
+				if(p->pos < q->pos)
+				{
+					ActualInsert= ActualInsert+cl1-cl2;
+					MaxInsert=MaxInsert+cl1;
+					MaxInsert2=MaxInsert2-cl2;
+				}
+				else
+				{
+					ActualInsert=ActualInsert-cl1+cl2;
+					MaxInsert=MaxInsert-cl1;
+					MaxInsert2=MaxInsert2+cl2;
+				}
+
+				InsertSizeDist[ActualInsert]++;
+				fout << p->name << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" <<ActualInsert
+					<< "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar1
+					<< "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar2
+					<< "\tPartialPair"
+					<< endl;
+			}
 			char start_end[256];
 			sprintf(start_end, "%d:%d", start, end);
 			pair<unordered_map<string, bool>::iterator, bool> iter =
@@ -1047,22 +1174,20 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 		else
 		{
 			//cerr<<"exit from Inf"<<endl;
-			fout << p->name << "\t" << MaxInsert << "\t" << "-1" << "\t"
-				<< bns->anns[seqid_p].name << "\t"
-				<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-				<< bns->anns[seqid_q].name << "\t"
-				<< q->pos - bns->anns[seqid_q].offset + 1 << "\tAbnormal"
+			fout << p->name << "\t" << MaxInsert << "\t"<<MaxInsert2<<"\t" << "-1"
+				<< "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
+				<< "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
+				<< "\tAbnormal"
 				<< endl;
 		}
 	}
 	else
 	{
 		//cerr<<"exit from LowQualf"<<endl;
-		fout << p->name << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< bns->anns[seqid_p].name << "\t"
-			<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"
-			<< bns->anns[seqid_q].name << "\t"
-			<< q->pos - bns->anns[seqid_q].offset + 1 << "\tLowQual"
+		fout << p->name << "\t" << MaxInsert << "\t" <<MaxInsert2<<"\t"<< -1
+			<< "\t"	<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
+			<< "\t" << bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
+			<< "\tLowQual"
 			<< endl;
 		return 2; //low quality
 	}
@@ -1077,13 +1202,30 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 	if (type == 1) //q is aligned only
 	{
 		if (q.getFlag() & SAM_FR1) //if it's read one
-			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
+			MaxInsert2 = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
 			- q.get1BasedPosition() + 1;
 		else
 			MaxInsert = q.get1BasedPosition() + q.getReadLength();
-		fout << q.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t" << "*"
-			<< "\t" << "*" << "\t" << q.getReferenceName() << "\t"
-			<< q.get1BasedPosition() << "\tRevOnly" << endl;
+
+		int cl2;
+		cl2=atoi(q.getCigar());
+		if(q.getCigar()[to_string(cl2).size()]!='S')//if the first character is 'S'
+		{
+			cl2=0;
+		}
+		else
+		{
+			if(q.getFlag()&SAM_FSR)//reversed
+				MaxInsert2-=cl2;
+			else
+				MaxInsert2+=cl2;
+		}
+
+
+		fout << q.getReadName() << "\t" << -1 << "\t" <<MaxInsert2<<"\t"<< -1
+			<< "\t"<< "*"<< "\t" << "*" << "\t" <<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+			<< "\t"<<q.getReferenceName() << "\t"<< q.get1BasedPosition() <<"\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
+			<< "\tRevOnly" << endl;
 		return 0;
 	}
 	else if (type == 3) //p is aligned only
@@ -1093,33 +1235,45 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 			- p.get1BasedPosition() + 1;
 		else
 			MaxInsert = p.get1BasedPosition() + p.getReadLength();
-		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-			<< "*" << "\t" << "*" << "\tFwdOnly" << endl;
+
+		int cl2;
+		cl2=atoi(p.getCigar());
+		if(p.getCigar()[to_string(cl2).size()]!='S')//if the first character is 'S'
+		{
+			cl2=0;
+		}
+		else
+		{
+			if(p.getFlag()&SAM_FSR)//reversed
+				MaxInsert-=cl2;
+			else
+				MaxInsert+=cl2;
+		}
+		fout << p.getReadName() << "\t" << MaxInsert << "\t"<<-1<<"\t"<< -1
+			<<"\t"<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+			<< "\t*" << "\t" << "*" <<"\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
+			<< "\tFwdOnly" << endl;
 		return 0;
 	}
 	else if (type == 2) // both aligned
 	{
-		if (p.get1BasedPosition() < q.get1BasedPosition())
+		if(p.get1BasedPosition()<q.get1BasedPosition())
 		{
 			//j = pos_end(q) - q->pos; //length of read
 			//bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-			MaxInsert = q.get1BasedPosition() + q.getReadLength();
+			MaxInsert = p.get1BasedPosition() + p.getReadLength();
 			//j = pos_end(p) - p->pos; //length of read
 			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-			MaxInsert2 = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
-				- p.get1BasedPosition() + 1;
-			;
+			MaxInsert2 = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
+				- q.get1BasedPosition() + 1;
 		}
 		else
 		{
-			//j = pos_end(q) - q->pos; //length of read
-			//bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-			MaxInsert = atoi(SFH.getSQTagValue("LN", q.getReferenceName()))
-				- q.get1BasedPosition() + 1;
-			//j = pos_end(p) - p->pos; //length of read
-			//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-			MaxInsert2 = p.get1BasedPosition() + p.getReadLength();
+			MaxInsert = q.get1BasedPosition() + q.getReadLength();
+						//j = pos_end(p) - p->pos; //length of read
+						//bns_coor_pac2real(bns, p->pos, j, &seqid_p);
+						MaxInsert2 = atoi(SFH.getSQTagValue("LN", p.getReferenceName()))
+							- p.get1BasedPosition() + 1;
 		}
 	}
 	else
@@ -1128,19 +1282,21 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		exit(1);
 	}
 
-	if (MaxInsert2 > MaxInsert)
-		MaxInsert = MaxInsert2;
+//	if (MaxInsert2 > MaxInsert)
+//		MaxInsert = MaxInsert2;
 	if (MaxInsert >= INSERT_SIZE_LIMIT)
 		MaxInsert = INSERT_SIZE_LIMIT-1;
+	if (MaxInsert2 >= INSERT_SIZE_LIMIT)
+		MaxInsert2 = INSERT_SIZE_LIMIT-1;
 	MaxInsertSizeDist[MaxInsert]++;
 	if (strcmp(p.getReferenceName(), q.getReferenceName()) != 0)
 	{
 
 		InsertSizeDist[0]++;
 		//cerr<<"Duplicate function exit from diff chrom"<<endl;
-		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-			<< q.getReferenceName() << "\t" << q.get1BasedPosition()
+		fout << p.getReadName() << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" << -1
+			<<"\t"<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+			<<"\t"<< q.getReferenceName() << "\t" << q.get1BasedPosition() << "\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
 			<< "\tDiffChrom" << endl;
 		return 0;
 	}
@@ -1162,11 +1318,45 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		}
 		if (ActualInsert < INSERT_SIZE_LIMIT)
 		{
-			InsertSizeDist[ActualInsert]++;
-			fout << p.getReadName() << "\t" << MaxInsert << "\t" << ActualInsert
-				<< "\t" << p.getReferenceName() << "\t"
-				<< p.get1BasedPosition() << "\t" << q.getReferenceName()
-				<< "\t" << q.get1BasedPosition() << "\tPropPair" << endl;
+
+			string cigar1=p.getCigar();
+			string cigar2=q.getCigar();
+			if(cigar1.find('S')==cigar1.npos && cigar2.find('S')==cigar1.npos)//no softclip
+			{
+				InsertSizeDist[ActualInsert]++;
+			fout << p.getReadName() << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" << ActualInsert
+				<< "\t" << p.getReferenceName() << "\t"	<< p.get1BasedPosition() << "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+				<< "\t" << q.getReferenceName()	<< "\t" << q.get1BasedPosition() << "\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
+				<< "\tPropPair" << endl;
+			}
+			else
+			{
+				int cl1,cl2;
+				cl1=atoi(p.getCigar());
+				if(p.getCigar()[to_string(cl1).size()]!='S')//if the first character is 'S'
+				cl1=0;
+				cl2=atoi(q.getCigar());
+				if(q.getCigar()[to_string(cl2).size()]!='S')//if the first character is 'S'
+				cl2=0;
+
+				if(p.get1BasedPosition() < q.get1BasedPosition())
+				{
+							ActualInsert= ActualInsert+cl1-cl2;
+							MaxInsert=MaxInsert+cl1;
+							MaxInsert2=MaxInsert2-cl2;
+				}
+				else
+				{
+							ActualInsert=ActualInsert-cl1+cl2;
+							MaxInsert=MaxInsert-cl1;
+							MaxInsert2=MaxInsert2+cl2;
+				}
+				InsertSizeDist[ActualInsert]++;
+				fout << p.getReadName() << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" <<ActualInsert
+					<< "\t" << p.getReferenceName() << "\t"	<< p.get1BasedPosition() << "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+					<< "\t" << q.getReferenceName()	<< "\t" << q.get1BasedPosition() << "\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
+					<< "\tPartialPair" << endl;
+			}
 			char start_end[256];
 			sprintf(start_end, "%d:%d", start, end);
 			pair<unordered_map<string, bool>::iterator, bool> iter =
@@ -1181,18 +1371,31 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 		else
 		{
 			//cerr<<"exit from Inf"<<endl;
-			fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-				<< p.getReferenceName() << "\t" << p.get1BasedPosition()
-				<< "\t" << q.getReferenceName() << "\t"
-				<< q.get1BasedPosition() << "\tAbnormal" << endl;
+			fout << p.getReadName() << "\t" << MaxInsert <<"\t"<<MaxInsert2<< "\t" << -1
+				<< "\t"	<< p.getReferenceName() << "\t" << p.get1BasedPosition()<< "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+				<< "\t" << q.getReferenceName() << "\t"	<< q.get1BasedPosition() << "\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
+				<< "\tAbnormal" << endl;
 		}
 	}
 	else
 	{
+		int ActualInsert(-1), start(0), end(0);
+		if (p.get1BasedPosition() < q.get1BasedPosition())
+		{
+			start = p.get1BasedPosition();
+			end = q.get1BasedPosition() + q.getReadLength();
+			ActualInsert = end - start;
+		}
+		else
+		{
+			start = q.get1BasedPosition();
+			end = p.get1BasedPosition() + p.getReadLength();
+			ActualInsert = end - start;
+		}
 		//cerr<<"exit from LowQualf"<<endl;
-		fout << p.getReadName() << "\t" << MaxInsert << "\t" << 0 << "\t"
-			<< p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t"
-			<< q.getReferenceName() << "\t" << q.get1BasedPosition()
+		fout << p.getReadName() << "\t" << MaxInsert <<"\t"<<MaxInsert2<<"\t" << -1
+			<< "\t"<< p.getReferenceName() << "\t" << p.get1BasedPosition()<< "\t"<<p.getFlag()<<"\t"<<p.getReadLength()<<"\t"<<p.getCigar()
+			<< "\t"<< q.getReferenceName() << "\t" << q.get1BasedPosition()<< "\t"<<q.getFlag()<<"\t"<<q.getReadLength()<<"\t"<<q.getCigar()
 			<< "\tLowQual" << endl;
 		return 2; //low quality
 	}
@@ -1818,18 +2021,18 @@ int StatCollector::getInsertSizeDist(const string & outputPath)
 
 	std::string InFileName(outputPath+".InsertSizeTable");
 	std::string OutFileName(outputPath+".InsertSizeDist");
-	InsertSizeEstimator Estimator;
-	Estimator.InputInsertSizeTable(InFileName);
-	Estimator.Sort();
-	Estimator.UpdateWeight();
-	Estimator.UpdateInsertDist();
-	Estimator.GetInsertDist(OutFileName);
-	//ofstream fout(outputPath + ".InsertSizeDist");
-	//	for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
-	//	{
-	//		fout << i << "\t" << InsertSizeDist[i] << endl;
-	//	}
-	//	fout.close();
+//	InsertSizeEstimator Estimator;
+//	Estimator.InputInsertSizeTable(InFileName);
+//	Estimator.Sort();
+//	Estimator.UpdateWeight();
+//	Estimator.UpdateInsertDist();
+//	Estimator.GetInsertDist(OutFileName);
+	ofstream fout(outputPath + ".InsertSizeDist");
+		for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
+		{
+			fout << i << "\t" << InsertSizeDist[i] << endl;
+		}
+		fout.close();
 	return 0;
 }
 int StatCollector::getSexChromInfo(const string & outputPath)

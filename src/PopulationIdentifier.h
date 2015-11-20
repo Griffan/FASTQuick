@@ -146,7 +146,10 @@ public:
 				//std::cerr << "AF:" << ptr->AFs[i] << "\tUD:" << ptr->UD[i][0] << "\t" << ptr->UD[i][1] << "\tmeans:" << ptr->means[i] << std::endl;
 				chr = ptr->PosVec[i].first;
 				pos = ptr->PosVec[i].second;
-				glIndex = ptr->MarkerIndex[chr][pos];
+				if (ptr->MarkerIndex[chr].find(pos) != ptr->MarkerIndex[chr].end())
+					glIndex = ptr->MarkerIndex[chr][pos];
+				else
+					glIndex = ptr->GL.size()-1;
 				ptr->AFs[i] = ((ptr->UD[i][0] * tPC1 + ptr->UD[i][1] * tPC2) + ptr->means[i]) / 2.0;
 				if (ptr->AFs[i] < min_af) ptr->AFs[i] = min_af;
 				if (ptr->AFs[i] > max_af) ptr->AFs[i] = max_af;
@@ -154,14 +157,18 @@ public:
 				GF1 = 2 * (ptr->AFs[i])*(1 - ptr->AFs[i]);
 				GF2 = (ptr->AFs[i])*(ptr->AFs[i]);
 				sumLLK += log(PHRED(ptr->GL[glIndex][0]) * GF0 + PHRED(ptr->GL[glIndex][1]) * GF1 + PHRED(ptr->GL[glIndex][2]) * GF2);
-				//std::cerr << "GL:" << ptr->GL[i][0] << "\t" << ptr->GL[i][1] << "\t" << ptr->GL[i][2] << "\t"<<ptr->GL.size()<<std::endl;
+				//std::cerr << "GL:" << ptr->GL[glIndex][0] << "\t" << ptr->GL[glIndex][1] << "\t" << ptr->GL[glIndex][2] << "\t" << chr << "\t" << pos << std::endl;
+				//std::cerr << "AF:" << ptr->AFs[i] << "\tUD:" << ptr->UD[i][0] << "\t" << ptr->UD[i][1] << "\tmeans:" << ptr->means[i] << std::endl;
 			}
 			//std::cerr << "sumLLK:" << sumLLK << std::endl;
 			return sumLLK;
 		}
 		fullLLKFunc(PopulationIdentifier* inPtr){
 			ptr = inPtr;
-			llk1 = llk0 = (0 - computeMixLLKs(static_cast<double>(ptr->PC[0][0]), static_cast<double>(ptr->PC[0][1])));
+			srand(time(NULL));
+			double r1 = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+			double r2 = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+			llk1 = llk0 = (0 - computeMixLLKs(r1, r2));
 		}
 
 		virtual double Evaluate(Vector& v) {
@@ -200,7 +207,7 @@ public:
 	std::vector<PCtype> means;
 	std::vector<double> AFs;
 
-	std::unordered_map<std::string, std::unordered_map<int, int> > ChooseBed;
+	std::unordered_map<std::string, std::unordered_map<int, std::pair<char,char> > > ChooseBed;
 	std::vector<std::pair<std::string, int> > PosVec;
 
 	PopulationIdentifier();
@@ -225,6 +232,9 @@ public:
 	/*Optimize*/
 	int OptimizeLLK();
 	int RunMapping();
+
+	int writeVcfFile(const std::string& path);
+	int ReadPileup(const std::string& path);
 #ifdef ARMADILLO
 	int PrintVcf(const std::string & path);
 #endif

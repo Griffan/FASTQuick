@@ -1,7 +1,7 @@
 /*
  * BwtIndexer.h
  *
- *  Created on: 2014Äê7ÔÂ9ÈÕ
+ *  Created on: 2014ï¿½ï¿½7ï¿½ï¿½9ï¿½ï¿½
  *      Author: Administrator
  */
 
@@ -17,6 +17,7 @@
 #include <cmath>
 #include <time.h>
 #include <iostream>
+#include <map>
 //Bloom filter parameters
 #define VCF_SITES 10000
 #define WINDOW_SIZE 1000
@@ -55,6 +56,8 @@ public:
 
 	BwtIndexer();
 
+	BwtIndexer(int thresh);
+
 	BwtIndexer(std::string & NewRef);
 
 	BwtIndexer(RefBuilder & ArtiRef, std::string & NewRef);
@@ -78,10 +81,18 @@ public:
 
 	bool IsKmerInHash(uint64_t kmer)const;
 
+	int CountKmerHitInHash(uint64_t kmer)const;
+
 	bool IsReadInHash(const ubyte_t * S, int len)const;
+
+	bool IsReadInHash(const ubyte_t * S, int len, bool n_chunck)const;
+
+	bool IsReadInHashByCount(const ubyte_t * S, int len)const;
 
 	//typedef uint32_t v4si __attribute__ ((vector_size (16)));
 	bool IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const;
+
+	bool IsReadInHashByCount(const ubyte_t *S, int len, bool n_chunck)const;
 
 #ifdef BLOOM_FPP
 #include "bloom_filter.hpp"
@@ -150,9 +161,22 @@ public:
 
 	unsigned char * roll_hash_table[6]; //11110000
 
+	/*debug hash*/
+
+	std::map<int,int> debug_hash;
+	int AddSeq2DebugHash(int shrinked);
+	inline int DebugHashPrint()
+	{
+		std::cerr<<"Enter DebugHashPrint, debug hash size:"<<debug_hash.size()<<"\n"<<std::endl;
+		for(std::map<int,int>::iterator iter=debug_hash.begin();iter!=debug_hash.end();iter++)
+			std::cout<<iter->first<<"\t"<<iter->second<<std::endl;
+		return 0;
+	}
+	/*debug hash end*/
+
 	long long int hash_table_size;
 
-	void InitializeRollHashTable();
+	void InitializeRollHashTable(int thresh);
 
 	void ReadRollHashTable(const std::string& prefix);
 
@@ -164,9 +188,9 @@ public:
 
 	uint32_t KmerShrinkage(uint64_t a, unsigned int mask)const;
 
-	void AddSeq2HashCore(const std::string & Seq, int iter);
+	void AddSeq2HashCore(const std::string & Seq, int iter, const std::vector<char>& alleles);
 
-	void AddSeq2Hash(const std::string & Seq, const gap_opt_t * opt);
+	void AddSeq2Hash(const std::string & Seq, const std::vector<char>& alleles);
 
 #endif
 	virtual ~BwtIndexer();
@@ -258,12 +282,11 @@ inline uint32_t BwtIndexer::KmerShrinkage(uint64_t kmer, unsigned int iter)const
 	
 }
 
-inline void BwtIndexer::AddSeq2Hash(const std::string & Seq,
-		const gap_opt_t * opt)
+inline void BwtIndexer::AddSeq2Hash(const std::string & Seq, const std::vector<char>& alleles)
 {
 	for (int i = 0; i != 6; ++i)
 	{
-		AddSeq2HashCore(Seq, i);
+		AddSeq2HashCore(Seq, i, alleles);
 	}
 }
 

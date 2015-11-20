@@ -48,7 +48,10 @@ PROGRAMS = $(bin_PROGRAMS)
 am_FASTQuick_OBJECTS = FASTQuick-FASTQuick.$(OBJEXT) \
 	FASTQuick-BwtIndexer.$(OBJEXT) FASTQuick-BwtMapper.$(OBJEXT) \
 	FASTQuick-RefBuilder.$(OBJEXT) \
-	FASTQuick-StatCollector.$(OBJEXT)
+	FASTQuick-StatCollector.$(OBJEXT) \
+	FASTQuick-InsertSizeEstimator.$(OBJEXT) \
+	FASTQuick-PopulationIdentifier.$(OBJEXT) \
+	FASTQuick-ContaminationEstimator.$(OBJEXT)
 FASTQuick_OBJECTS = $(am_FASTQuick_OBJECTS)
 FASTQuick_DEPENDENCIES = ../libmpu/libmpu.a ../libmpu/libtabix.a \
 	../libbwa/libbwa.a ../misc/libmisc.a \
@@ -69,15 +72,15 @@ DIST_SOURCES = $(FASTQuick_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run aclocal-1.11
+ACLOCAL = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run aclocal-1.11
 AMTAR = $${TAR-tar}
-AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoconf
-AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run autoheader
-AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run automake-1.11
+AUTOCONF = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoconf
+AUTOHEADER = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoheader
+AUTOMAKE = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O4
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -101,7 +104,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -lz -lpthread 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/missing --run makeinfo
+MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = full-package-name
@@ -114,13 +117,13 @@ PACKAGE_VERSION = VERSION
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = 
 VERSION = VERSION
-abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/src
-abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/src
-abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
-abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development
+abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/src
+abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/src
+abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick
+abs_top_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -140,7 +143,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_development/install-sh
+install_sh = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -162,10 +165,10 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 AUTOMAKE_OPTIONS = foreign     
-FASTQuick_SOURCES = FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp
+FASTQuick_SOURCES = FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp InsertSizeEstimator.cpp PopulationIdentifier.cpp ContaminationEstimator.cpp
 FASTQuick_LDFLAGS = 
 FASTQuick_LDADD = ../libmpu/libmpu.a ../libmpu/libtabix.a ../libbwa/libbwa.a ../misc/libmisc.a ../libStatGen/libStatGen.a
-FASTQuick_CXXFLAGS = -O4   -Wall -std=c++0x  -DHAVE_PTHREAD -fpermissive -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
+FASTQuick_CXXFLAGS =   -Wall -std=c++0x  -DHAVE_PTHREAD -fpermissive -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
 all: all-am
 
 .SUFFIXES:
@@ -249,7 +252,10 @@ distclean-compile:
 
 include ./$(DEPDIR)/FASTQuick-BwtIndexer.Po
 include ./$(DEPDIR)/FASTQuick-BwtMapper.Po
+include ./$(DEPDIR)/FASTQuick-ContaminationEstimator.Po
 include ./$(DEPDIR)/FASTQuick-FASTQuick.Po
+include ./$(DEPDIR)/FASTQuick-InsertSizeEstimator.Po
+include ./$(DEPDIR)/FASTQuick-PopulationIdentifier.Po
 include ./$(DEPDIR)/FASTQuick-RefBuilder.Po
 include ./$(DEPDIR)/FASTQuick-StatCollector.Po
 
@@ -336,6 +342,48 @@ FASTQuick-StatCollector.obj: StatCollector.cpp
 #	source='StatCollector.cpp' object='FASTQuick-StatCollector.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-StatCollector.obj `if test -f 'StatCollector.cpp'; then $(CYGPATH_W) 'StatCollector.cpp'; else $(CYGPATH_W) '$(srcdir)/StatCollector.cpp'; fi`
+
+FASTQuick-InsertSizeEstimator.o: InsertSizeEstimator.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-InsertSizeEstimator.o -MD -MP -MF $(DEPDIR)/FASTQuick-InsertSizeEstimator.Tpo -c -o FASTQuick-InsertSizeEstimator.o `test -f 'InsertSizeEstimator.cpp' || echo '$(srcdir)/'`InsertSizeEstimator.cpp
+	$(am__mv) $(DEPDIR)/FASTQuick-InsertSizeEstimator.Tpo $(DEPDIR)/FASTQuick-InsertSizeEstimator.Po
+#	source='InsertSizeEstimator.cpp' object='FASTQuick-InsertSizeEstimator.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-InsertSizeEstimator.o `test -f 'InsertSizeEstimator.cpp' || echo '$(srcdir)/'`InsertSizeEstimator.cpp
+
+FASTQuick-InsertSizeEstimator.obj: InsertSizeEstimator.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-InsertSizeEstimator.obj -MD -MP -MF $(DEPDIR)/FASTQuick-InsertSizeEstimator.Tpo -c -o FASTQuick-InsertSizeEstimator.obj `if test -f 'InsertSizeEstimator.cpp'; then $(CYGPATH_W) 'InsertSizeEstimator.cpp'; else $(CYGPATH_W) '$(srcdir)/InsertSizeEstimator.cpp'; fi`
+	$(am__mv) $(DEPDIR)/FASTQuick-InsertSizeEstimator.Tpo $(DEPDIR)/FASTQuick-InsertSizeEstimator.Po
+#	source='InsertSizeEstimator.cpp' object='FASTQuick-InsertSizeEstimator.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-InsertSizeEstimator.obj `if test -f 'InsertSizeEstimator.cpp'; then $(CYGPATH_W) 'InsertSizeEstimator.cpp'; else $(CYGPATH_W) '$(srcdir)/InsertSizeEstimator.cpp'; fi`
+
+FASTQuick-PopulationIdentifier.o: PopulationIdentifier.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-PopulationIdentifier.o -MD -MP -MF $(DEPDIR)/FASTQuick-PopulationIdentifier.Tpo -c -o FASTQuick-PopulationIdentifier.o `test -f 'PopulationIdentifier.cpp' || echo '$(srcdir)/'`PopulationIdentifier.cpp
+	$(am__mv) $(DEPDIR)/FASTQuick-PopulationIdentifier.Tpo $(DEPDIR)/FASTQuick-PopulationIdentifier.Po
+#	source='PopulationIdentifier.cpp' object='FASTQuick-PopulationIdentifier.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-PopulationIdentifier.o `test -f 'PopulationIdentifier.cpp' || echo '$(srcdir)/'`PopulationIdentifier.cpp
+
+FASTQuick-PopulationIdentifier.obj: PopulationIdentifier.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-PopulationIdentifier.obj -MD -MP -MF $(DEPDIR)/FASTQuick-PopulationIdentifier.Tpo -c -o FASTQuick-PopulationIdentifier.obj `if test -f 'PopulationIdentifier.cpp'; then $(CYGPATH_W) 'PopulationIdentifier.cpp'; else $(CYGPATH_W) '$(srcdir)/PopulationIdentifier.cpp'; fi`
+	$(am__mv) $(DEPDIR)/FASTQuick-PopulationIdentifier.Tpo $(DEPDIR)/FASTQuick-PopulationIdentifier.Po
+#	source='PopulationIdentifier.cpp' object='FASTQuick-PopulationIdentifier.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-PopulationIdentifier.obj `if test -f 'PopulationIdentifier.cpp'; then $(CYGPATH_W) 'PopulationIdentifier.cpp'; else $(CYGPATH_W) '$(srcdir)/PopulationIdentifier.cpp'; fi`
+
+FASTQuick-ContaminationEstimator.o: ContaminationEstimator.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-ContaminationEstimator.o -MD -MP -MF $(DEPDIR)/FASTQuick-ContaminationEstimator.Tpo -c -o FASTQuick-ContaminationEstimator.o `test -f 'ContaminationEstimator.cpp' || echo '$(srcdir)/'`ContaminationEstimator.cpp
+	$(am__mv) $(DEPDIR)/FASTQuick-ContaminationEstimator.Tpo $(DEPDIR)/FASTQuick-ContaminationEstimator.Po
+#	source='ContaminationEstimator.cpp' object='FASTQuick-ContaminationEstimator.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-ContaminationEstimator.o `test -f 'ContaminationEstimator.cpp' || echo '$(srcdir)/'`ContaminationEstimator.cpp
+
+FASTQuick-ContaminationEstimator.obj: ContaminationEstimator.cpp
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -MT FASTQuick-ContaminationEstimator.obj -MD -MP -MF $(DEPDIR)/FASTQuick-ContaminationEstimator.Tpo -c -o FASTQuick-ContaminationEstimator.obj `if test -f 'ContaminationEstimator.cpp'; then $(CYGPATH_W) 'ContaminationEstimator.cpp'; else $(CYGPATH_W) '$(srcdir)/ContaminationEstimator.cpp'; fi`
+	$(am__mv) $(DEPDIR)/FASTQuick-ContaminationEstimator.Tpo $(DEPDIR)/FASTQuick-ContaminationEstimator.Po
+#	source='ContaminationEstimator.cpp' object='FASTQuick-ContaminationEstimator.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(FASTQuick_CXXFLAGS) $(CXXFLAGS) -c -o FASTQuick-ContaminationEstimator.obj `if test -f 'ContaminationEstimator.cpp'; then $(CYGPATH_W) 'ContaminationEstimator.cpp'; else $(CYGPATH_W) '$(srcdir)/ContaminationEstimator.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

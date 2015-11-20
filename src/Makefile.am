@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS=foreign
 
 bin_PROGRAMS=FASTQuick
 
-FASTQuick_SOURCES=FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp InsertSizeEstimator.cpp
+FASTQuick_SOURCES=FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp StatCollector.cpp InsertSizeEstimator.cpp PopulationIdentifier.cpp ContaminationEstimator.cpp
 
 FASTQuick_LDFLAGS= 
 

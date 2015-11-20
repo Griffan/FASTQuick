@@ -1,6 +1,8 @@
 #include "PopulationIdentifier.h"
-#include <fstream>
+#include <iostream>
 #include <algorithm>
+#include "InputFile.h"
+
 #ifdef ARMADILLO
 #include <armadillo>
 using namespace arma;
@@ -168,14 +170,63 @@ int PopulationIdentifier::RunSVD()
 	return 0;
 }
 #endif
+
+#include <fstream>
+#include <sstream>
+
+std::vector<std::string> bedContainer;
+int PopulationIdentifier::writeVcfFile(const std::string& path)
+{
+	std::ofstream fout(path);
+	if (!fout.is_open()) { abort(); }
+	fout
+		<< "##fileformat=VCFv4.0\n"
+		<< "##FILTER=<ID=NOT_POLY_IN_1000G,Description=\"Alternate allele count = 0\">\n"
+		<< "##FILTER=<ID=badAssayMapping,Description=\"The mapping information for the SNP assay is internally inconsistent in the chip metadata\">\n"
+		<< "##FILTER=<ID=dup,Description=\"Duplicate assay at same position with worse Gentrain Score\">\n"
+		<< "##FILTER=<ID=id10,Description=\"Within 10 bp of an known indel\">\n"
+		<< "##FILTER=<ID=id20,Description=\"Within 20 bp of an known indel\">\n"
+		<< "##FILTER=<ID=id5,Description=\"Within 5 bp of an known indel\">\n"
+		<< "##FILTER=<ID=id50,Description=\"Within 50 bp of an known indel\">\n"
+		<< "##FILTER=<ID=refN,Description=\"Reference base is N. Assay is designed for 2 alt alleles\">\n"
+		<< "##FORMAT=<ID=GC,Number=.,Type=Float,Description=\"Gencall Score\">\n"
+		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+		<< "##INFO=<ID=CR,Number=.,Type=Float,Description=\"SNP Callrate\">\n"
+		<< "##INFO=<ID=GentrainScore,Number=.,Type=Float,Description=\"Gentrain Score\">\n"
+		<< "##INFO=<ID=HW,Number=.,Type=Float,Description=\"Hardy-Weinberg Equilibrium\">\n"
+		<< "##reference=human_g1k_v37.fasta\n"
+		<< "##source=infiniumFinalReportConverterV1.0\n"
+		<< "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+	
+	for (size_t i = 0; i < bedContainer.size(); i++)
+	{
+		std::stringstream ss(bedContainer[i]);
+		std::string chr;
+		int pos;
+		char ref, alt;
+		ss >> chr;
+		fout << chr << "\t";
+		ss >> pos;
+		fout << pos+1 << "\t"<<"SNPID"<<pos+1<<"\t";
+		ss >> pos;
+		ss >> ref;
+		fout << ref<<"\t";
+		ss >> alt;
+		fout << alt << "\t"<<".\tPASS\tAF=";
+		fout << this->AFs[i] << "\n";
+
+
+	}
+	return 0;
+}
 PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed)
 {
-	
+	ReadChooseBed(Bed);
 	NumMarker = ReadMatrixUD(UDpath);
 	NumIndividual = ReadMatrixPC(PCpath);
-	ReadChooseBed(Bed);
-	ReadMatrixGL(GLpath);
-
+	
+	//ReadMatrixGL(GLpath);
+	ReadPileup(GLpath);
 	FormatMarkerIntersection();
 	ReadMean(Mean);
 	fn = PopulationIdentifier::fullLLKFunc(this);
@@ -204,7 +255,8 @@ int PopulationIdentifier::ReadChooseBed(const std::string &path)
 	std::ifstream fin(path);
 	std::string line,chr;
 	uint32_t index(0),pos(0);
-	
+	char ref(0), alt(0);
+
 	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
 	while (std::getline(fin, line))
 	{
@@ -212,10 +264,11 @@ int PopulationIdentifier::ReadChooseBed(const std::string &path)
 		std::stringstream ss(line);
 		//std::string chr;
 		//int pos;
-		ss >> chr >> pos;
-		//ss >> tmpUD[0] >> tmpUD[1];
-		//UD.push_back(tmpUD);
-		ChooseBed[chr][pos+1] = index;
+		ss >> chr >> pos>>pos;
+		ss >> ref >> alt;
+	
+		bedContainer.push_back(line);
+		ChooseBed[chr][pos] = std::make_pair(ref,alt);
 	}
 	fin.close();
 	return UD.size();
@@ -270,16 +323,16 @@ int PopulationIdentifier::CheckMarkerSetConsistency()
 }
 int PopulationIdentifier::FormatMarkerIntersection()
 {
-	if (CheckMarkerSetConsistency())
+	//if (CheckMarkerSetConsistency())
 	{
 		means = std::vector<PCtype>(NumMarker, 0.5);
 		AFs = std::vector<double>(NumMarker, 0);
 	}
-	else//implement intersection behavior if needed
-	{
-		std::cerr << "[Waring] - Marker Sets are not consistent UD:"<<UD.size()<<"\tGL:"<<GL.size() << std::endl;
-		exit(EXIT_FAILURE);
-	}
+	//else//implement intersection behavior if needed
+	//{
+	//	std::cerr << "[Waring] - Marker Sets are not consistent UD:"<<UD.size()<<"\tGL:"<<GL.size() << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
 	return 0;
 }
 int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL information for individual need to be classified
@@ -310,6 +363,100 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 	return 0;
 }
 
+#define REV_PHRED(x)	pow(10.0,x/(-10.0))
+static std::vector<double>  calLikelihood(const std::string & seq, const std::string & qual,char ref,char alt)//maj:ref, min:alt
+{	
+
+	double lik(0), GL0(0), GL1(0), GL2(0);
+	{
+		for (uint32_t i = 0; i != seq.size(); ++i)
+		{
+			double seq_error = REV_PHRED(qual[i]);
+			//fprintf(stderr,"Debug (qual:%d\tseq_error:%f)\n",qual[i],seq_error);
+			if (seq[i] == '.'||seq[i]==',')
+			{
+				GL0 += log10(1 - seq_error);
+				GL1 += log10(0.5 - seq_error / 3);
+				GL2 += log10(seq_error / 3);
+			}
+			else if (seq[i] == alt||seq[i]==toupper(alt))
+			{
+				GL0 += log10(seq_error / 3);
+				GL1 += log10(0.5 - seq_error / 3);
+				GL2 += log10(1 - seq_error);
+			}
+			else
+			{
+				GL0 += log10(2 * seq_error / 3);
+				GL1 += log10(2 * seq_error / 3);
+				GL2 += log10(2 * seq_error / 3);
+			}
+		}
+		//fprintf(stderr, "\n");
+	}
+	std::vector<double> tmp(3, 0);
+	tmp[0] = GL0*(-10); tmp[1] = GL1*(-10); tmp[2] = GL2*(-10);
+	double minimal(tmp[0]);
+	if (tmp[1] < minimal)
+	{
+		minimal = tmp[1];
+	}
+	if (tmp[2] < minimal)
+	{
+		minimal = tmp[2];
+	}
+	tmp[0] -= minimal; tmp[1] -= minimal; tmp[2] -= minimal;
+	return tmp;
+}
+int PopulationIdentifier::ReadPileup(const std::string& path)
+{
+	//std::ifstream fin(path);
+	InputFile fin(path.c_str(), "r", InputFile::BGZF);
+	std::string line;
+	uint32_t index(0);
+
+	std::vector<double> tmpGL(3, 0);
+	char ref, alt;
+	if (!fin.isOpen()) { warning("Open file %s failed!\n", path.c_str()); }
+
+	int sephore = -1;
+	while ((line="",fin.readLine(line)!=-1))
+	{
+		if (line[0] == '#') continue;
+		std::stringstream ss(line);
+		std::string chr,seq,qual;
+		int pos;
+		ss >> chr >> pos;
+		if (ChooseBed[chr].find(pos) == ChooseBed[chr].end()||MarkerIndex[chr].find(pos)!=MarkerIndex[chr].end()){continue; }
+		else
+		{
+			ref = ChooseBed[chr][pos].first;
+			alt = ChooseBed[chr][pos].second;
+		}
+		MarkerIndex[chr][pos] = index;
+		ss >> seq;
+		ss >> seq;
+		ss >> seq;
+		ss >> qual;
+		ss >> qual;
+		ss >> qual;
+		//std::cout << "calculating likelihood for: " << chr << "\t" << pos << "\t" << ref << "\t" << alt << std::endl;
+		tmpGL = calLikelihood(seq,qual,ref,alt);
+
+		ss >> tmpGL[0] >> tmpGL[1] >> tmpGL[2];
+		//std::cout << chr <<"\t"<< pos << "\t"<<tmpGL[0] << "\t"<<tmpGL[1] <<"\t"<< tmpGL[2] << std::endl;
+		GL.push_back(tmpGL);
+		index++;
+	}
+	
+	{//for marker existed in UD but not in pileup
+		tmpGL[0] = tmpGL[1] = tmpGL[2] = 0.0;
+		GL.push_back(tmpGL);
+	}
+	fin.ifclose();
+	return 0;
+}
+
 int PopulationIdentifier::OptimizeLLK()
 {
 	//std::cerr << "Now the label is:1" << std::endl;
@@ -332,6 +479,7 @@ int PopulationIdentifier::OptimizeLLK()
 	double optimalPC2 = myMinimizer.point[1]; //fullLLKFunc::invLogit(myMinimizer.point[1]);
 	std::cout << "PCs in OptimizaLLK():" << std::endl;
 	std::cout << "PC1:" << optimalPC1 << "\tPC2:" << optimalPC2 << std::endl;
+
 	return 0;
 }
 int PopulationIdentifier::RunMapping()
@@ -350,3 +498,4 @@ int PopulationIdentifier::PrintVcf(const std::string & path)
 PopulationIdentifier::~PopulationIdentifier()
 {
 }
+
