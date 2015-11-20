@@ -337,7 +337,7 @@ int runAlign(int argc, char ** argv)
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
-	int kmer_thresh(0);
+	int kmer_thresh(3);
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
@@ -548,8 +548,8 @@ int runPop(int argc, char ** argv)
 //		LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource directory[Required]")
 //		LONG_STRING_PARAM("mu", &muPath, "[String] Input mu matrix file in resource directory[Required]")
 		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]")
-		LONG_STRING_PARAM("gl", &glPath, "[String] Input genotype likelihood file generated from align[Required]")
-		LONG_STRING_PARAM("pileup", &pileup, "[String] Input pileup file generated from align[Required]")
+		LONG_STRING_PARAM("gl", &glPath, "[String] Input genotype likelihood file generated from align step[Required if no pileup file]")
+		LONG_STRING_PARAM("pileup", &pileup, "[String] Input pileup file generated from align[Required if no gl file]")
 		LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed.post.bed.allele.bed file in resource directory[Required]")
 		LONG_STRING_PARAM("out", &output, "[String] Specify output file[Required]")
 	END_LONG_PARAMS();
@@ -572,9 +572,9 @@ int runPop(int argc, char ** argv)
 		error("--mu is required");
 		exit(EXIT_FAILURE);
 	}
-	if (pileup == "Empty")
+	if (pileup == "Empty"&&glPath == "Empty")
 	{
-		error("--pileup is required");
+		error("either --pileup or --gl is required");
 		exit(EXIT_FAILURE);
 	}
 	if (bedPath == "Empty")
@@ -582,7 +582,7 @@ int runPop(int argc, char ** argv)
 		error("--BED is required");
 		exit(EXIT_FAILURE);
 	}
-	PopulationIdentifier pop(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu", pileup, bedPath);
+	PopulationIdentifier pop(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu", pileup,glPath,bedPath);
 	pop.OptimizeLLK();
 
 	notice("Version: %s\n", PACKAGE_VERSION);
@@ -605,11 +605,11 @@ int runCon(int argc, char ** argv)
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
-		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file that contains site allele frequency doesn't exist]")
-		LONG_STRING_PARAM("VCF", &VcfSiteAFFile, "[String] Specify VCF file that contains site allele frequency.[Required if SVD matrix doesn't exist]")
+		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file doesn't provide site allele frequency]")
+		LONG_STRING_PARAM("VCF", &VcfSiteAFFile, "[String] Specify VCF file that contains site allele frequency.[Required if SVD matrices don't exist]")
 		LONG_STRING_PARAM("pileup", &MPUpath, "[String] Specify pileup file for current individual, could be the one generated from align step.[Required]")
-		LONG_STRING_PARAM("out", &Prefix, "[String] Specify the output prefix.[Required]")
 		LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]")
+		LONG_STRING_PARAM("out", &Prefix, "[String] Specify the output prefix.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 
 
