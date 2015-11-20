@@ -443,7 +443,8 @@ bwa_cigar_t *bwa_sw_core(bwtint_t l_pac, const ubyte_t *pacseq, int len, const u
 	free(ref_seq); free(path);
 	return cigar;
 }
-static int expand_seq(bwa_seq_t* p, bwa_seq_t* q,int mode)
+
+static int expand_seq(bwa_seq_t* p, bwa_seq_t* q,int mode)//this function try to fills members that are not initialized when they are filtered by Hash
 {
 	int is_comp = mode&BWA_MODE_COMPREAD;
 	//p->rseq = (ubyte_t*)calloc(p->full_len, 1);
