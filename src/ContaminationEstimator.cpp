@@ -45,7 +45,7 @@ int ContaminationEstimator::RunFromVCF(const std::string VcfSiteAFFile,const std
 }
 int ContaminationEstimator::RunFromSVDMatrix(const std::string UDpath, const std::string PCpath, const std::string Mean, const std::string & MPUpath, const std::string &Bed, const std::string& Prefix,const std::string& ReadGroup)
 {
-	PopulationIdentifier pop(UDpath, PCpath, Mean, MPUpath, Bed);
+	PopulationIdentifier pop(UDpath, PCpath, Mean, MPUpath, std::string("Empty"),Bed);
 	pop.OptimizeLLK();
 	pop.writeVcfFile(MPUpath+".vcf");
 	/*preparations done, then call RunFromVCF*/

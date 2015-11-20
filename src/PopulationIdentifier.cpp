@@ -178,7 +178,7 @@ std::vector<std::string> bedContainer;
 int PopulationIdentifier::writeVcfFile(const std::string& path)
 {
 	std::ofstream fout(path);
-	if (!fout.is_open()) { abort(); }
+	if (!fout.is_open()) { std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE); }
 	fout
 		<< "##fileformat=VCFv4.0\n"
 		<< "##FILTER=<ID=NOT_POLY_IN_1000G,Description=\"Alternate allele count = 0\">\n"
@@ -219,14 +219,15 @@ int PopulationIdentifier::writeVcfFile(const std::string& path)
 	}
 	return 0;
 }
-PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed)
+PopulationIdentifier::PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & pileup, const std::string & GLpath, const std::string &Bed)
 {
 	ReadChooseBed(Bed);
 	NumMarker = ReadMatrixUD(UDpath);
 	NumIndividual = ReadMatrixPC(PCpath);
-	
-	//ReadMatrixGL(GLpath);
-	ReadPileup(GLpath);
+	if(GLpath!="Empty")
+		ReadMatrixGL(GLpath);
+	else
+		ReadPileup(pileup);
 	FormatMarkerIntersection();
 	ReadMean(Mean);
 	fn = PopulationIdentifier::fullLLKFunc(this);
@@ -237,7 +238,7 @@ int PopulationIdentifier::ReadMatrixUD(const std::string &path)
 	std::string line;
 	uint32_t index(0);
 	std::vector<PCtype> tmpUD(2, 0);
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.is_open()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
@@ -257,7 +258,7 @@ int PopulationIdentifier::ReadChooseBed(const std::string &path)
 	uint32_t index(0),pos(0);
 	char ref(0), alt(0);
 
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.is_open()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
 	{
 		index++;
@@ -279,7 +280,7 @@ int PopulationIdentifier::ReadMatrixPC(const std::string &path)
 	std::string line;
 	uint32_t index(0);
 	std::vector<PCtype> tmpPC(2, 0);
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.is_open()) { std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
@@ -301,7 +302,7 @@ int PopulationIdentifier::ReadMean(const std::string &path)
 	uint32_t index(0),pos(0);
 	double mu(0);
 	std::string snpName,chr;
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.is_open()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
@@ -341,7 +342,7 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 	std::string line;
 	uint32_t index(0);
 	std::vector<double> tmpGL(3, 0);
-	if (!fin.is_open()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.is_open()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE); }
 	while (std::getline(fin, line))
 	{
 		std::stringstream ss(line);
@@ -417,7 +418,7 @@ int PopulationIdentifier::ReadPileup(const std::string& path)
 
 	std::vector<double> tmpGL(3, 0);
 	char ref, alt;
-	if (!fin.isOpen()) { warning("Open file %s failed!\n", path.c_str()); }
+	if (!fin.isOpen()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 
 	int sephore = -1;
 	while ((line="",fin.readLine(line)!=-1))

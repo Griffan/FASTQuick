@@ -220,7 +220,7 @@ public:
 #endif
 	/*Initialize from existed UD*/
 	/*This assumes the markers are the same as the selected vcf*/
-	PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string & GLpath, const std::string &Bed);
+	PopulationIdentifier(const std::string& UDpath, const std::string &PCpath, const std::string &Mean, const std::string& pileup,const std::string & GLpath, const std::string &Bed);
 	int ReadMatrixUD(const std::string &path);
 	int ReadMatrixPC(const std::string &path);
 	/*Intersect marker sites*/
