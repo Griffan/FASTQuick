@@ -2020,14 +2020,15 @@ int StatCollector::getInsertSizeDist(const string & outputPath)
 {
 
 	std::string InFileName(outputPath+".InsertSizeTable");
-	std::string OutFileName(outputPath+".InsertSizeDist");
-//	InsertSizeEstimator Estimator;
-//	Estimator.InputInsertSizeTable(InFileName);
+	std::string OutFileName(outputPath+".AdjustedInsertSizeDist");
+
+	InsertSizeEstimator Estimator;
+	Estimator.InputInsertSizeTable(InFileName);
 //	Estimator.Sort();
-//	Estimator.UpdateWeight();
+	Estimator.UpdateWeight(OutFileName);
 //	Estimator.UpdateInsertDist();
 //	Estimator.GetInsertDist(OutFileName);
-	ofstream fout(outputPath + ".InsertSizeDist");
+	ofstream fout(outputPath+".RawInsertSizeDist");
 		for (uint32_t i = 0; i != InsertSizeDist.size(); ++i)
 		{
 			fout << i << "\t" << InsertSizeDist[i] << endl;
