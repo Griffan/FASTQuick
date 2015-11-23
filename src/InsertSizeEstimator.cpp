@@ -31,7 +31,7 @@ void split( vector<string> & theStringVector,  /* Altered/returned value */
     }
 }
 
-int InsertSizeEstimator::InputInsertSizeTable(std::string FileName) {
+int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
     std::ifstream fin(FileName);
     if(!fin.is_open()) std::cerr<<"File "<<FileName<<" Open Failed!"<<std::endl;
     std::string line;
@@ -106,8 +106,8 @@ int InsertSizeEstimator::InputInsertSizeTable(std::string FileName) {
     return 0;
 }
 
-int InsertSizeEstimator::UpdateWeight() {
-
+int InsertSizeEstimator::UpdateWeight(const std::string & outputPath) {
+	ofstream fout(outputPath);
     vector<double> F(1000,0.),f(1000,0.);
     vector<double> G(F),g(f);
     for (int k = 0; k <1000 ; ++k) {
@@ -132,10 +132,10 @@ int InsertSizeEstimator::UpdateWeight() {
             G[k]=g[k];
         }
 
-        cout << k << "\t" << f[k]<<"\tm:"<<m<<"\tn:"<<n<< endl;
+        fout << k << "\t" << f[k]<< std::endl;
     }
 
-
+    fout.close();
     return 0;
 }
 

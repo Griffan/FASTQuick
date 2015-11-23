@@ -84,8 +84,8 @@ public:
         MisDist=Dist(INSERT_LIMIT,0.);
     }
 
-    int InputInsertSizeTable(std::string FileName);
-    int UpdateWeight();
+    int InputInsertSizeTable(const std::string& FileName);
+    int UpdateWeight(const std::string &FileName);
     int Sort();
     int GetInsertDist();
     int UpdateInsertDist();
