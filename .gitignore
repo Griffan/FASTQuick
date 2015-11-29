@@ -25,5 +25,5 @@ CMakeLists.txt
 # *.hex
 *.Po
 tabix
-FASTQuick
+FASTQuick*
 config.log
