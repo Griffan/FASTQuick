@@ -1,4 +1,4 @@
 AUTOMAKE_OPTIONS=foreign     
 
 
-SUBDIRS =  libmpu libbwa misc src
+SUBDIRS =  libStatGen libmpu libbwa misc src
