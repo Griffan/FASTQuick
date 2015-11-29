@@ -15,10 +15,10 @@
 
 
 
-pkgdatadir = $(datadir)/full-package-name
-pkgincludedir = $(includedir)/full-package-name
-pkglibdir = $(libdir)/full-package-name
-pkglibexecdir = $(libexecdir)/full-package-name
+pkgdatadir = $(datadir)/fastquick
+pkgincludedir = $(includedir)/fastquick
+pkglibdir = $(libdir)/fastquick
+pkglibexecdir = $(libexecdir)/fastquick
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -36,7 +36,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -132,24 +132,25 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LDFLAGS = 
 LIBOBJS = 
-LIBS = -lz -lpthread 
+LIBS = -lz -lssl -lpthread -lm -lcrypto 
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
-PACKAGE = full-package-name
-PACKAGE_BUGREPORT = BUG-REPORT-ADDRESS
-PACKAGE_NAME = FULL-PACKAGE-NAME
-PACKAGE_STRING = FULL-PACKAGE-NAME VERSION
-PACKAGE_TARNAME = full-package-name
+PACKAGE = fastquick
+PACKAGE_BUGREPORT = fanzhang@umich.edu
+PACKAGE_NAME = FASTQuick
+PACKAGE_STRING = FASTQuick 0.0.1
+PACKAGE_TARNAME = fastquick
 PACKAGE_URL = 
-PACKAGE_VERSION = VERSION
+PACKAGE_VERSION = 0.0.1
 PATH_SEPARATOR = :
+POW_LIB = 
 RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
-VERSION = VERSION
+VERSION = 0.0.1
 abs_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick
 abs_srcdir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick
 abs_top_builddir = /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick
@@ -188,14 +189,13 @@ psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
-subdirs =  libmpulibbwasrcmisc
 sysconfdir = ${prefix}/etc
 target_alias = 
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
 AUTOMAKE_OPTIONS = foreign     
-SUBDIRS = libmpu libbwa misc src
+SUBDIRS = libStatGen libmpu libbwa misc src
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
