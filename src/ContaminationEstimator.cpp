@@ -7,7 +7,6 @@
 
 #include "ContaminationEstimator.h"
 #include "../libmpu/mpuTool.h"
-#include "../libmpu/Error.h"
 #include "PopulationIdentifier.h"
 #include <iostream>
 #include <sstream>

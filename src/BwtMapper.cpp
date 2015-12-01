@@ -14,7 +14,8 @@
 #include "../libbwa/bwase.h"
 #include "../libbwa/bwape.h"
 #include "../libbwa/khash.h"
-#include "../libmpu/Error.h"
+#include "../misc/general/Error.h"
+#include "../libmpu/Random.h"
 #include <algorithm>
 //#include <gperftools/profiler.h>
 
@@ -288,8 +289,9 @@ struct __bwa_seqio_t {
 static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed)
 {
 
-	struct drand48_data randBuffer;
-	srand48_r(seed, &randBuffer);
+	//struct drand48_data randBuffer;
+	//srand48_r(seed, &randBuffer);
+	Random randGen(seed);
 	bwa_seq_t *seqs, *p;
 	kseq_t *seq = bs->ks;
 	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 = mode&BWA_MODE_IL13, l_bc = mode >> 24;
@@ -309,8 +311,9 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 	/*if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, 0, 0, seq->seq.l, frac)) continue;*/
 	while (1)
 	{
-		double rand_num = 0;
-		drand48_r(&randBuffer,&rand_num);
+		double rand_num=randGen.Next();
+		//drand48_r(&randBuffer,&rand_num);
+
 		if ( rand_num> frac)
 		{
 			//notice("before length:%d", seq->seq.l);
@@ -469,8 +472,9 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed, bwa_seq_t* seqs, int read_len)
 {
 
-	struct drand48_data randBuffer;
-	srand48_r(seed, &randBuffer);
+	//struct drand48_data randBuffer;
+	//srand48_r(seed, &randBuffer);
+	Random randGen(seed);
 	bwa_seq_t /**seqs,*/ *p;
 	kseq_t *seq = bs->ks;
 	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 = mode&BWA_MODE_IL13, l_bc = mode >> 24;
@@ -485,8 +489,8 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 	//ProfilerStart("FastPopCon.prof");
 	while (1)
 	{
-		double rand_num = 0;
-		drand48_r(&randBuffer, &rand_num);
+		double rand_num = randGen.Next();
+		//drand48_r(&randBuffer, &rand_num);
 		if (rand_num > frac)
 		{
 			if ((l = kseq_read4_fpc(seq)) < 0) {

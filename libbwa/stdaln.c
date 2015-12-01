@@ -881,10 +881,10 @@ int aln_extend_core(unsigned char *seq1, int len1, unsigned char *seq2, int len2
 	if (len1 == 0 || len2 == 0) return -1;
 
 	/* allocate memory */
-	mem = _mem? _mem : calloc((len1 + 2) * (N_MATRIX_ROW + 1), 4);
+	mem = _mem? _mem : (uint8_t *)calloc((len1 + 2) * (N_MATRIX_ROW + 1), 4);
 	_p = mem;
 	eh = (uint32_t*)_p, _p += 4 * (len1 + 2);
-	s_array = calloc(N_MATRIX_ROW, sizeof(void*));
+	s_array = (int32_t **)calloc(N_MATRIX_ROW, sizeof(void*));
 	for (i = 0; i != N_MATRIX_ROW; ++i)
 		s_array[i] = (int32_t*)_p, _p += 4 * len1;
 	/* initialization */

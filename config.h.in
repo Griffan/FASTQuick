@@ -33,11 +33,17 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `bam' library (-lbam). */
+#undef HAVE_LIBBAM
+
 /* Define to 1 if you have the `crypto' library (-lcrypto). */
 #undef HAVE_LIBCRYPTO
 
 /* Define to 1 if you have the `csg' library (-lcsg). */
 #undef HAVE_LIBCSG
+
+/* Define to 1 if you have the `general' library (-lgeneral). */
+#undef HAVE_LIBGENERAL
 
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
@@ -51,8 +57,8 @@
 /* Define to 1 if you have the `ssl' library (-lssl). */
 #undef HAVE_LIBSSL
 
-/* Define to 1 if you have the `StatGen' library (-lStatGen). */
-#undef HAVE_LIBSTATGEN
+/* Define to 1 if you have the `vcf_statgen' library (-lvcf_statgen). */
+#undef HAVE_LIBVCF_STATGEN
 
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ

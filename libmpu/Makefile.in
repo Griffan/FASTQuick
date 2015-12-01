@@ -51,22 +51,21 @@ AR = ar
 ARFLAGS = cru
 libmpu_a_AR = $(AR) $(ARFLAGS)
 libmpu_a_DEPENDENCIES = libtabix.a
-am_libmpu_a_OBJECTS = mpuTool.$(OBJEXT) Parameters.$(OBJEXT) \
-	Error.$(OBJEXT) PhredHelper.$(OBJEXT) BaseAsciiMap.$(OBJEXT) \
-	MathGold.$(OBJEXT) MathGenMin.$(OBJEXT) MathMatrix.$(OBJEXT) \
-	Random.$(OBJEXT) Sort.$(OBJEXT) fVcf.$(OBJEXT) \
-	boolParser.$(OBJEXT) mpuVerify.$(OBJEXT) \
-	mpuPileBases.$(OBJEXT) mpuMixupLikelihoods.$(OBJEXT)
+am_libmpu_a_OBJECTS = boolParser.$(OBJEXT) fVcf.$(OBJEXT) \
+	MathGenMin.$(OBJEXT) MathGold.$(OBJEXT) \
+	mpuMixupLikelihoods.$(OBJEXT) mpuPileBases.$(OBJEXT) \
+	mpuTool.$(OBJEXT) mpuVerify.$(OBJEXT) Parameters.$(OBJEXT) \
+	PhredHelper.$(OBJEXT) Random.$(OBJEXT)
 libmpu_a_OBJECTS = $(am_libmpu_a_OBJECTS)
 libtabix_a_AR = $(AR) $(ARFLAGS)
 libtabix_a_LIBADD =
 am_libtabix_a_OBJECTS = bedidx.$(OBJEXT) mbgzf.$(OBJEXT) \
-	knetfile.$(OBJEXT) kstring.$(OBJEXT) index.$(OBJEXT)
+	kstring.$(OBJEXT) index.$(OBJEXT)
 libtabix_a_OBJECTS = $(am_libtabix_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_tabix_OBJECTS = tabix.$(OBJEXT) bedidx.$(OBJEXT) mbgzf.$(OBJEXT) \
-	knetfile.$(OBJEXT) kstring.$(OBJEXT) index.$(OBJEXT)
+	kstring.$(OBJEXT) index.$(OBJEXT)
 tabix_OBJECTS = $(am_tabix_OBJECTS)
 tabix_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -182,11 +181,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
-AM_CPPFLAGS = -Wall -fpic -O4 -I../libStatGen/include
-#AM_CPPFLAGS = -Wall -fpic -g -O0
-
-#noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h bgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h mpuLikelihoods.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h mpuSetLikelihoods.h mpuSet.h
-noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h mbgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h  MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h
+AM_CPPFLAGS = -Wall -fpic  -I../misc/general/  -I../misc/
+noinst_HEADERS = bam_endian.h  boolExprParser.h  Constant.h  fVcf.h   kseq.h   kstring.h     MathGold.h  mpuFile.h              mpuPileBases.h  mpuVerify.h   pFile.h        Random.h  wFile.h bgix.h        boolParser.h      fPed.h      khash.h  ksort.h  MathGenMin.h  mbgzf.h     mpuMixupLikelihoods.h  mpuTool.h       Parameters.h  PhredHelper.h  tabix.h
 noinst_LIBRARIES = libtabix.a libmpu.a
 
 #mpuTool_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp mpuLikelihoods.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp MathVector.cpp MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp mpuSetLikelihoods.cpp
@@ -196,9 +192,11 @@ libmpu_a_LIBADD = libtabix.a
 #mpuTool_LDADD = libtabix.a
 
 #bgzip_SOURCES = bgzip.c bedidx.c bgzf.c knetfile.c kstring.c
-tabix_SOURCES = tabix.c bedidx.c mbgzf.c knetfile.c kstring.c index.c
-libtabix_a_SOURCES = bedidx.c mbgzf.c knetfile.c kstring.c index.c
-libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp  MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
+tabix_SOURCES = tabix.c bedidx.c mbgzf.c kstring.c index.c
+libtabix_a_SOURCES = bedidx.c mbgzf.c  kstring.c index.c
+
+#libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp  PhredHelper.cpp  MathGold.cpp MathGenMin.cpp  MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
+libmpu_a_SOURCES = boolParser.cpp  fVcf.cpp  MathGenMin.cpp  MathGold.cpp  mpuMixupLikelihoods.cpp  mpuPileBases.cpp  mpuTool.cpp  mpuVerify.cpp  Parameters.cpp  PhredHelper.cpp  Random.cpp
 all: all-am
 
 .SUFFIXES:
@@ -212,9 +210,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign libmpu/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu libmpu/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign libmpu/Makefile
+	  $(AUTOMAKE) --gnu libmpu/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -291,20 +289,15 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BaseAsciiMap.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MathGenMin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MathGold.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MathMatrix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PhredHelper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Random.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Sort.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bedidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/boolParser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fVcf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/index.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/knetfile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kstring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbgzf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpuMixupLikelihoods.Po@am__quote@
@@ -544,7 +537,6 @@ uninstall-am: uninstall-binPROGRAMS
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-binPROGRAMS
-
 
 #dist_noinst_SCRIPTS = autogen.sh
 

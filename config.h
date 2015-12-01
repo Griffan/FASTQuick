@@ -34,11 +34,17 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* Define to 1 if you have the `bam' library (-lbam). */
+/* #undef HAVE_LIBBAM */
+
 /* Define to 1 if you have the `crypto' library (-lcrypto). */
 #define HAVE_LIBCRYPTO 1
 
 /* Define to 1 if you have the `csg' library (-lcsg). */
 /* #undef HAVE_LIBCSG */
+
+/* Define to 1 if you have the `general' library (-lgeneral). */
+/* #undef HAVE_LIBGENERAL */
 
 /* Define to 1 if you have the `m' library (-lm). */
 #define HAVE_LIBM 1
@@ -52,8 +58,8 @@
 /* Define to 1 if you have the `ssl' library (-lssl). */
 #define HAVE_LIBSSL 1
 
-/* Define to 1 if you have the `StatGen' library (-lStatGen). */
-/* #undef HAVE_LIBSTATGEN */
+/* Define to 1 if you have the `vcf_statgen' library (-lvcf_statgen). */
+/* #undef HAVE_LIBVCF_STATGEN */
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 1
@@ -160,7 +166,7 @@
 #define HAVE__BOOL 1
 
 /* Name of package */
-#define PACKAGE "fastquick"
+#define PACKAGE "FASTQuick"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "fanzhang@umich.edu"

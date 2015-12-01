@@ -8,7 +8,7 @@
 #include "RefBuilder.h"
 #include "Utility.h"
 #include "../misc/faidx.h"
-#include "../libmpu/Error.h"
+#include "../misc/general/Error.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
 #include "VcfRecord.h"

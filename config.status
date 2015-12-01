@@ -405,7 +405,7 @@ on `(hostname || uname -n) 2>/dev/null | sed 1q`
 "
 
 # Files that config.status was made for.
-config_files=" Makefile libbwa/Makefile libmpu/Makefile misc/Makefile src/Makefile"
+config_files=" Makefile libbwa/Makefile libmpu/Makefile misc/Makefile misc/bam/Makefile misc/general/Makefile misc/vcf/Makefile src/Makefile"
 config_headers=" config.h"
 config_commands=" depfiles"
 
@@ -449,7 +449,7 @@ Copyright (C) 2010 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick'
+ac_pwd='/net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 MKDIR_P='/bin/mkdir -p'
@@ -564,6 +564,9 @@ do
     "libbwa/Makefile") CONFIG_FILES="$CONFIG_FILES libbwa/Makefile" ;;
     "libmpu/Makefile") CONFIG_FILES="$CONFIG_FILES libmpu/Makefile" ;;
     "misc/Makefile") CONFIG_FILES="$CONFIG_FILES misc/Makefile" ;;
+    "misc/bam/Makefile") CONFIG_FILES="$CONFIG_FILES misc/bam/Makefile" ;;
+    "misc/general/Makefile") CONFIG_FILES="$CONFIG_FILES misc/general/Makefile" ;;
+    "misc/vcf/Makefile") CONFIG_FILES="$CONFIG_FILES misc/vcf/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -672,14 +675,14 @@ S["mkdir_p"]="/bin/mkdir -p"
 S["MKDIR_P"]="/bin/mkdir -p"
 S["INSTALL_STRIP_PROGRAM"]="$(install_sh) -c -s"
 S["STRIP"]=""
-S["install_sh"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/install-sh"
-S["MAKEINFO"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run makeinfo"
-S["AUTOHEADER"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoheader"
-S["AUTOMAKE"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run automake-1.11"
-S["AUTOCONF"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run autoconf"
-S["ACLOCAL"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_20151026_deadline_version/FASTQuick/missing --run aclocal-1.11"
+S["install_sh"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/install-sh"
+S["MAKEINFO"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run makeinfo"
+S["AUTOHEADER"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoheader"
+S["AUTOMAKE"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run automake-1.11"
+S["AUTOCONF"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run autoconf"
+S["ACLOCAL"]="${SHELL} /net/wonderland/home/fanzhang/WorkingSpace/data/5.FastA/src_present/missing --run aclocal-1.11"
 S["VERSION"]="0.0.1"
-S["PACKAGE"]="fastquick"
+S["PACKAGE"]="FASTQuick"
 S["CYGPATH_W"]="echo"
 S["am__isrc"]=""
 S["INSTALL_DATA"]="${INSTALL} -m 644"
@@ -770,7 +773,7 @@ D["PACKAGE_VERSION"]=" \"0.0.1\""
 D["PACKAGE_STRING"]=" \"FASTQuick 0.0.1\""
 D["PACKAGE_BUGREPORT"]=" \"fanzhang@umich.edu\""
 D["PACKAGE_URL"]=" \"\""
-D["PACKAGE"]=" \"fastquick\""
+D["PACKAGE"]=" \"FASTQuick\""
 D["VERSION"]=" \"0.0.1\""
 D["HAVE_LIBCRYPTO"]=" 1"
 D["HAVE_LIBM"]=" 1"

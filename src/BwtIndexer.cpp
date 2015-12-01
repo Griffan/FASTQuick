@@ -1,19 +1,17 @@
-
-
-#include "BwtIndexer.h"
-#include "RefBuilder.h"
-#include "../libbwa/bwt.h"
-#include "stdint.h"
-#include "../libbwa/utils.h"
-#include "stdio.h"
-#include "../libbwa/bntseq.h"
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
-#include "../libbwa/kseq.h"
 #include <iostream>
 #include <sstream>
-#include "../libmpu/Error.h"
+#include "BwtIndexer.h"
+#include "RefBuilder.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "../libbwa/bwt.h"
+#include "../libbwa/utils.h"
+#include "../libbwa/bntseq.h"
+#include "../libbwa/kseq.h"
+#include "../misc/general/Error.h"
 using namespace std;
 extern void notice(const char*,...);
 extern void warning(const char*,...);

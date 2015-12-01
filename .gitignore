@@ -27,3 +27,4 @@ CMakeLists.txt
 tabix
 FASTQuick*
 config.log
+Makefile

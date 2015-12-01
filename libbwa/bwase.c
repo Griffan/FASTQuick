@@ -59,7 +59,7 @@ void bwa_aln2seq_core(int n_aln, const bwt_aln1_t *aln, bwa_seq_t *s, int set_ma
 		 * simply output all hits, but the following samples "rest"
 		 * number of random hits. */
 		rest = n_occ > n_multi + 1 ? n_multi + 1 : n_occ; // find one additional for ->sa
-		s->multi = calloc(rest, sizeof(bwt_multi1_t));
+		s->multi = (bwt_multi1_t *)calloc(rest, sizeof(bwt_multi1_t));
 		for (k = 0; k < n_aln; ++k) {
 			const bwt_aln1_t *q = aln + k;
 			if (q->l - q->k + 1 <= rest) {
@@ -305,12 +305,12 @@ void bwa_correct_trimmed(bwa_seq_t *s)
 		else {
 			if (s->cigar == 0) {
 				s->n_cigar = 2;
-				s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
+				s->cigar = (bwa_cigar_t *)calloc(s->n_cigar, sizeof(bwa_cigar_t));
 				s->cigar[0] = __cigar_create(0, s->len);
 			}
 			else {
 				++s->n_cigar;
-				s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
+				s->cigar = (bwa_cigar_t *)realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
 			}
 			s->cigar[s->n_cigar - 1] = __cigar_create(3, (s->full_len - s->len));
 		}
@@ -322,12 +322,12 @@ void bwa_correct_trimmed(bwa_seq_t *s)
 		else {
 			if (s->cigar == 0) {
 				s->n_cigar = 2;
-				s->cigar = calloc(s->n_cigar, sizeof(bwa_cigar_t));
+				s->cigar = (bwa_cigar_t *)calloc(s->n_cigar, sizeof(bwa_cigar_t));
 				s->cigar[1] = __cigar_create(0, s->len);
 			}
 			else {
 				++s->n_cigar;
-				s->cigar = realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
+				s->cigar = (bwa_cigar_t *)realloc(s->cigar, s->n_cigar * sizeof(bwa_cigar_t));
 				memmove(s->cigar + 1, s->cigar, (s->n_cigar - 1) * sizeof(bwa_cigar_t));
 			}
 			s->cigar[0] = __cigar_create(3, (s->full_len - s->len));
@@ -398,8 +398,8 @@ ubyte_t * bwa_refine_gapped(const bntseq_t *bns, const int n_seqs, bwa_seq_t *se
 		bwa_seq_t *s = seqs + i;
 		if (s->type != BWA_TYPE_NO_MATCH) {
 			int nm;
-			char* tmp_qual = strdup(s->qual);
-			if (s->strand)  seq_reverse(s->len, tmp_qual, 0);
+			char* tmp_qual = strdup((char*)(s->qual));
+			if (s->strand)  seq_reverse(s->len, (ubyte_t *)tmp_qual, 0);
 			s->md = bwa_cal_md1(s->n_cigar, s->cigar, s->len, s->pos, s->strand ? s->rseq : s->seq, (ubyte_t*)tmp_qual,// &(s->count),
 				bns->l_pac, ntbns ? ntpac : pacseq, str, &nm);
 			s->nm = nm;
@@ -635,7 +635,7 @@ int bwa_set_rg(const char *s)
 	if (p == 0) return -1;
 	p += 4;
 	for (q = p; *q && *q != '\t' && *q != '\n'; ++q);
-	bwa_rg_id = calloc(q - p + 1, 1);
+	bwa_rg_id = (char*)calloc(q - p + 1, 1);
 	for (q = p, r = bwa_rg_id; *q && *q != '\t' && *q != '\n'; ++q)
 		*r++ = *q;
 	return 0;
