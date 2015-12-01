@@ -6,7 +6,6 @@ FASTQuick_SOURCES=FASTQuick.cpp BwtIndexer.cpp BwtMapper.cpp RefBuilder.cpp Stat
 
 FASTQuick_LDFLAGS= 
 
-FASTQuick_LDADD= ../libmpu/libmpu.a ../libmpu/libtabix.a ../libbwa/libbwa.a ../misc/libmisc.a ../libStatGen/libStatGen.a
+FASTQuick_LDADD= ../libbwa/libbwa.a ../misc/libmisc.a ../misc/general/libgeneral.a ../libmpu/libmpu.a ../misc/bam/libbam.a  ../misc/libmisc.a ../libmpu/libtabix.a ../misc/general/libgeneral.a ../misc/vcf/libvcf_statgen.a ../misc/general/libgeneral.a 
 
-FASTQuick_CXXFLAGS= -O4   -Wall -std=c++0x  -DHAVE_PTHREAD -fpermissive -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -mmmx -msse -msse2 -msse3 -I../libStatGen/include/ -L../libStatGen/ -L../libmpu/ -I../misc/  -lStatGen -lmpu 
-
+FASTQuick_CXXFLAGS=  -Wall -std=c++0x  -DHAVE_PTHREAD  -mmmx -msse -msse2 -msse3  -I../misc/vcf/ -I../misc/general/ -I../misc/ -lz -lpthread -pipe -Werror  -Wno-strict-overflow -I../include -I.   -D__ZLIB_AVAILABLE__ -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS

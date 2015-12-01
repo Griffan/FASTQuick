@@ -29,15 +29,16 @@
 #include "Utility.h"
 #include "cmath"
 #include "fstream"
-#include "../libStatGen/vcf/VcfFileReader.h"
-#include "../libStatGen/vcf/VcfHeader.h"
-#include "../libStatGen/vcf/VcfRecord.h"
+#include "../misc/vcf/VcfFileReader.h"
+#include "../misc/vcf/VcfHeader.h"
+#include "../misc/vcf/VcfRecord.h"
+#include "../misc/bam/SamRecord.h"
+#include "../misc/bam/BamInterface.h"
+#include "../misc/bam/SamFile.h"
+#include "../misc/bam/SamValidation.h"
 #include "../libbwa/bwtaln.h"
 #include "../libbwa/bntseq.h"
-#include "../libStatGen/bam/SamRecord.h"
-#include "../libStatGen/bam/BamInterface.h"
-#include "../libStatGen/bam/SamFile.h"
-#include "../libStatGen/bam/SamValidation.h"
+
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 

@@ -1,6 +1,4 @@
 #include "bwape.h"
-#include "../libmpu/Error.h"
-
 #include "ksort.h"
 KSORT_INIT_GENERIC(uint64_t)
 
@@ -66,7 +64,7 @@ int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double ap_prio
 		if (p[1]->len > max_len) max_len = p[1]->len;
 	}
 	if (tot < 20) {
-		warning(" fail to infer insert size: too few good pairs\n");
+		fprintf(stderr,"\n\aWARNING - \n fail to infer insert size: too few good pairs\n");
 		free(isizes);
 		return -1;
 	}
@@ -103,7 +101,7 @@ int infer_isize(int n_seqs, bwa_seq_t *seqs[2], isize_info_t *ii, double ap_prio
 	//fprintf(stderr, "[infer_isize] (25, 50, 75) percentile: (%d, %d, %d)\n", p25, p50, p75);
 	if (isnan(ii->std) || p75 > 100000) {
 		ii->low = ii->high = ii->high_bayesian = 0; ii->avg = ii->std = -1.0;
-		warning("fail to infer insert size: weird pairing\n");
+		fprintf(stderr,"\n\aWARNING - \n fail to infer insert size: weird pairing\n");
 		return -1;
 	}
 	for (y = 1.0; y < 10.0; y += 0.01)
@@ -617,9 +615,9 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 			free(cigar[0]); free(cigar[1]);
 		}
 	}
-	notice("%lld out of %lld Q%d singletons are mated.",
+	fprintf(stdout,"NOTICE - %lld out of %lld Q%d singletons are mated.",
 		(long long)n_mapped[1], (long long)n_tot[1], SW_MIN_MAPQ);
-	notice("%lld out of %lld Q%d discordant pairs are fixed.",
+	fprintf(stdout,"NOTICE - %lld out of %lld Q%d discordant pairs are fixed.",
 		(long long)n_mapped[0], (long long)n_tot[0], SW_MIN_MAPQ);
 	return pacseq;
 }

@@ -4,11 +4,9 @@
 ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
 
 ## Paths to include
-AM_CPPFLAGS = -Wall -fpic -O4 -I../libStatGen/include
-#AM_CPPFLAGS = -Wall -fpic -g -O0
+AM_CPPFLAGS = -Wall -fpic  -I../misc/general/  -I../misc/
 
-#noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h bgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h mpuLikelihoods.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h MathVector.h MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h mpuSetLikelihoods.h mpuSet.h
-noinst_HEADERS = bam_endian.h boolParser.h kseq.h pException.h tabix.h ksort.h pFile.h bgix.h kstring.h PhredHelper.h mbgzf.h fVcf.h khash.h Parameters.h boolExprParser.h knetfile.h wFile.h mpuFile.h Error.h Constant.h BaseAsciiMap.h fPed.h MathGold.h MathGenMin.h MathConstant.h  MathMatrix.h Random.h Sort.h mpuVerify.h mpuPileBases.h mpuMixupLikelihoods.h
+noinst_HEADERS = bam_endian.h  boolExprParser.h  Constant.h  fVcf.h   kseq.h   kstring.h     MathGold.h  mpuFile.h              mpuPileBases.h  mpuVerify.h   pFile.h        Random.h  wFile.h bgix.h        boolParser.h      fPed.h      khash.h  ksort.h  MathGenMin.h  mbgzf.h     mpuMixupLikelihoods.h  mpuTool.h       Parameters.h  PhredHelper.h  tabix.h
 
 bin_PROGRAMS =  tabix
 
@@ -23,12 +21,12 @@ libmpu_a_LIBADD = libtabix.a
 
 #bgzip_SOURCES = bgzip.c bedidx.c bgzf.c knetfile.c kstring.c
 
-tabix_SOURCES = tabix.c bedidx.c mbgzf.c knetfile.c kstring.c index.c
+tabix_SOURCES = tabix.c bedidx.c mbgzf.c kstring.c index.c
 
-libtabix_a_SOURCES = bedidx.c mbgzf.c knetfile.c kstring.c index.c
+libtabix_a_SOURCES = bedidx.c mbgzf.c  kstring.c index.c
 
-libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp Error.cpp PhredHelper.cpp BaseAsciiMap.cpp MathGold.cpp MathGenMin.cpp  MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
-
+#libmpu_a_SOURCES = mpuTool.cpp Parameters.cpp  PhredHelper.cpp  MathGold.cpp MathGenMin.cpp  MathMatrix.cpp Random.cpp Sort.cpp fVcf.cpp boolParser.cpp mpuVerify.cpp mpuPileBases.cpp mpuMixupLikelihoods.cpp
+libmpu_a_SOURCES = boolParser.cpp  fVcf.cpp  MathGenMin.cpp  MathGold.cpp  mpuMixupLikelihoods.cpp  mpuPileBases.cpp  mpuTool.cpp  mpuVerify.cpp  Parameters.cpp  PhredHelper.cpp  Random.cpp
 ## Define an independent executable script for inclusion in the distribution
 ## archive. It will not be installed on an end user's system, however.
 #dist_noinst_SCRIPTS = autogen.sh
