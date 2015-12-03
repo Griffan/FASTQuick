@@ -123,6 +123,19 @@ private:
 private:
 	int addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt);
 	int addSingleAlignment( SamRecord& p,const gap_opt_t* opt);
+	void StatVecDistUpdate(const std::string& qual, unsigned int left_to_right_coord,
+			unsigned int tmp_index, const std::string& RefSeq, const std::string& seq,
+			unsigned int tmpCycle);
+	void AddBaseInfoToNewCoord(const std::string& Chrom, uint32_t i,
+			const std::string& qual, unsigned int left_to_right_coord,
+			const std::string& RefSeq, const std::string& seq, unsigned int tmpCycle);
+	void UpdateInfoVecAtMarker(unsigned int tmpCycleVcfTable,
+			unsigned int tmpCycle, unsigned int tmp_left_to_right_coord,
+			unsigned int left_to_right_coord, unsigned int realCoord, int cl,
+			char sign[2], bool strand, const std::string& Chrom,
+			unsigned int tmp_index, const std::string& seq, const std::string& qual,
+			int mapQ);
+
 public:
 	StatCollector();
 	StatCollector(const std::string & OutFile);

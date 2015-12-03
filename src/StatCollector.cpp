@@ -93,7 +93,25 @@ StatCollector::StatCollector(const string & OutFile)
 	InsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 	MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
-int flag2 = 0;
+
+void StatCollector::StatVecDistUpdate(const string& qual,
+		unsigned int left_to_right_coord, unsigned int tmp_index,
+		const string& RefSeq, const string& seq, unsigned int tmpCycle) {
+	EmpRepDist[qual[left_to_right_coord]]++;
+	if (qual[left_to_right_coord] >= 20) {
+		Q20DepthVec[tmp_index]++;
+		if (qual[left_to_right_coord] >= 30) {
+			Q30DepthVec[tmp_index]++;
+		}
+	}
+	if (RefSeq[left_to_right_coord] != seq[left_to_right_coord]) {
+		misEmpRepDist[qual[left_to_right_coord]]++;
+		misEmpCycleDist[tmpCycle]++;
+	}
+	/************EmpCycle**************************************************************/
+	EmpCycleDist[tmpCycle]++;
+}
+
 int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt) //
 {
 	int seqid(0), j(0);
@@ -117,10 +135,6 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 		//}
 		return false; //this alignment bridges two adjacent reference sequences
 	}
-	//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
-	//	{
-	//		return false;
-	//	}
 
 	string seq, qual, newSeq, newQual;
 
@@ -198,21 +212,25 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 
 					if (VcfTable.find(Chrom) != VcfTable.end())
 					{
-						tmpCycleVcfTable = tmpCycle;
-						tmp_left_to_right_coord = left_to_right_coord;
-						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
-						{
-							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-							{
-								tmp_index = VcfTable[Chrom][i];
-								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-								MaqVec[tmp_index].push_back(p->mapQ + 33);
-								StrandVec[tmp_index].push_back(p->strand);
-							}
-						}
+//						tmpCycleVcfTable = tmpCycle;
+//						tmp_left_to_right_coord = left_to_right_coord;
+//						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+//							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
+//						{
+//							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+//							{
+//								tmp_index = VcfTable[Chrom][i];
+//								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+//								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+//								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+//								MaqVec[tmp_index].push_back(p->mapQ + 33);
+//								StrandVec[tmp_index].push_back(p->strand);
+//							}
+//						}
+						UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
+								tmp_left_to_right_coord, left_to_right_coord,
+								realCoord, cl, sign, p->strand, Chrom, tmp_index, seq,
+								qual, p->mapQ);
 					}
 
 					/*****************************************************************************/
@@ -235,57 +253,15 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 							if (dbSNPTable[Chrom].find(i)
 								== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord] >= 20)
-								{
-									Q20DepthVec[tmp_index]++;
-									if (qual[left_to_right_coord] >= 30)
-									{
-										Q30DepthVec[tmp_index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
+								StatVecDistUpdate(qual, left_to_right_coord,
+										tmp_index, RefSeq, seq, tmpCycle);
 							}
 						}
 						else //coord not exists
 						{
 							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-							DepthVec.push_back(0);
-							Q30DepthVec.push_back(0);
-							Q20DepthVec.push_back(0);
-
-							DepthVec[index]++;
-							PositionTable[Chrom][i] = index;
-
-							if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
-							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord]  >= 20)
-								{
-									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord]  >= 30)
-									{
-										Q30DepthVec[index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
-							}
-							index++;
+							AddBaseInfoToNewCoord(Chrom, i, qual,
+									left_to_right_coord, RefSeq, seq, tmpCycle);
 						}
 					}
 					else // chrom not exists
@@ -298,34 +274,8 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 							if (i > RefRealEnd)
 								break;
 							//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-							DepthVec.push_back(0);
-							Q30DepthVec.push_back(0);
-							Q20DepthVec.push_back(0);
-							DepthVec[index]++;
-							PositionTable[Chrom][i] = index;
-
-							if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
-							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord]  >= 20)
-								{
-									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord]  >= 30)
-									{
-										Q30DepthVec[index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
-							}
-							index++;
+						AddBaseInfoToNewCoord(Chrom, i, qual,
+								left_to_right_coord, RefSeq, seq, tmpCycle);
 						}
 					}
 					realCoord += cl;
@@ -386,19 +336,24 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 
 			if (VcfTable.find(Chrom) != VcfTable.end())
 			{
-				tmpCycleVcfTable = tmpCycle;
-				tmp_left_to_right_coord = left_to_right_coord;
-				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
-					++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
-					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-					{
-					tmp_index = VcfTable[Chrom][i];
-					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-					MaqVec[tmp_index].push_back(p->mapQ + 33);
-					StrandVec[tmp_index].push_back(p->strand);
-					}
+//				tmpCycleVcfTable = tmpCycle;
+//				tmp_left_to_right_coord = left_to_right_coord;
+//				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
+//					++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
+//					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+//					{
+//					tmp_index = VcfTable[Chrom][i];
+//					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+//					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+//					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+//					MaqVec[tmp_index].push_back(p->mapQ + 33);
+//					StrandVec[tmp_index].push_back(p->strand);
+//					}
+				UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
+						tmp_left_to_right_coord, left_to_right_coord,
+						realCoord, p->len, sign, p->strand, Chrom, tmp_index, seq,
+						qual, p->mapQ);
+
 			}
 			/************************************************************************************/
 			if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
@@ -418,55 +373,15 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 					DepthVec[tmp_index]++;
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[tmp_index]++;
-							if (qual[left_to_right_coord]  >= 30)
-							{
-								Q30DepthVec[tmp_index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord]
-							!= seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
+						StatVecDistUpdate(qual, left_to_right_coord, tmp_index,
+								RefSeq, seq, tmpCycle);
 					}
 				}
 				else //coord not exists
 				{
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-					DepthVec.push_back(0);
-					Q30DepthVec.push_back(0);
-					Q20DepthVec.push_back(0);
-					DepthVec[index]++;
-					PositionTable[Chrom][i] = index;
-
-					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
-					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord] >= 30)
-							{
-								Q30DepthVec[index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord]
-							!= seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
-					}
-					index++;
+					AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
+							RefSeq, seq, tmpCycle);
 				}
 			}
 			else // chrom not exists
@@ -479,32 +394,8 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 					if (i > RefRealEnd)
 						break;
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-					DepthVec.push_back(0);
-					Q30DepthVec.push_back(0);
-					Q20DepthVec.push_back(0);
-					DepthVec[index]++;
-					PositionTable[Chrom][i] = index;
-
-					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
-					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord] >= 30)
-							{
-								Q30DepthVec[index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
-					}
-					index++;
+				AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
+						RefSeq, seq, tmpCycle);
 				}
 			}
 		}
@@ -512,36 +403,53 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 		return true;
 }
 
+void StatCollector::AddBaseInfoToNewCoord(const string& Chrom, uint32_t i,
+		const string& qual, unsigned int left_to_right_coord,
+		const string& RefSeq, const string& seq, unsigned int tmpCycle) {
+	//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+	DepthVec.push_back(0);
+	Q30DepthVec.push_back(0);
+	Q20DepthVec.push_back(0);
+	DepthVec[index]++;
+	PositionTable[Chrom][i] = index;
+	if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
+			{
+		StatVecDistUpdate(qual, left_to_right_coord, index, RefSeq, seq,
+				tmpCycle);
+	}
+	index++;
+}
+
+void StatCollector::UpdateInfoVecAtMarker(unsigned int tmpCycleVcfTable,
+		unsigned int tmpCycle, unsigned int tmp_left_to_right_coord,
+		unsigned int left_to_right_coord, unsigned int realCoord, int cl,
+		char sign[2], bool strand, const string& Chrom, unsigned int tmp_index,
+		const string& seq, const string& qual, int mapQ) {
+	tmpCycleVcfTable = tmpCycle;
+	tmp_left_to_right_coord = left_to_right_coord;
+	for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
+			++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord) {
+		if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
+				{
+			tmp_index = VcfTable[Chrom][i];
+			SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+			QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+			CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+			MaqVec[tmp_index].push_back(mapQ + 33);
+			StrandVec[tmp_index].push_back(strand);
+		}
+	}
+}
+
 int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 {
-	//int seqid(0), j(0);
 
 	if (p.getFlag() & SAM_FSU)
 	{
 		return false;
 	}
 
-	//	if (/*p->type == BWA_TYPE_NO_MATCH || */(p->count) > 60)
-	//	{
-	//		return false;
-	//	}
-	//
 	string seq(p.getSequence()), qual(p.getQuality()), newSeq, newQual;
-
-	//	if (p->strand == 0)
-	//		for (j = 0; j != p->full_len; ++j)
-	//		{
-	//			seq += "ACGTN"[(int) (p)->seq[j]];
-	//			qual += (char) p->qual[j];
-	//		}
-	//	else
-	//		for (j = 0; j != p->full_len; ++j)
-	//		{
-	//			seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
-	//			qual += (char) p->qual[p->full_len - 1 - j];
-	//		}
-	//if (p->strand) seq_reverse(p->len, p->qual, 0);
-	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
 
 	//ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
 	string RefSeq(seq), MD;
@@ -564,7 +472,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 		size_t atPos = PosName.find("@");
 		string Chrom = PosName.substr(0, colonPos);
 		unsigned int refCoord = atoi(PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
-	
+
 		unsigned int realCoord(0);
 		unsigned int RefRealStart(0), RefRealEnd(0);
 
@@ -629,7 +537,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 			else
 				return 0;
 		}
-		
+
 
 		unsigned int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0),
 			tmp_left_to_right_coord(0);
@@ -669,21 +577,10 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 
 					if (VcfTable.find(Chrom) != VcfTable.end())
 					{
-						tmpCycleVcfTable = tmpCycle;
-						tmp_left_to_right_coord = left_to_right_coord;
-						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-							++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
-						{
-							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
-							{
-								tmp_index = VcfTable[Chrom][i];
-								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-								MaqVec[tmp_index].push_back(mapQ + 33);
-								StrandVec[tmp_index].push_back(strand);
-							}
-						}
+					UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
+							tmp_left_to_right_coord, left_to_right_coord,
+							realCoord, cl, sign, strand, Chrom, tmp_index, seq,
+							qual, mapQ);
 					}
 					/*****************************************************************************/
 					if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
@@ -702,55 +599,14 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 							if (dbSNPTable[Chrom].find(i)
 								== dbSNPTable[Chrom].end())	//not in dbsnp table
 							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord]  >= 20)
-								{
-									Q20DepthVec[tmp_index]++;
-									if (qual[left_to_right_coord]  >= 30)
-									{
-										Q30DepthVec[tmp_index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
+								StatVecDistUpdate(qual, left_to_right_coord,
+										tmp_index, RefSeq, seq, tmpCycle);
 							}
 						}
 						else //coord not exists
 						{
-							DepthVec.push_back(0);
-							Q30DepthVec.push_back(0);
-							Q20DepthVec.push_back(0);
-							DepthVec[index]++;
-							PositionTable[Chrom][i] = index;
-
-							if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
-							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord]  >= 20)
-								{
-									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord]  >= 30)
-									{
-										Q30DepthVec[index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
-							}
-							index++;
+							AddBaseInfoToNewCoord(Chrom, i, qual,
+									left_to_right_coord, RefSeq, seq, tmpCycle);
 						}
 					}
 					else // chrom not exists
@@ -762,34 +618,8 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 								continue;
 							if (i > RefRealEnd)
 								break;
-							DepthVec.push_back(0);
-							Q30DepthVec.push_back(0);
-							Q20DepthVec.push_back(0);
-							DepthVec[index]++;
-							PositionTable[Chrom][i] = index;
-
-							if (dbSNPTable[Chrom].find(i)
-								== dbSNPTable[Chrom].end()) //not in dbsnp table
-							{
-								EmpRepDist[qual[left_to_right_coord]]++;
-								if (qual[left_to_right_coord]  >= 20)
-								{
-									Q20DepthVec[index]++;
-									if (qual[left_to_right_coord]  >= 30)
-									{
-										Q30DepthVec[index]++;
-									}
-								}
-								if (RefSeq[left_to_right_coord]
-									!= seq[left_to_right_coord])
-								{
-									misEmpRepDist[qual[left_to_right_coord]]++;
-									misEmpCycleDist[tmpCycle]++;
-								}
-								/************EmpCycle**************************************************************/
-								EmpCycleDist[tmpCycle]++;
-							}
-							index++;
+						AddBaseInfoToNewCoord(Chrom, i, qual,
+								left_to_right_coord, RefSeq, seq, tmpCycle);
 						}
 					}
 					realCoord += cl;
@@ -817,20 +647,24 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 
 			if (VcfTable.find(Chrom) != VcfTable.end())
 			{
-				tmpCycleVcfTable = tmpCycle;
-				tmp_left_to_right_coord = left_to_right_coord;
-				for (uint32_t i = realCoord;
-					i != realCoord + p.getReadLength() - 1 + 1;
-					++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
-					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-					{
-					tmp_index = VcfTable[Chrom][i];
-					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-					MaqVec[tmp_index].push_back(mapQ + 33);
-					StrandVec[tmp_index].push_back(strand);
-					}
+//				tmpCycleVcfTable = tmpCycle;
+//				tmp_left_to_right_coord = left_to_right_coord;
+//				for (uint32_t i = realCoord;
+//					i != realCoord + p.getReadLength() - 1 + 1;
+//					++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
+//					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
+//					{
+//					tmp_index = VcfTable[Chrom][i];
+//					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+//					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+//					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+//					MaqVec[tmp_index].push_back(mapQ + 33);
+//					StrandVec[tmp_index].push_back(strand);
+//					}
+				UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
+											tmp_left_to_right_coord, left_to_right_coord,
+											realCoord, p.getReadLength(), sign, strand, Chrom, tmp_index, seq,
+											qual, mapQ);
 			}
 			/************************************************************************************/
 			if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
@@ -851,55 +685,15 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 					DepthVec[tmp_index]++;
 					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
 					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[tmp_index]++;
-							if (qual[left_to_right_coord]  >= 30)
-							{
-								Q30DepthVec[tmp_index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord]
-							!= seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
+						StatVecDistUpdate(qual, left_to_right_coord, tmp_index,
+								RefSeq, seq, tmpCycle);
 					}
 				}
 				else //coord not exists
 				{
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-					DepthVec.push_back(0);
-					Q30DepthVec.push_back(0);
-					Q20DepthVec.push_back(0);
-					DepthVec[index]++;
-					PositionTable[Chrom][i] = index;
-
-					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
-					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord]  >= 30)
-							{
-								Q30DepthVec[index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord]
-							!= seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
-					}
-					index++;
+					AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
+							RefSeq, seq, tmpCycle);
 				}
 			}
 			else // chrom not exists
@@ -913,32 +707,8 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 					if (i > RefRealEnd)
 						break;
 					//cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-					DepthVec.push_back(0);
-					Q30DepthVec.push_back(0);
-					Q20DepthVec.push_back(0);
-					DepthVec[index]++;
-					PositionTable[Chrom][i] = index;
-
-					if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
-					{
-						EmpRepDist[qual[left_to_right_coord]]++;
-						if (qual[left_to_right_coord]  >= 20)
-						{
-							Q20DepthVec[index]++;
-							if (qual[left_to_right_coord]  >= 30)
-							{
-								Q30DepthVec[index]++;
-							}
-						}
-						if (RefSeq[left_to_right_coord] != seq[left_to_right_coord])
-						{
-							misEmpRepDist[qual[left_to_right_coord]]++;
-							misEmpCycleDist[tmpCycle]++;
-						}
-						/************EmpCycle**************************************************************/
-						EmpCycleDist[tmpCycle]++;
-					}
-					index++;
+				AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
+						RefSeq, seq, tmpCycle);
 				}
 			}
 		}
@@ -971,9 +741,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	//cerr<<"Duplicate function entered"<<endl;
 	if (type == 1) //q is aligned only
 	{
-		j = pos_end(q) - q->pos; //length of read
+		j = pos_end(q) - q->pos; //length of read including cigar for bns tracking
 		bns_coor_pac2real(bns, q->pos, j, &seqid_q);
-		j = q->len;
+		j = q->len;//original read len
 		if(q->strand)//if q is on reverse strand
 			MaxInsert2 = q->pos + j - bns->anns[seqid_q].offset;
 		else
@@ -1007,9 +777,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	}
 	else if (type == 3) //p is aligned only
 	{
-		j = pos_end(p) - p->pos; //length of read
+		j = pos_end(p) - p->pos; //length of read including cigar for bns tracking
 		bns_coor_pac2real(bns, p->pos, j, &seqid_p);
-		j= p->len;
+		j= p->len;//original read length
 		if(p->strand)//on reverse strand
 			MaxInsert = p->pos + j - bns->anns[seqid_p].offset;
 		else
@@ -1403,7 +1173,7 @@ int StatCollector::IsDuplicated(SamFileHeader& SFH, SamRecord& p, SamRecord& q,
 }
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
 int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
-	const gap_opt_t* opt, ofstream & fout, int &total_add) 
+	const gap_opt_t* opt, ofstream & fout, int &total_add)
 {
 	int seqid(0), seqid2(0), j(0), j2(0);
 	if (p == 0 || p->type == BWA_TYPE_NO_MATCH)
@@ -2365,8 +2135,8 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	fout << "Estimated AvgDepth for Q30 bases : " << Q30AvgDepth() << endl;
 	/*auto MIS500 =
 		[&]()->double
-	{	long long tmp(0), total(0); 
-		for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
+	{	long long tmp(0), total(0);
+		for (size_t i = 500; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i];
 		for (size_t i = 500; i != InsertSizeDist.size(); ++i)
 		{
 			tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
@@ -2376,11 +2146,11 @@ int StatCollector::SummaryOutput(const string & outputPath,
 	fout << "Median Insert Size(>=500bp) : " << MIS500() << endl;
 	/*auto MIS300 =
 		[&]()->double
-	{	long long tmp(0), total(0); 
-		for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i]; 
+	{	long long tmp(0), total(0);
+		for (size_t i = 300; i != InsertSizeDist.size(); ++i) total += InsertSizeDist[i];
 		for (size_t i = 300; i != InsertSizeDist.size(); ++i)
 		{
-		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i; 
+		tmp += InsertSizeDist[i]; if (tmp > total / 2) return i;
 		}
 		return 0;
 	};*/
