@@ -253,7 +253,7 @@ int runIndex(int argc, char ** argv)
 
 	double t_real;
 	t_real = realtime();
-	int /*c,*/ opte = -1;
+	//int /*c,*/ opte = -1;
 	gap_opt_t *opt;
 	opt = gap_init_opt();
 
@@ -270,7 +270,7 @@ int runIndex(int argc, char ** argv)
 		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Input Selected Sites VCF file,e.g. hapmap vcf[Required]")
 		LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
-		LONG_STRING_PARAM("out_idx_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
+		LONG_STRING_PARAM("out_index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
@@ -285,7 +285,7 @@ int runIndex(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--out_idx_prefix is required");
+		error("--out_index_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	if (RefPath == "Empty")
@@ -369,7 +369,7 @@ int runAlign(int argc, char ** argv)
 		LONG_STRING_PARAM("bam_in", &BamIn, "[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
 		EXCLUSIVE_PARAM("sam_out", &NonBamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
 		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output files[Required]")
-		LONG_STRING_PARAM("in_idx_prefix", &IndexPrefix, "[String] Input prefix of all the index files[Required]")
+		LONG_STRING_PARAM("in_index_prefix", &IndexPrefix, "[String] Input prefix of all the index files(parameter of out_index_prefix in index stage)[Required]")
 
 
 		//LONG_STRING_PARAM("out",&outf,"Output file prefix")
@@ -432,7 +432,7 @@ int runAlign(int argc, char ** argv)
 	}
 	if (IndexPrefix == "Empty")
 	{
-		error("--in_idx_prefix is required");
+		error("--in_index_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	//if (VcfPath == "Empty")
@@ -580,7 +580,7 @@ int runPop(int argc, char ** argv)
 		error("--SVD_prefix is required, if you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
 		exit(EXIT_FAILURE);
 	}
-	if (PCPath == "Empty")
+	/*if (PCPath == "Empty")
 	{
 		error("--PC is required");
 		exit(EXIT_FAILURE);
@@ -589,7 +589,7 @@ int runPop(int argc, char ** argv)
 	{
 		error("--mu is required");
 		exit(EXIT_FAILURE);
-	}
+	}*/
 	if (pileup == "Empty"&&glPath == "Empty")
 	{
 		error("either --pileup or --gl is required");
