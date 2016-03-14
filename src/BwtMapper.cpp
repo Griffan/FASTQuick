@@ -1100,11 +1100,11 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		// print mate coordinate
 		if (mate && mate->type != BWA_TYPE_NO_MATCH)
 		{
-			int m_seqid, m_is_N;
+			int m_seqid/*, m_is_N*/;
 			long long isize;
 			am = mate->seQ < p->seQ ? mate->seQ : p->seQ; // smaller single-end mapping quality
 			// redundant calculation here, but should not matter too much
-			m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
+			//m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
 			//printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
 			// ss << (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name;
 			(seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH, bns->anns[m_seqid].name);

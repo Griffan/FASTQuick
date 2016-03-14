@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I  m4 ${ACLOCAL_FLAGS}
 
 ## Paths to include
-AM_CPPFLAGS = -Wall -fpic  -I../misc/general/  -I../misc/
+AM_CXXFLAGS = -O3 -Wall -fpic  -I../misc/general/  -I../misc/
 
 noinst_HEADERS = bam_endian.h  boolExprParser.h  Constant.h  fVcf.h   kseq.h   kstring.h     MathGold.h  mpuFile.h              mpuPileBases.h  mpuVerify.h   pFile.h        Random.h  wFile.h bgix.h        boolParser.h      fPed.h      khash.h  ksort.h  MathGenMin.h  mbgzf.h     mpuMixupLikelihoods.h  mpuTool.h       Parameters.h  PhredHelper.h  tabix.h
 

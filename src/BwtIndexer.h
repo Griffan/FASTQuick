@@ -46,7 +46,7 @@
 //#define BLOOM_FPP 0.1
 #define PROCESS_RATIO 0.5
 #define READ_STEP_SIZE 1
-static bool debug_flag=false;
+//static bool debug_flag=false;
 struct _RollParam
 {
 	int kmer_size;
