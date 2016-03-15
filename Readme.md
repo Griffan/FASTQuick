@@ -2,7 +2,8 @@
    FASTQuick, a Fastq file based Population identification and Contamination detection tool.
    
    
-   **For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]**
+###Tutorial
+   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]**
    
    
 ###CONTENTS
