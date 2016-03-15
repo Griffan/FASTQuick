@@ -568,8 +568,8 @@ int runPop(int argc, char ** argv)
 		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]")
 		LONG_STRING_PARAM("gl", &glPath, "[String] Input genotype likelihood file generated from align step[Required if no pileup file]")
 		LONG_STRING_PARAM("pileup", &pileup, "[String] Input pileup file generated from align[Required if no gl file]")
-		LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed.post.bed.allele.bed file in resource directory[Required]")
-		LONG_STRING_PARAM("out", &output, "[String] Specify output file[Required]")
+		LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed file in resource directory[Required]")
+		//LONG_STRING_PARAM("out", &output, "[String] Specify output file[Required]")
 	END_LONG_PARAMS();
 
 	pl.Add(new longParams("Available Options", longParameters));
@@ -645,7 +645,7 @@ int runCon(int argc, char ** argv)
 	}
 	if (MPUpath == "Empty")
 	{
-		error("--MPUpath is required");
+		error("--pileup is required");
 		exit(EXIT_FAILURE);
 	}
 	if (BEDpath == "Empty")
@@ -676,14 +676,16 @@ int runCon(int argc, char ** argv)
 static int usage()
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Program: FastPopCon (Fast Population-identification and Contamination analysis tool for NGS data)\n");
+	fprintf(stderr, "Program: FASTQuick (Fast Population-identification and Contamination analysis tool for NGS data)\n");
 	fprintf(stderr, "Version: %s\n", PACKAGE_VERSION);
 	fprintf(stderr, "Contact: Fan Zhang <fanzhang@umich.edu>\n\n");
-	fprintf(stderr, "Usage:   FastPopCon <command> [options]\n\n");
-	fprintf(stderr, "Command: index         index sequences in the FASTA format\n");
-	fprintf(stderr, "         align         summarize alignment based basic statisic\n");
+	fprintf(stderr, "Usage:   FASTQuick <command> [options]\n\n");
+	fprintf(stderr, "Command: index       extract flanking region sequences around chosen SNP's and build index\n");
+	fprintf(stderr, "         align       summarize alignment based basic statisic\n");
 	fprintf(stderr, "         pop         generate sample population identification\n");
 	fprintf(stderr, "         con         estimate sample contamination level\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Use FASTQuick <command> --help to see detailed help information.\n");
 	fprintf(stderr, "\n");
 	return 1;
 }
