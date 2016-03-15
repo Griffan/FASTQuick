@@ -1,42 +1,39 @@
 ###NAME
-   FastPopCon, a **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool
+   FASTQuick, a Fastq file based QC tool, including conventional QC metrics as well as population identification and contamination detection features
 ###CONTENTS
 
 ###SYNOPSIS
-FastPopCon index --vcf hapmap.vcf --dbsnp 00-All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta 
-FastPopCon align --ref hs37d5.fa --fq_list NA12878.fq.list --bam_out --cal_dup --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000  --I --t 2  --prefix NA12878 --frac_samp 1.0 
-FastPopCon pop --UD resource/hapmap.dat.UD --PC resource/hapmap.dat.V --mu resource/hapmap.dat.mu --gl NA12878.likelihood --bed resource/choose.bed.post.bed.allele.bed
-FastPopCon con --prefix NA12878
+FASTQuick index --siteVCF hapmap.shuffled.vcf --dbsnpVCF All.vcf.gz  --ref hs37d5.fa --flank_len 250 --var_short 9000 --flank_long_len 1000 --var_long 1000 --mask 20141007.all.strict_mask.fasta --out_index_prefix NA12878
+FASTQuick align --fq_list NA12878.fq.list --bam_out --cal_dup --I --t 2  --in_index_prefix NA12878 --frac_samp 1.0 
+FASTQuick pop --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed
+FASTQuick con --SVD_prefix resource/hapmap.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed —out NA12878
 ###DESCRIPTION
-   FastPopCon is short for **Fast**q file based **Pop**ulation identification and **Con**tamination detection tool. It is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+   FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
 ###COMMANDS AND OPTIONS
 **index**	
-FastPopCon index --vcf [hapmap site vcf] --dbsnp [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
+FASTQuick index --siteVCF [site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] 
 Index database sequences, using known variant sites to anchor informative region.
 **OPTIONS**
---vcf	STR	path of input hapmap site vcf file 
---dbsnp	STR	path of input dbsnp site vcf file
+--siteVCF	STR	path of input hapmap site vcf file 
+--dbsnpVCF	STR	path of input dbsnp site vcf file
 --ref	STR	path of reference genome fasta file
 --mask	STR	path of repetitive region  mask fasta file
 --flank_len	INT	flanking region length of short-flanking-region variant
 --var_short	INT	number of short-flanking-region variant
 --flank_long_len	INT flanking region length of long-flanking-region variant
 --var_long	INT	number of long-flanking-region variant
+--out_index_prefix	STR	prefix of index files
 **align**
-FastPopCon align --ref [reference genome fasta file] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000]  [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
+FASTQuick align  --fq_list [sample’s fastq list file] --in_index_prefix [prefix of index files] [--bam_out] [--cal_dup] [--I] --t [2]  --prefix [NA12878] --frac_samp [1.0]
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
 **OPTIONS**
---ref	STR	path of reference genome fasta file
 --fq_list	STR path of fastq file list, format: [path of pair-end 1]\t[path of pair-end]
 --fastq_1	STR path of pair end 1 fastq file
 --fastq_2	STR path of pair end 2 fastq file
 --bam_in	STR path of already aligned bam file
 --bam_out	BOOL	output is bam format or not
 --prefix	STR	prefix of variety of output file associated with specific sample
---flank_len	INT	flanking region length of short-flanking-region variant
---var_short	INT	number of short-flanking-region variant
---flank_long_len	INT flanking region length of long-flanking-region variant
---var_long	INT	number of long-flanking-region variant
+--in_index_prefix	STR	prefix of index files generated from index step
 --n	float	Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT. In the latter case, the maximum edit distance is automatically chosen for different read lengths. [0.04]
 --o	INT	Maximum number of gap opens [1]
 --e	INT	Maximum number of gap extensions, -1 for k-difference mode (disallowing long gaps) [-1]
@@ -62,29 +59,31 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
 --cal_dup	BOOL	Calculate PCR duplicated reads in all the statistics.[False]
 --frac_samp	FLOAT	Overall reads downsampling rate.[1]
 **pop**
-FastPopCon pop --UD [resource/hapmap.dat.UD] --PC [resource/hapmap.dat.V] --mu [resource/hapmap.dat.mu] --gl [prefix.likelihood] --bed [resource/choose.bed.post.bed.allele.bed]
+FASTQuick pop --SVD_prefix [resource/hapmap.dat] --BED [resource/choose.bed] --pileup [NA12878.Pileup.gz]
 Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.
 **OPTIONS**
-	--UD	STR	Path of UD matrix in resource directory
-	--PC	STR	Path of V matrix in resource directory
-	--mu	STR	Path of mu matrix in resource directory
---gl	STR	Path of output likelihood file in align step, with prefix specified in align step and suffix likelihood.
---bed	STR	Bed format file that specified markers used in pop inference, also can be found in resource directory.
+--SVD_prefix	STR	Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]
+--pileup	STR	Input pileup file generated from align step. [Required if no gl file]
+--BED	STR	Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose file in resource directory.[Required]
 **con**
-FastPopCon con --prefix [NA12878]
+FASTQuick con --SVD_prefix [resource/hapmap.dat] --BED [resource/choose.bed] --pileup [NA12878.Pileup.gz] --out [NA12878]
 Estimate the probability that this sample is contaminated with other genomic material.
 **OPTIONS**
---prefix STR Specify the prefix used in previous steps, which will be used to retrieve all the information needed in this step.
+--SVD_prefix	STR	Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file doesn't provide site allele frequency]
+--VCF	STR	Specify VCF file that contains site allele frequency.[Required if SVD matrices don't exist]
+--pileup	STR	Specify pileup file for current individual, could be the one generated from align step.[Required]
+--BED	STR	Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]
+--out	STR	Specify the output prefix.[Required]
+--RG	STR	set ReadGroup name
+
 ###EXAMPLES
-   Some examples of common usage.
+   Some examples in example/run.sh, the testing run script.
 ###SEE ALSO
    A list of related commands or functions.
-###BUGS
-   List known bugs.
 ###AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
 ###COPYRIGHT
-   The full FastPopCon package is distributed under GPLv3 as it uses source codes from BWT-SW which is covered by GPL. Sorting, hash table, BWT and IS libraries are distributed under the MIT license.
+   The full FASTQuick package is distributed under the MIT license.
 
 
 
