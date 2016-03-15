@@ -114,7 +114,7 @@ typedef struct {
 	//bool out_bam;
 	char * RG;
 	char* in_bam;
-	bool out_bam;
+	char out_bam;
 	int read_len;
 } gap_opt_t;
 

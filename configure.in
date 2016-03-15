@@ -6,7 +6,8 @@ AC_INIT(FASTQuick, 0.0.1, fanzhang@umich.edu)
 AM_INIT_AUTOMAKE(FASTQuick,0.0.1)
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-
+: ${CFLAGS=""}
+: ${CXXFLAGS=""}
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CXX

@@ -936,7 +936,7 @@ bool BwtIndexer::Fa2RevPac(const char * prefix)
 	for (i = seq_len - 1, j = 0; i >= 0; --i)
 	{
 		int c = bufin[i >> 2] >> ((~i & 3) << 1) & 3;
-		bwtint_t j = seq_len - 1 - i;
+		/*bwtint_t*/ j = seq_len - 1 - i;
 		bufout[j >> 2] |= c << ((~j & 3) << 1);
 	}
 	//free(bufin);

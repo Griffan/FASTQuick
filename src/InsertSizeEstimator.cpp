@@ -83,7 +83,7 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,1));
             MisDist[Max2]++;
         }
-        else if(Status == "PropPair")//||Status == "PartialPair")
+        else if(Status == "PropPair"||Status == "PartialPair")
         {
 //            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
 //            MisDist[Max]++;
