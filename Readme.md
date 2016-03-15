@@ -95,7 +95,7 @@ Identify individual’s population identity, ancestry information. The geometric
     --SVD_prefix	STR	Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]
     --gl	STR	Input genotype likelihood file generated from align step.[Required if no pileup file]
     --pileup STR Input pileup file generated from align[Required if no gl file]
-    --BED	STR	Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed.post.bed.allele.bed file in resource directory.[Required]
+    --BED	STR	Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed file in resource directory.[Required]
 **con**
 
     FASTQuick con --SVD_prefix [resource/hapmap_3.3.b37.dat] --pileup [NA12878.Pileup.gz] --BED [resource/choose.bed]
