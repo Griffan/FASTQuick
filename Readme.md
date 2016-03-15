@@ -3,7 +3,7 @@
    
    
 ###Tutorial
-   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]**
+   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
    
    
 ###CONTENTS
