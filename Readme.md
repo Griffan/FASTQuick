@@ -1,5 +1,5 @@
 ###NAME
-   FASTQuick, a Fastq file based Population identification and Contamination detection tool.
+   FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, population identification, contamination estimation and variety of QC analysis. 
    
    
 ###Tutorial
