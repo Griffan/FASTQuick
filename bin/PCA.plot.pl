@@ -2,7 +2,7 @@
 
 use strict;
 die "Usage:
-	perl test.a11.plot.pc.maps.pl <SampleID> <PC1> <PC2> <resource dir>\n" unless @ARGV==4;
+	perl PCA.plot.pl <SampleID> <PC1> <PC2> <resource dir>\n" unless @ARGV==4;
 	my $sampleID=shift;
 	my $PC1=shift;
 	my $PC2=shift;
