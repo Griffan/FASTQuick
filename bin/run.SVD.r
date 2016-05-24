@@ -15,7 +15,12 @@ pc.lik <- function(pcs, gls, UD, mu, n) {
     return(0-llk)
 }
 
-library(irlba)
+if(!require("irlba")){
+       install.packages("irlba",repos="http://cran.r-project.org",lib="./Rlib/")
+       library(irlba,lib="./Rlib/")
+}else{
+       library(irlba)
+}
 ##argv1 hapmap.dat 
 ##argv2 resource dir
 args <- commandArgs(trailingOnly = TRUE)

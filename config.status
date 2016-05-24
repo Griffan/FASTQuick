@@ -405,7 +405,7 @@ on `(hostname || uname -n) 2>/dev/null | sed 1q`
 "
 
 # Files that config.status was made for.
-config_files=" Makefile libbwa/Makefile libmpu/Makefile misc/Makefile misc/bam/Makefile misc/general/Makefile misc/vcf/Makefile src/Makefile"
+config_files=" Makefile libbwa/Makefile libmpu/Makefile misc/Makefile misc/bam/Makefile misc/general/Makefile misc/vcf/Makefile misc/vcfast/Makefile src/Makefile"
 config_headers=" config.h"
 config_commands=" depfiles"
 
@@ -567,6 +567,7 @@ do
     "misc/bam/Makefile") CONFIG_FILES="$CONFIG_FILES misc/bam/Makefile" ;;
     "misc/general/Makefile") CONFIG_FILES="$CONFIG_FILES misc/general/Makefile" ;;
     "misc/vcf/Makefile") CONFIG_FILES="$CONFIG_FILES misc/vcf/Makefile" ;;
+    "misc/vcfast/Makefile") CONFIG_FILES="$CONFIG_FILES misc/vcfast/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

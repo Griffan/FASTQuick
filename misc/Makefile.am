@@ -12,4 +12,4 @@ libmisc_a_CXXFLAGS= -O3  -I../misc/vcf/ -I../misc/general/ -lz  -Wall -std=c++0x
 
 libmisc_a_CFLAGS=  -O3 -lz  -Wall  -Wno-unused-result -mmmx -msse -msse2 -msse3 -pipe  -I../include -I.   -D__ZLIB_AVAILABLE__ -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS
 
-SUBDIRS=general vcf bam
+SUBDIRS=general vcf bam vcfast
