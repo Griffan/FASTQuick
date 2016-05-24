@@ -2,36 +2,20 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT(FASTQuick, 0.0.1, fanzhang@umich.edu)
-AM_INIT_AUTOMAKE(FASTQuick,0.0.1)
+AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-: ${CFLAGS=""}
-: ${CXXFLAGS=""}
+
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_RANLIB
+
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lbam':
-AC_CHECK_LIB([bam], [main])
-# FIXME: Replace `main' with a function in `-lcrypto':
-AC_CHECK_LIB([crypto], [main])
-# FIXME: Replace `main' with a function in `-lcsg':
-AC_CHECK_LIB([csg], [main])
-# FIXME: Replace `main' with a function in `-lgeneral':
-AC_CHECK_LIB([general], [main])
-# FIXME: Replace `main' with a function in `-lm':
-AC_CHECK_LIB([m], [main])
-# FIXME: Replace `main' with a function in `-lmpu':
-AC_CHECK_LIB([mpu], [main])
+# FIXME: Replace `main' with a function in `-lmisc':
+AC_CHECK_LIB([misc], [main])
 # FIXME: Replace `main' with a function in `-lpthread':
 AC_CHECK_LIB([pthread], [main])
-# FIXME: Replace `main' with a function in `-lssl':
-AC_CHECK_LIB([ssl], [main])
-# FIXME: Replace `main' with a function in `-lvcf_statgen':
-AC_CHECK_LIB([vcf_statgen], [main])
 # FIXME: Replace `main' with a function in `-lz':
 AC_CHECK_LIB([z], [main])
 
@@ -69,6 +53,6 @@ AC_CONFIG_FILES([Makefile
                  misc/bam/Makefile
                  misc/general/Makefile
                  misc/vcf/Makefile
-		 misc/vcfast/Makefile
+                 misc/vcfast/Makefile
                  src/Makefile])
 AC_OUTPUT

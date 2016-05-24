@@ -6009,7 +6009,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile libbwa/Makefile libmpu/Makefile misc/Makefile misc/bam/Makefile misc/general/Makefile misc/vcf/Makefile src/Makefile"
+ac_config_files="$ac_config_files Makefile libbwa/Makefile libmpu/Makefile misc/Makefile misc/bam/Makefile misc/general/Makefile misc/vcf/Makefile misc/vcfast/Makefile src/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6753,6 +6753,7 @@ do
     "misc/bam/Makefile") CONFIG_FILES="$CONFIG_FILES misc/bam/Makefile" ;;
     "misc/general/Makefile") CONFIG_FILES="$CONFIG_FILES misc/general/Makefile" ;;
     "misc/vcf/Makefile") CONFIG_FILES="$CONFIG_FILES misc/vcf/Makefile" ;;
+    "misc/vcfast/Makefile") CONFIG_FILES="$CONFIG_FILES misc/vcfast/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
