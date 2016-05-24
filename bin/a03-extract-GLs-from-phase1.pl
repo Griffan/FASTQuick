@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-die "perl a03-extract-GLs-from-phase1.pl <resource directory> <1000g release 20110521 directory>\n" unless @ARGV==2;
+die "perl a03-extract-GLs-from-phase1.pl <resource directory> <1000g release 20110521 directory>\n\t<1000g release 20110521 directory> only need to contain ALL.chr*.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz files\n" unless @ARGV==2;
 my $resourceDIR=$ARGV[0];
 my $glDIR=$ARGV[1];
 #print @ARGV,"\n";
