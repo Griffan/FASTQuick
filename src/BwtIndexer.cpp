@@ -310,8 +310,15 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len, bool more_chunck)const
 		return false;
 
 }
-bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
+bool BwtIndexer::IsReadInHash(ubyte_t * S, int len)const
 {
+	if(len < 96)
+	{
+		for(int i=len;i!= 96;++i)
+		{
+			S[i] = 0;
+		}
+	}
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
 	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
@@ -421,17 +428,14 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck
 	else
 		return false;
 }
-bool BwtIndexer::IsReadInHashByCount(const ubyte_t * S, int len)const
+bool BwtIndexer::IsReadInHashByCount(ubyte_t * S, int len)const
 {
 	if(len < 96)
 	{
-		ubyte_t * tmpS = S;
-		S = new ubyte_t [96];
-		for(int i=0;i!= 96;++i)
+		for(int i=len;i!= 96;++i)
 		{
 			S[i] = 0;
 		}
-		memcpy(tmpS,S,len);
 	}
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
@@ -490,7 +494,7 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t * S, int len)const
 	else
 		return false;
 }
-bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const
+bool BwtIndexer::IsReadFiltered(ubyte_t * S, const ubyte_t * Q, int len)const
 {
 /*	if(len==0)
 	{

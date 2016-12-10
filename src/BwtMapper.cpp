@@ -366,7 +366,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
 		memcpy(p->rseq, p->seq, p->len);
 		//fprintf(stderr, "I have been here: %d times!\n",i);
-		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
 		seq_reverse(p->len, p->rseq, is_comp);
 
 		p->name = strdup((const char*)seq->name.s);
@@ -446,7 +446,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 	//	p->rseq = (ubyte_t*)calloc(p->full_len, 1);
 	//	memcpy(p->rseq, p->seq, p->len);
 	//	//fprintf(stderr, "I have been here: %d times!\n",i);
-	//	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+	//	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
 	//	seq_reverse(p->len, p->rseq, is_comp);
 
 	//	//p->name = strdup((const char*)seq->name.s);
@@ -564,7 +564,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		}
 		//p->rseq = (ubyte_t*)calloc(p->full_len, 1);
 		memcpy(p->rseq, p->seq, p->len);
-		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this 
+		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
 		seq_reverse(p->len, p->rseq, is_comp);
 		//p->name = strdup((const char*)seq->name.s);
 		strncpy(p->name, seq->name.s, seq->name.l);
@@ -1562,7 +1562,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 
 		//fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
 
-		//#pragma omp parallel for 
+		//#pragma omp parallel for
 #ifdef HAVE_PTHREAD
 
 		if (opt->n_threads <= 1)
@@ -1835,7 +1835,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 	ubyte_t *pacseq = 0;
 	FileStatCollector FSC(fn_fa1, fn_fa2);
 
-	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
+//	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
 	seqs[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 	seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 	seqs_buff[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
@@ -1867,7 +1867,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 
 		//fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
 
-		//#pragma omp parallel for 
+		//#pragma omp parallel for
 #ifdef HAVE_PTHREAD
 
 		if (opt->n_threads <= 1)
@@ -2132,7 +2132,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 //	pthread_attr_t attr;
 //
 //	thread_IO_t* IO_param = (thread_IO_t*)calloc(1, sizeof(thread_IO_t));
-//	
+//
 //	pthread_attr_init(&attr);
 //	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 //	fprintf(stderr,"now we entered read with hash part\n");
@@ -2204,7 +2204,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 //	ubyte_t *pacseq = 0;
 //	FileStatCollector FSC(fn_fa1, fn_fa2);
 //	int ReadIsGood = 2;
-//	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
+////	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
 //	seqs[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 //	seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 //	seqs_buff[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
@@ -2222,7 +2222,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 //			ReadIsGood = 1;
 //		}
 //		else ReadIsGood = 0;
-//		
+//
 //		int cnt_chg;
 //		isize_info_t ii;
 //		t = clock();
@@ -2316,9 +2316,9 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 //					free(super_IO_param);
 //					free(data);
 //					free(tid);
-//			
+//
 //		}
-//#else	
+//#else
 //		for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 //		{
 //			//DBG(fprintf(stderr,"Before come into cal sa reg gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
@@ -2474,7 +2474,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 	ubyte_t *pacseq = 0;
 	FileStatCollector FSC(fn_fa1, fn_fa2);
 
-	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
+//	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
 	seqs[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 	seqs[1] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
 	seqs_buff[0] = (bwa_seq_t*)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
