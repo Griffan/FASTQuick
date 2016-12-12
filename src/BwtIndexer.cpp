@@ -312,13 +312,6 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len, bool more_chunck)const
 }
 bool BwtIndexer::IsReadInHash(ubyte_t * S, int len)const
 {
-	if(len < 96)
-	{
-		for(int i=len;i!= 96;++i)
-		{
-			S[i] = 0;
-		}
-	}
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
 	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
@@ -430,13 +423,6 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck
 }
 bool BwtIndexer::IsReadInHashByCount(ubyte_t * S, int len)const
 {
-	if(len < 96)
-	{
-		for(int i=len;i!= 96;++i)
-		{
-			S[i] = 0;
-		}
-	}
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
 	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };

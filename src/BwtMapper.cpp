@@ -346,7 +346,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 		//p->count=0;
 		p->full_len = p->clip_len = p->len = l;
 		n_tot += p->full_len;
-		p->seq = (ubyte_t*)calloc(p->len, 1);
+		p->seq = (ubyte_t*)calloc(p->len<96?96:p->len, 1);
 		for (i = 0; i != p->full_len; ++i)
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
 		if (seq->qual.l) { // copy quality
