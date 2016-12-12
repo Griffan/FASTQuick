@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #define HAVE_ARPA_INET_H 1
@@ -11,7 +11,7 @@
 #define HAVE_FCNTL_H 1
 
 /* Define to 1 if you have the `floor' function. */
-#define HAVE_FLOOR 1
+/* #undef HAVE_FLOOR */
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #define HAVE_FSEEKO 1
@@ -34,32 +34,11 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `bam' library (-lbam). */
-/* #undef HAVE_LIBBAM */
-
-/* Define to 1 if you have the `crypto' library (-lcrypto). */
-#define HAVE_LIBCRYPTO 1
-
-/* Define to 1 if you have the `csg' library (-lcsg). */
-/* #undef HAVE_LIBCSG */
-
-/* Define to 1 if you have the `general' library (-lgeneral). */
-/* #undef HAVE_LIBGENERAL */
-
-/* Define to 1 if you have the `m' library (-lm). */
-#define HAVE_LIBM 1
-
-/* Define to 1 if you have the `mpu' library (-lmpu). */
-/* #undef HAVE_LIBMPU */
+/* Define to 1 if you have the `misc' library (-lmisc). */
+/* #undef HAVE_LIBMISC */
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #define HAVE_LIBPTHREAD 1
-
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#define HAVE_LIBSSL 1
-
-/* Define to 1 if you have the `vcf_statgen' library (-lvcf_statgen). */
-/* #undef HAVE_LIBVCF_STATGEN */
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 1
@@ -90,7 +69,7 @@
 #define HAVE_NETDB_H 1
 
 /* Define to 1 if you have the `pow' function. */
-#define HAVE_POW 1
+/* #undef HAVE_POW */
 
 /* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
@@ -103,10 +82,7 @@
 #define HAVE_SOCKET 1
 
 /* Define to 1 if you have the `sqrt' function. */
-#define HAVE_SQRT 1
-
-/* Define to 1 if stdbool.h conforms to C99. */
-#define HAVE_STDBOOL_H 1
+/* #undef HAVE_SQRT */
 
 /* Define to 1 if you have the <stddef.h> header file. */
 #define HAVE_STDDEF_H 1
@@ -166,7 +142,7 @@
 #define HAVE__BOOL 1
 
 /* Name of package */
-#define PACKAGE "FASTQuick"
+#define PACKAGE "fastquick"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "fanzhang@umich.edu"
@@ -175,7 +151,7 @@
 #define PACKAGE_NAME "FASTQuick"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "FASTQuick 0.0.1"
+#define PACKAGE_STRING "FASTQuick 1.0.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "fastquick"
@@ -184,13 +160,13 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.0.1"
+#define PACKAGE_VERSION "1.0.0"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.0.1"
+#define VERSION "1.0.0"
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 /* #undef _LARGEFILE_SOURCE */
