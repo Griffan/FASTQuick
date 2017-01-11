@@ -5,4 +5,4 @@ include_directories(../misc/vcf/ ../misc/general/ ../misc/)
 
 add_executable(FASTQuick ${CXX_SOURCE_FILES})
 
-target_link_libraries(FASTQuick bwa misc mpu bam tabix vcf_statgen general_statgen)
+target_link_libraries(FASTQuick bwa mpu bam tabix vcf_statgen general_statgen misc)
