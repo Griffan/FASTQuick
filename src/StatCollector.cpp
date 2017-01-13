@@ -1661,6 +1661,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 		//vcf_index++;
 
 	}
+    reader.close();
 	string BedFile = VcfPath + ".dpSNP.subset.vcf";
 	if (!reader.open(BedFile.c_str(), header))
 	{
@@ -1675,7 +1676,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 		int pos = VcfLine.get1BasedPosition();
 		dbSNPTable[chr][pos] = 1;
 	}
-
+    reader.close();
 	//string line, Chrom, PosStr, GCStr;
 	//_GCstruct * GCstruct = new _GCstruct [opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
 	//FGC.read((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
@@ -1706,8 +1707,8 @@ int StatCollector::releaseVcfSites()
 
     for (int j = 0; j <VcfRecVec.size(); ++j) {
         delete VcfRecVec[j];
-        VcfRecVec.clear();
     }
+    VcfRecVec.clear();
     VcfTable.clear();
     GC.clear();
     SeqVec.clear();
