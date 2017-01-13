@@ -1046,11 +1046,11 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		// print mate coordinate
 		if (mate && mate->type != BWA_TYPE_NO_MATCH)
 		{
-			int m_seqid/*, m_is_N*/;
+			int m_seqid, m_is_N;
 			long long isize;
 			am = mate->seQ < p->seQ ? mate->seQ : p->seQ; // smaller single-end mapping quality
 			// redundant calculation here, but should not matter too much
-			//m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
+			m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
 			//printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
 			// ss << (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name;
 			(seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH, bns->anns[m_seqid].name);
@@ -1312,7 +1312,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 	{
 		tot_seqs += n_seqs;
 		FSC.NumRead += n_seqs;
-		fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...", n_seqs);
+		fprintf(stderr, "NOTICE - Reading in %d sequences into buffer...\n", n_seqs);
 		//      fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
 		//      t = clock();
 		//t = clock();
@@ -2131,7 +2131,6 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer& BwtIndex, const char *
 				FSC.NumRead += n_seqs[1];
 			}
 			else ReadIsGood = 0;
-
 		}
 		int cnt_chg;
 		isize_info_t ii;
@@ -2433,10 +2432,10 @@ else ReadIsGood = 0;
 		bwa_free_read_seq(READ_BUFFER_SIZE, seqs[j]);
 		bwa_free_read_seq(READ_BUFFER_SIZE, seqs_buff[j]);
 	}
-	free(seqs[0]);
-	free(seqs[1]);
-	free(seqs_buff[0]);
-	free(seqs_buff[1]);
+//	free(seqs[0]);
+//	free(seqs[1]);
+//	free(seqs_buff[0]);
+//	free(seqs_buff[1]);
 	collector.addFSC(FSC);
 	if (pacseq)
 		free(pacseq);
