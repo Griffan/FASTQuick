@@ -1670,7 +1670,6 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	while (!reader.isEOF())
 	{
 		VcfRecord VcfLine;
-		;
 		reader.readRecord(VcfLine);
 		string chr(VcfLine.getChromStr());
 		int pos = VcfLine.get1BasedPosition();
@@ -1700,6 +1699,24 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	//delete GCstruct;
 	FGC.close();
 	return 0;
+}
+
+int StatCollector::releaseVcfSites()
+{
+
+    for (int j = 0; j <VcfRecVec.size(); ++j) {
+        delete VcfRecVec[j];
+        VcfRecVec.clear();
+    }
+    VcfTable.clear();
+    GC.clear();
+    SeqVec.clear();
+    QualVec.clear();
+    CycleVec.clear();
+    MaqVec.clear();
+    StrandVec.clear();
+    dbSNPTable.clear();
+    return 0;
 }
 int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 {
@@ -2176,8 +2193,7 @@ int StatCollector::SummaryOutput(const string & outputPath,
 StatCollector::~StatCollector()
 {
 	// TODO Auto-generated destructor stub
-	for (uint32_t i = 0; i != VcfRecVec.size(); ++i)
-		delete VcfRecVec[i];
+	releaseVcfSites();
 
 }
 
