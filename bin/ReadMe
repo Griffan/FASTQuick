@@ -5,7 +5,7 @@ If you are trying to make your own new population identity matrices, you can use
 
 Note:
 	GATK-resources/hapmap_3.3.b37.vcf.gz	can be found at ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle
-	1000g/release/20110521/			can be found at ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/
+	1000g/release/20110521/			can be found at ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/  from which you only need ALL.chr*.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz files
 
 #Step by step script
 Alternatively, if you want to generate your own customized matrices rather than hapmap vcf or 1000g vcf, here I list the tools in this bin directory that may help you

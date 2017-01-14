@@ -58,7 +58,7 @@ open(R,">1kg.hapmap.pcs.r") || die "Cannot open file\n";
 print R "library(ggplot2)\n";
 print R "df <- as.data.frame(read.table('1kg.hapmap.pcs.dat',header=TRUE))\n";
 print R "pdf('1kg.hapmap.pcs.all.pdf',width=12,height=8)\n";
-print R "ggplot(df,aes(x=PC1,y=PC2,colour=POPULATION)) + geom_point() + geom_text(data=df[df\$POPULATION==\"TBA\", ],aes(label=ID),hjust=0, vjust=0,color=\"blue\")+geom_text(data=df[df\$ID==\"HG00553T\", ],aes(label=ID),hjust=0, vjust=0,color=\"blue\")+geom_point(data=df[df\$POPULATION==\"TBA\", ],size=4,color=\"blue\")+facet_grid(. ~ SET,scales=\"free\") + theme(legend.position='bottom')\n";
+print R "ggplot(df,aes(x=PC1,y=PC2,colour=POPULATION)) + geom_point() + geom_text(data=df[df\$POPULATION==\"TBA\", ],aes(label=ID),hjust=0, vjust=0,color=\"blue\")+geom_point(data=df[df\$POPULATION==\"TBA\", ],size=4,color=\"blue\")+facet_grid(. ~ SET,scales=\"free\") + theme(legend.position='bottom')\n";
 print R "dev.off()\n";
 #print R "pdf('1kg.hapmap.pcs.overlap.pdf',width=8,height=6)\n";
 #print R "ggplot(subset(df,OVERLAP==1),aes(PC1,PC2,colour=POPULATION)) + geom_point(size=1.5) + facet_grid(. ~ SET,scales=\"free\") + theme(legend.position='bottom')\n";

@@ -149,6 +149,7 @@ public:
 	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
 
 	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
+	int releaseVcfSites();
 	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
 	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
 	int getEmpRepDist(const std::string & outputPath);

@@ -6,7 +6,7 @@
 .settings/
 .idea/
 FastPopCon*
-CMakeLists.txt
+
 #files being edited
 *~
 
@@ -28,3 +28,4 @@ tabix
 FASTQuick*
 config.log
 Makefile
+build

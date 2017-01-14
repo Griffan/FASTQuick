@@ -16,8 +16,9 @@ pc.lik <- function(pcs, gls, UD, mu, n) {
 }
 
 if(!require("irlba")){
+	ifelse(!dir.exists(file.path("./", "Rlib")), dir.create(file.path("./", "Rlib")), FALSE)
        install.packages("irlba",repos="http://cran.r-project.org",lib="./Rlib/")
-       library(irlba,lib="./Rlib/")
+library(irlba,lib="./Rlib/")
 }else{
        library(irlba)
 }
@@ -38,21 +39,21 @@ write.table(U %*% diag(d), paste(args[1],".UD",sep=""),row.names=FALSE,col.names
 write.table(V, paste(args[1],".V",sep=""),row.names=colnames(r$m), col.names=FALSE, quote=FALSE)
 write.table(matrix(cbind(row.names(r$m),r$mu),nrow(r$m),2),paste(args[1],".mu",sep=""),row.names=FALSE,col.names=FALSE,quote=FALSE)
 
-n <- ncol(r$m)
-GL <- as.matrix(read.table(paste(args[2],'/1kg.phase1.selected.GLs.dat',sep=""))) ##  M * (3Nk)
-l <- ncol(GL)/3
-ids <- substr(colnames(GL)[(1:l)*3],1,7)
-pops <- substr(colnames(GL)[(1:l)*3],9,11)
+#n <- ncol(r$m)
+#GL <- as.matrix(read.table(paste(args[2],'/1kg.phase1.selected.GLs.dat',sep=""))) ##  M * (3Nk)
+#l <- ncol(GL)/3
+#ids <- substr(colnames(GL)[(1:l)*3],1,7)
+#pops <- substr(colnames(GL)[(1:l)*3],9,11)
 
-out <- matrix(NA,l,k)
+#out <- matrix(NA,l,k)
 
-for(i in 1:l) {
-   print(paste(ids[i],pops[i]))
-  randstart <- V[as.integer(runif(1,0,n))+1,]
+#for(i in 1:l) {
+#   print(paste(ids[i],pops[i]))
+#  randstart <- V[as.integer(runif(1,0,n))+1,]
 #    #randstart <- V[1,]    
-    res <- optim( randstart, pc.lik, gls=10^GL[,3*(i-1)+1:3], UD=UD, mu=r$mu, n=n, method="Nelder-Mead")
-    out[i,] <- res$par
+#    res <- optim( randstart, pc.lik, gls=10^GL[,3*(i-1)+1:3], UD=UD, mu=r$mu, n=n, method="Nelder-Mead")
+#    out[i,] <- res$par
 #                                        #print(paste(ids[i],pops[i],res$par))
 #    
-}
-write.table(out,paste(args[2],'/1kg.phase1.selected.pc2.out',sep=""),row.names=ids,col.names=F,quote=F)
+#}
+#write.table(out,paste(args[2],'/1kg.phase1.selected.pc2.out',sep=""),row.names=ids,col.names=F,quote=F)
