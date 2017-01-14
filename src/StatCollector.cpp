@@ -1661,6 +1661,7 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 		//vcf_index++;
 
 	}
+    reader.close();
 	string BedFile = VcfPath + ".dpSNP.subset.vcf";
 	if (!reader.open(BedFile.c_str(), header))
 	{
@@ -1670,13 +1671,12 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	while (!reader.isEOF())
 	{
 		VcfRecord VcfLine;
-		;
 		reader.readRecord(VcfLine);
 		string chr(VcfLine.getChromStr());
 		int pos = VcfLine.get1BasedPosition();
 		dbSNPTable[chr][pos] = 1;
 	}
-
+    reader.close();
 	//string line, Chrom, PosStr, GCStr;
 	//_GCstruct * GCstruct = new _GCstruct [opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
 	//FGC.read((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
@@ -1700,6 +1700,24 @@ int StatCollector::restoreVcfSites(const string & VcfPath, const gap_opt_t* opt)
 	//delete GCstruct;
 	FGC.close();
 	return 0;
+}
+
+int StatCollector::releaseVcfSites()
+{
+
+    for (int j = 0; j <VcfRecVec.size(); ++j) {
+        delete VcfRecVec[j];
+    }
+    VcfRecVec.clear();
+    VcfTable.clear();
+    GC.clear();
+    SeqVec.clear();
+    QualVec.clear();
+    CycleVec.clear();
+    MaqVec.clear();
+    StrandVec.clear();
+    dbSNPTable.clear();
+    return 0;
 }
 int StatCollector::getDepthDist(const string & outputPath, const gap_opt_t* opt)
 {
@@ -2176,8 +2194,7 @@ int StatCollector::SummaryOutput(const string & outputPath,
 StatCollector::~StatCollector()
 {
 	// TODO Auto-generated destructor stub
-	for (uint32_t i = 0; i != VcfRecVec.size(); ++i)
-		delete VcfRecVec[i];
+	releaseVcfSites();
 
 }
 

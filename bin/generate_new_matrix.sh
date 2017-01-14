@@ -2,12 +2,13 @@
 #$2 is resource directory
 #$3 is the src/bin directory which contains auxilary tools
 #$4 is exact path of hapmap_3.3.b37.vcf.gz, e.g. GATK-resources/hapmap_3.3.b37.vcf.gz
-#$5 is exact path of 1000g/release/20110521/ e.g. /net/1000g/1000g/release/20110521/
+#$5 is exact path of 1000g/release/20110521/ e.g. /net/1000g/1000g/release/20110521/, in particular, we need ALL.chr*.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz files
 
 PRG=$0
 usage()
 {
     echo "usage:$PRG [your own *.SelectedSite.vcf.gz] [src/resource directory] [ src/bin directory] [path of hapmap_3.3.b37.vcf.gz] [path of 1000g/release/20110521/]...." >&2
+    echo "\t[path of 1000g/release/20110521/] only need to contain ALL.chr*.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz files\n" >&2
     exit 1
 }
 

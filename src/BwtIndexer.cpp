@@ -310,8 +310,8 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len, bool more_chunck)const
 		return false;
 
 }
-bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
-{	
+bool BwtIndexer::IsReadInHash(ubyte_t * S, int len)const
+{
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
 	v16qi mmx2 = { S[1], S[5], S[9], S[13], S[17], S[21], S[25], S[29], S[33], S[37], S[41], S[45], S[49], S[53], S[57], S[61] };
@@ -325,7 +325,7 @@ bool BwtIndexer::IsReadInHash(const ubyte_t * S, int len)const
 
 #define GCC_VERSION (__GNUC__ * 10000 \
                + __GNUC_MINOR__ * 100 \
-                + __GNUC_PATCHLEVEL__)	
+                + __GNUC_PATCHLEVEL__)
 #if defined(GCC_VERSION)&& GCC_VERSION >= 40700//4.7#endif
 //fprintf(stderr,"GCC_VERSION is about 4.7");
 	mmx1 = mmx1 << 6;
@@ -414,14 +414,14 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck
 		{
 			kmer[i] = ((kmer[i] << 2) | S[32*i + j]);
 		}
-		count+=IsKmerInHash(kmer[i]);
+		count+=CountKmerHitInHash(kmer[i]);
 	}
 	if (count >= RollParam.thresh)
 		return true;
 	else
 		return false;
 }
-bool BwtIndexer::IsReadInHashByCount(const ubyte_t * S, int len)const
+bool BwtIndexer::IsReadInHashByCount(ubyte_t * S, int len)const
 {
 	uint64_t kmer3[2];
 	v16qi mmx1 = { S[0], S[4], S[8], S[12], S[16], S[20], S[24], S[28], S[32], S[36], S[40], S[44], S[48], S[52], S[56], S[60] };
@@ -466,17 +466,21 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t * S, int len)const
 	mmx5 = mmx5 | mmx8;
 	memcpy(&kmer3,&mmx1,16);
 
-	int count=CountKmerHitInHash(swap_uint64(kmer3[0]))+ CountKmerHitInHash(swap_uint64(kmer3[1]));
-
-	memcpy(&kmer3, &mmx5, 16);
-	count+=CountKmerHitInHash(swap_uint64(kmer3[0]));
+	int count=CountKmerHitInHash(swap_uint64(kmer3[0]));
+	if(len >= 32)
+		CountKmerHitInHash(swap_uint64(kmer3[1]));
+	if(len >=64)
+	{
+		memcpy(&kmer3, &mmx5, 16);
+		count+=CountKmerHitInHash(swap_uint64(kmer3[0]));
+	}
 
 	if (count >= RollParam.thresh)
 		return true;
 	else
 		return false;
 }
-bool BwtIndexer::IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const
+bool BwtIndexer::IsReadFiltered(ubyte_t * S, const ubyte_t * Q, int len)const
 {
 /*	if(len==0)
 	{
@@ -600,7 +604,7 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter, const std::v
 	//AddSeq2DebugHash(shrinked);
 	//if (debug_flag)
 	//{
-	//	fprintf(stderr, "I found it!!!!!\t"); 
+	//	fprintf(stderr, "I found it!!!!!\t");
 	//	for (int k = 0; k != 32;++k)
 	//		fprintf(stderr, "%c","ACGT"[(datum>>((31-k)*2))&3]);
 	//	fprintf(stderr, "\t");
@@ -1062,7 +1066,7 @@ BwtIndexer::~BwtIndexer()
 	DBG(fprintf(stderr,"Incoming destroyer...\n");)
 		if (bwt_d)
 		{
-			
+
 		if (bwt_d->sa)
 			free(bwt_d->sa);
 		if (bwt_d->bwt)
@@ -1073,7 +1077,7 @@ BwtIndexer::~BwtIndexer()
 	DBG(fprintf(stderr,"bwt_d delete successfully...\n");)
 		if (rbwt_d)
 		{
-			
+
 		if (rbwt_d->sa)
 			free(rbwt_d->sa);
 		if (rbwt_d->bwt)

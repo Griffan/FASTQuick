@@ -104,14 +104,14 @@ public:
 
 	int CountKmerHitInHash(uint64_t kmer)const;
 
-	bool IsReadInHash(const ubyte_t * S, int len)const;
+	bool IsReadInHash(ubyte_t * S, int len)const;
 
 	bool IsReadInHash(const ubyte_t * S, int len, bool n_chunck)const;
 
-	bool IsReadInHashByCount(const ubyte_t * S, int len)const;
+	bool IsReadInHashByCount(ubyte_t * S, int len)const;
 
 	//typedef uint32_t v4si __attribute__ ((vector_size (16)));
-	bool IsReadFiltered(const ubyte_t * S, const ubyte_t * Q, int len)const;
+	bool IsReadFiltered(ubyte_t * S, const ubyte_t * Q, int len)const;
 
 	bool IsReadInHashByCount(const ubyte_t *S, int len, bool n_chunck)const;
 
@@ -300,7 +300,7 @@ inline uint32_t BwtIndexer::KmerShrinkage(uint64_t kmer, unsigned int iter)const
 		fprintf(stderr,"Fatal error: unknown mask.\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 }
 
 inline void BwtIndexer::AddSeq2Hash(const std::string & Seq, const std::vector<char>& alleles)

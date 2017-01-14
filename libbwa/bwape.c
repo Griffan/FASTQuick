@@ -615,9 +615,9 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 			free(cigar[0]); free(cigar[1]);
 		}
 	}
-	fprintf(stdout,"NOTICE - %lld out of %lld Q%d singletons are mated.",
+	fprintf(stdout,"NOTICE - %lld out of %lld Q%d singletons are mated.\n",
 		(long long)n_mapped[1], (long long)n_tot[1], SW_MIN_MAPQ);
-	fprintf(stdout,"NOTICE - %lld out of %lld Q%d discordant pairs are fixed.",
+	fprintf(stdout,"NOTICE - %lld out of %lld Q%d discordant pairs are fixed.\n",
 		(long long)n_mapped[0], (long long)n_tot[0], SW_MIN_MAPQ);
 	return pacseq;
 }
