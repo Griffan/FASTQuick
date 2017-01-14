@@ -1295,7 +1295,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 	bwt_t *bwt[2];
 	bntseq_t *ntbns = 0;
 	// initialization
-	bwase_initialize();
+	//bwase_initialize();
 	for (i = 1; i != 256; ++i)
 		g_log_n[i] = (int)(4.343 * log(i) + 0.5);
 	srand48(BwtIndex.bns->seed);
@@ -1325,26 +1325,41 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 		}
 		else
 		{
+			int n_align_thread = opt->n_threads;
 			pthread_t *tid;
 			pthread_attr_t attr;
 			thread_aux_t *data;
 			int j;
 			pthread_attr_init(&attr);
 			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-			data = (thread_aux_t*)calloc(opt->n_threads, sizeof(thread_aux_t));
-			tid = (pthread_t*)calloc(opt->n_threads, sizeof(pthread_t));
-			for (j = 0; j < opt->n_threads; ++j)
+			data = (thread_aux_t*)calloc(n_align_thread, sizeof(thread_aux_t));
+			tid = (pthread_t*)calloc(n_align_thread, sizeof(pthread_t));
+
+			size_t grain_size = n_seqs / n_align_thread;
+//			for (j = 0; j < opt->n_threads; ++j)
+//			{
+//				data[j].tid = j;
+//				data[j].bwt[0] = bwt[0];
+//				data[j].bwt[1] = bwt[1];
+//				data[j].n_seqs = n_seqs;
+//				data[j].seqs = seqs;
+//				data[j].opt = opt;
+//				data[j].Indexer_Ptr = &BwtIndex;
+//				pthread_create(&tid[j], &attr, worker, data + j);
+//			}
+			for (j = 0; j < n_align_thread; ++j)
 			{
 				data[j].tid = j;
 				data[j].bwt[0] = bwt[0];
 				data[j].bwt[1] = bwt[1];
-				data[j].n_seqs = n_seqs;
-				data[j].seqs = seqs;
+				if (j == n_align_thread - 1) data[j].n_seqs = n_seqs - grain_size*(n_align_thread - 1);
+				else data[j].n_seqs = grain_size;
+				data[j].seqs = seqs + j*grain_size;
 				data[j].opt = opt;
 				data[j].Indexer_Ptr = &BwtIndex;
 				pthread_create(&tid[j], &attr, worker, data + j);
 			}
-			for (j = 0; j < opt->n_threads; ++j)
+			for (j = 0; j < n_align_thread; ++j)
 				pthread_join(tid[j], 0);
 			free(data);
 			free(tid);
