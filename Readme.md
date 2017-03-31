@@ -1,12 +1,12 @@
-###NAME
+### NAME
    FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, population identification, contamination estimation and variety of QC analysis. 
    
    
-###Tutorial
+### Tutorial
    For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
    
    
-###CONTENTS
+### CONTENTS
 
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
@@ -17,7 +17,7 @@
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
 
-###SYNOPSIS
+### SYNOPSIS
 ```
 FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_index_prefix reduced_ref_index
 
@@ -27,13 +27,13 @@ FASTQuick pop --SVD_prefix resource/hapmap_3.3.b37.dat --pileup NA12878.Pileup.g
 
 FASTQuick con --SVD_prefix resource/hapmap_3.3.b37.dat --pileup NA12878.Pileup.gz --BED resource/choose.bed —out test
 ```
-###DESCRIPTION
+### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
-###COMMANDS AND OPTIONS
+### COMMANDS AND OPTIONS
 
 **index**	
 
-    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_index_prefix [reduced_ref_index]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_index_prefix [reduced_ref_index]
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -109,21 +109,21 @@ Estimate the probability that this sample is contaminated with other genomic mat
     --BED   STR   Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]
     --out   STR   Specify the output prefix.[Required]
     --RG STR   set ReadGroup name
-###EXAMPLES
+### EXAMPLES
    Some examples of common usage.
    See wiki page tutorial.
    [https://github.com/Griffan/FASTQuick/wiki]
    
    
-###USEFUL TIPS
+### USEFUL TIPS
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
    
    FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxiliary tools in bin directory.
-###BUGS
+### BUGS
    List known bugs.
-###AUTHOR
+### AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
-###COPYRIGHT
+### COPYRIGHT
    The full FASTQuick package is distributed under MIT License.
 
 
