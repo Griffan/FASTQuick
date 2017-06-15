@@ -2435,8 +2435,8 @@ else ReadIsGood = 0;
 			seqs_buff[j] = tmp;
 		}
 		fprintf(stderr, "NOTICE - %lld sequences have been loaded.\n", FSC.NumRead);
-		fprintf(stderr, "NOTICE - %ld sequences have been filtered by hash.\n", n_filtered);
-		fprintf(stderr, "NOTICE - %ld sequences have been totally filtered.\n", total_filtered*2);
+		//fprintf(stderr, "NOTICE - %ld sequences have been filtered by hash.\n", n_filtered);
+		fprintf(stderr, "NOTICE - %ld sequences have been filtered.\n", total_filtered*2);
 		fprintf(stderr, "NOTICE - %ld sequences that are unmapped.\n", n_bwaunmap*2);
 
 		last_ii = ii;
@@ -2486,7 +2486,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 		ofstream fout(Prefix + ".InsertSizeTable");
 		int total_add = 0;
 		collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
-		notice("%d reads were calculated...\n", total_add);
+        notice("%d reads were actually used for QC!", total_add);
 		fout.close();
 		// BamFile->ifclose();
 		// destroy
@@ -2524,7 +2524,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 		int total_add = 0;
 //PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
 		PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-		notice(" %d reads were calculated...\n", total_add);
+        notice("%d reads were actually used for QC!", total_add);
 		fout.close();
 		BamFile->ifclose();
 		// destroy
@@ -2562,7 +2562,8 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 		ofstream fout(Prefix + ".InsertSizeTable");
 		int total_add = 0;
 		SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-		fout.close();
+        notice("%d reads were actually used for QC!", total_add);
+        fout.close();
 		BamFile->ifclose();
 		delete BamFile;
 		// destroy
@@ -2644,7 +2645,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
 				SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
 			}
 		}
-		notice("%d reads were calculated!", total_add);
+		notice("%d reads were actually used for QC!", total_add);
 		fout.close();
 		BamFile->ifclose();
 		delete BamFile;

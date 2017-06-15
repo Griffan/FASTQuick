@@ -354,7 +354,7 @@ int runAlign(int argc, char ** argv)
 	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
-	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
+	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
 	int kmer_thresh(3);
 	paramList pl;
 
@@ -402,7 +402,7 @@ int runAlign(int argc, char ** argv)
 
 		// LONG_PARAM("c",&compread,"seed length")
 		LONG_PARAM("N", &nonstop, "[Bool] non-iterative mode: search for all n-difference hits (slooow)")
-		EXCLUSIVE_PARAM("NonI", &NonIL13, "[Bool] the input is not in the Illumina 1.3+ FASTQ-like format")
+		LONG_PARAM("I", &IL13, "[Bool] the input is in the Illumina 1.3+ FASTQ-like format")
 		LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
 		LONG_PARAM_GROUP("Additional Parameters for PairEnd ", "Additional parameters specified for Pair end mapping.[Optional]")
@@ -464,15 +464,14 @@ int runAlign(int argc, char ** argv)
 		opt->mode |= BWA_MODE_NONSTOP;
 		opt->max_top2 = 0x7fffffff;
 	}
-	if (NonIL13)
-	{
-		notice("using Sanger quality system...");
-		//opt->mode |= BWA_MODE_IL13;
-	}
-	else
+	if(IL13)
 	{
 		notice("using Illumina 1.3 version quality system...");
 		opt->mode |= BWA_MODE_IL13;
+	}
+	else
+	{
+		notice("using Sanger quality system...");
 	}
 	if (loggap)
 	{
