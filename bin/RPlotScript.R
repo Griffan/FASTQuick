@@ -82,7 +82,7 @@ IS_Count=mydata[,2];
 q5=ggplot(mydata,aes(x=InsertSize,y=IS_Count))+geom_line()+ggtitle("InsertSizeDist")+xlim(0,1000)+ylim(0,max(IS_Count[1:length(IS_Count)]));
 
 
-mydata <- scan(paste(input,".summary",sep=""), what="", sep="\n")
+mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
 ExpectedDepth=as.numeric(strsplit(mydata[length(mydata)-12]," ")[[1]][5])
 EstimatedDepth=as.numeric(strsplit(mydata[length(mydata)-11]," ")[[1]][4])
 AccessibleFraction=as.numeric(strsplit(strsplit(mydata[length(mydata)-10]," ")[[1]][8],"/")[[1]][1]);
