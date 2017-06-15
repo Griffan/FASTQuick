@@ -142,13 +142,13 @@ int StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const ga
 		for (j = 0; j != p->full_len; ++j)
 		{
 		seq += "ACGTN"[(int)(p)->seq[j]];
-		qual += (char)p->qual[j];
+		qual += (char)(p->qual[j]-33);//change from ASCII to Phred
 		}
 	else
 		for (j = 0; j != p->full_len; ++j)
 		{
 		seq += "TGCAN"[(int)(p)->seq[p->full_len - 1 - j]];
-		qual += (char)p->qual[p->full_len - 1 - j];//33 based
+		qual += (char)(p->qual[p->full_len - 1 - j]-33);//0 based
 		}
 	//if (p->strand) seq_reverse(p->len, p->qual, 0);
 	//fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
@@ -2014,7 +2014,7 @@ vector<double>  calLikelihood(const string & seq, const string & qual, const cha
 }
 int StatCollector::getGenoLikelihood(const string & outputPath)
 {
-	ofstream fout(outputPath + ".likelihood");
+	ofstream fout(outputPath + ".Likelihood");
 	size_t numAllele[4] =
 	{ 0 };
 	char majAllele, minAllele;
