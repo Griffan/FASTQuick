@@ -1784,7 +1784,7 @@ int StatCollector::getEmpRepDist(const string & outputPath)
 	{
 		fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
 			<< "\t"
-			<< PHRED((double)(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 2))
+			<< PHRED((double)(misEmpRepDist[i] + 1) / (EmpRepDist[i] + 1))
 			<< endl;
 	}
 	fout.close();
@@ -1874,8 +1874,8 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 int StatCollector::outputPileup(const string & outputPath, const gap_opt_t* opt)
 {
 	ofstream fout(outputPath + ".Pileup");
-	int qualoffset = 0;
-	if (opt->mode|BWA_MODE_IL13) qualoffset = 31;
+	int qualoffset = 33;
+	if (opt->mode|BWA_MODE_IL13) qualoffset = 64;
 	for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
 	{
 		for (std::map<int, unsigned int>::iterator j = i->second.begin();
