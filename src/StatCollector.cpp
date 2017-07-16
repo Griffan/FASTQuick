@@ -9,6 +9,7 @@
 #include "InsertSizeEstimator.h"
 #include "../libbwa/bwase.h"
 #include "../libbwa/bamlite.h"
+#include "../libbwa/bwtaln.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -1804,14 +1805,14 @@ int StatCollector::getEmpCycleDist(const string & outputPath)
 	fout.close();
 	return 0;
 }
-int StatCollector::getInsertSizeDist(const string & outputPath)
+int StatCollector::getInsertSizeDist(const std::string &outputPath, double ratio)
 {
 
 	std::string InFileName(outputPath+".InsertSizeTable");
 	std::string OutFileName(outputPath+".AdjustedInsertSizeDist");
 
 	InsertSizeEstimator Estimator;
-	Estimator.InputInsertSizeTable(InFileName);
+	Estimator.InputInsertSizeTable(InFileName, ratio);
 //	Estimator.Sort();
 	Estimator.UpdateWeight(OutFileName);
 //	Estimator.UpdateInsertDist();
@@ -1864,7 +1865,10 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getGCDist(statPrefix, PosNum);
 	getEmpRepDist(statPrefix);
 	getEmpCycleDist(statPrefix);
-	getInsertSizeDist(statPrefix);
+
+	double ratio=double(opt->num_variant_long)/opt->num_variant_short;
+	getInsertSizeDist(statPrefix, ratio);
+
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix,opt);
 	SummaryOutput(statPrefix, opt);
