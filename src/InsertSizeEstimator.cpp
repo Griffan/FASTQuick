@@ -31,12 +31,17 @@ void split( vector<string> & theStringVector,  /* Altered/returned value */
     }
 }
 
-int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
+int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName, double ratio) {
     std::ifstream fin(FileName);
     if(!fin.is_open()) std::cerr<<"File "<<FileName<<" Open Failed!"<<std::endl;
     std::string line;
     std::istringstream ss;
     vector<string> stringVector;
+
+    double shortVote=1.;
+    double longVote=1./ratio;
+    double currVote=0;
+
     while(getline(fin,line))
     {
 //        ss.str(line);
@@ -61,6 +66,7 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
 //        ss.clear();
         split(stringVector,line,string("\t"));
         ReadName=stringVector[0];
+        Chr1=stringVector[4];
         Obs=atoi(stringVector[3].c_str());
         Pos2=atoi(stringVector[10].c_str());
         Chr2=stringVector[9];
@@ -69,6 +75,9 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
         Status=stringVector[14];
         //cerr<<"come here and "<<ReadName<<"\t"<<Obs<<"\t"<<Max<<"\t"<<Max2<<"\t"<<Status<<endl;
         //continue;
+        if(Chr1.back()=='L' || Chr2.back()=='L') currVote=longVote;
+        else currVote=shortVote;
+
         if(Max>=INSERT_LIMIT) Max=INSERT_LIMIT-1;
         if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
         if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
@@ -76,12 +85,12 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
         else if(Status == "FwdOnly")//Obs is NA
         {
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
-            MisDist[Max]++;
+            MisDist[Max]+=currVote;
         }
         else if(Status == "RevOnly")
         {
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,1));
-            MisDist[Max2]++;
+            MisDist[Max2]+=currVote;
         }
         else if(Status == "PropPair"||Status == "PartialPair")
         {
@@ -90,15 +99,15 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
 //            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
 //            MisDist[Max2]++;
             ObsDistVec[Obs].push_back(InsertSizeRecord(ReadName, Obs, Max,1));
-            ObsDist[Obs]++;
+            ObsDist[Obs]+=currVote;
            // cerr<<"ObsDist["<<Obs<<"]:"<<ObsDist[Obs]<<endl;
         }
         else {//pair end info available
             //continue;
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
-            MisDist[Max]+=0.5;
+            MisDist[Max]+=0.5*currVote;
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
-            MisDist[Max2]+=0.5;
+            MisDist[Max2]+=0.5*currVote;
         }
         totalPair++;
         //ObsRecordVec.push_back(InsertSizeRecord(ReadName,Obs,Max));
