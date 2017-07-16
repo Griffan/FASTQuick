@@ -109,7 +109,8 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName, doubl
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
             MisDist[Max2]+=0.5*currVote;
         }
-        totalPair++;
+//        totalPair++;
+        totalPair+=currVote;
         //ObsRecordVec.push_back(InsertSizeRecord(ReadName,Obs,Max));
     }
     return 0;
