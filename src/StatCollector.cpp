@@ -834,6 +834,10 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     }
     else if (type ==2) //both aligned
     {
+        readLength = pos_end(p) - p->pos; //length of read
+        bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
+        readLength = pos_end(q) - q->pos; //length of read
+        bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
         /*deal with cigar*/
 
         if(p->cigar)
@@ -864,17 +868,12 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         /*end deal with cigar*/
         if(!(p->strand)&& p->extra_flag&SAM_FR1 && p->extra_flag&SAM_FPP)//FR
         {
-            readLength = pos_end(p) - p->pos; //length of read
-            bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
-            readLength = p->len;
+
             if( (p->pos - cl1) >= bns->anns[seqid_p].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - (p->pos - cl1);
             else
                 maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
 
-            readLength = pos_end(q) - q->pos; //length of read
-            bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
-            readLength = q->len;
             if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >= (q->pos - cl3) + q->len)//soft clip stays within Flank Region
                 maxInsert2 = (q->pos - cl3) + q->len - bns->anns[seqid_q].offset;
             else
@@ -882,17 +881,12 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 
         } else if(p->strand && p->extra_flag&SAM_FR2 && p->extra_flag&SAM_FPP)//FR but rotated, should not happen in reality
         {
-            readLength = pos_end(q) - q->pos; //length of read
-            bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
-            readLength = q->len;
+
             if((q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - (q->pos - cl3);
             else
                 maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - q->pos;
 
-            readLength = pos_end(p) - p->pos; //length of read
-            bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
-            readLength = p->len;
             if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >= (p->pos - cl1) + p->len)//soft clip stays within Flank Region
                 maxInsert2 = (p->pos - cl1) + p->len - bns->anns[seqid_p].offset;
             else
