@@ -866,7 +866,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             }
         }
         /*end deal with cigar*/
-        if(!(p->strand)&& p->extra_flag&SAM_FR1 && p->extra_flag&SAM_FPP)//FR
+        if(!(p->strand) && q->strand && p->pos < q->pos)//FR
         {
 
             if( (p->pos - cl1) >= bns->anns[seqid_p].offset)//soft clip stays within Flank Region
@@ -879,7 +879,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             else
                 maxInsert2 = (q->pos - cl3) + q->len - cl4 - bns->anns[seqid_q].offset;
 
-        } else if(p->strand && p->extra_flag&SAM_FR2 && p->extra_flag&SAM_FPP)//FR but rotated, should not happen in reality
+        } else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
         {
 
             if((q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
@@ -1925,7 +1925,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpCycleDist(statPrefix);
 
 	double ratio=double(opt->num_variant_long*opt->flank_long_len)/(opt->num_variant_long*opt->flank_long_len+opt->num_variant_short*opt->flank_len);
-//	getInsertSizeDist(statPrefix, ratio);
+	getInsertSizeDist(statPrefix, ratio);
 
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix,opt);
