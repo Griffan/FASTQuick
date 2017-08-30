@@ -37,7 +37,7 @@ static std::string cigar_output(int n_cigar,bwa_cigar_t* cigar, int len)
 	return tmp;
 }
 
-#define INSERT_SIZE_LIMIT 2048
+#define INSERT_SIZE_LIMIT 4096
 StatCollector::StatCollector()
 {
 	// TODO Auto-generated constructor stub
@@ -1221,11 +1221,26 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	const gap_opt_t* opt, ofstream & fout, int &total_add)
 {
 	int seqid(0), seqid2(0), j(0), j2(0);
+	/*checking if reads bridges two reference contigs*/
+	if(p and p->type != BWA_TYPE_NO_MATCH) {
+		j = pos_end(p) - p->pos; //length of read
+		bns_coor_pac2real(bns, p->pos, j, &seqid);
+		if (p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
+			p->type = BWA_TYPE_NO_MATCH; //this alignment bridges two adjacent reference sequences
+		}
+	}
+	if(q and q->type != BWA_TYPE_NO_MATCH) {
+		j2 = pos_end(q) - q->pos; //length of read
+		bns_coor_pac2real(bns, q->pos, j2, &seqid2);
+		if (q->pos + j - bns->anns[seqid2].offset > bns->anns[seqid2].len) {
+			q->type = BWA_TYPE_NO_MATCH; //this alignment bridges two adjacent reference sequences
+		}
+	}
+	/*done checking if reads bridges two reference contigs*/
 	if (p == 0 || p->type == BWA_TYPE_NO_MATCH)
 	{
 		if (q != 0 && addSingleAlignment(bns, q, opt)) //adding single via pair interface
 		{
-			bns_coor_pac2real(bns, q->pos, j2, &seqid2);
 			string qname(bns->anns[seqid2].name);
 			if (string(qname).find("Y") != string::npos
 				|| string(qname).find("X") != string::npos)
@@ -1253,7 +1268,6 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	}
 
 	//until now p is aligned
-	bns_coor_pac2real(bns, p->pos, j, &seqid);
 	string pname(bns->anns[seqid].name);
 	if (q == 0 || q->type == BWA_TYPE_NO_MATCH)
 	{
@@ -1282,7 +1296,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 	{
 		j2 = pos_end(q) - q->pos; //length of read
 	}
-	bns_coor_pac2real(bns, q->pos, j2, &seqid2);
+
 	string qname(bns->anns[seqid2].name);
 	//until now both reads are aligned
 	if (isPartialAlign(p)) //p is partially aligned
@@ -1911,7 +1925,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpCycleDist(statPrefix);
 
 	double ratio=double(opt->num_variant_long*opt->flank_long_len)/(opt->num_variant_long*opt->flank_long_len+opt->num_variant_short*opt->flank_len);
-	getInsertSizeDist(statPrefix, ratio);
+//	getInsertSizeDist(statPrefix, ratio);
 
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix,opt);

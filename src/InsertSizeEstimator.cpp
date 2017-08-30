@@ -81,7 +81,7 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName, doubl
         if(Max>=INSERT_LIMIT) Max=INSERT_LIMIT-1;
         if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
         if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
-        if(Status =="Abnormal" or Status == "DiffChrom") continue;
+        if(Status =="Abnormal" or Status == "NotPair") continue;
         else if(Status == "FwdOnly")//Obs is NA
         {
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
