@@ -2486,7 +2486,7 @@ BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
 		ofstream fout(Prefix + ".InsertSizeTable");
 		int total_add = 0;
 		collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
-        notice("%d reads were actually used for QC!", total_add);
+        notice("%d reads were actually used for QC.", total_add);
 		fout.close();
 		// BamFile->ifclose();
 		// destroy
