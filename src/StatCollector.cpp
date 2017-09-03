@@ -929,48 +929,64 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 
         if(p->cigar||q->cigar)//not perfect match
         {
-
-            if(!(p->strand)&& p->extra_flag&SAM_FR1 && p->extra_flag&SAM_FPP)//FR
+	    bool stillInSeq = true;
+	    status = "PartialPair";
+            if(!(p->strand) && q->strand && p->pos < q->pos)//FR
             {
-                if(p->pos - cl1 >= bns->anns[seqid_p].offset)
+                if(p->pos - cl1 >= bns->anns[seqid_p].offset)//add S still in seq
                     start = p->pos - cl1;
                 else
+		{
                     start = p->pos;
-                if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >=(q->pos - cl3)+ q->len)
+		    stillInSeq = false;
+		}
+                if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >=(q->pos - cl3)+ q->len)//add S still in seq
                     end = q->pos-cl3 + q->len;
                 else
+		{
                     end = q->pos - cl3 + q->len - cl4;
+		    stillInSeq = false;
+		}
                 ActualInsert = end - start;
             }
-            else if(p->strand && p->extra_flag&SAM_FR2 && p->extra_flag&SAM_FPP)//FR but rotated, should not happen in reality
+            else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
             {
                 if(q->pos - cl3 >= bns->anns[seqid_q].offset)
                     start = q->pos - cl3;
                 else
+		{
                     start = q->pos;
+		    stillInSeq = false;
+		}
 
                 if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >=(p->pos - cl1)+ p->len)
                     end = p->pos-cl1 + p->len;
                 else
+		{
                     end = p->pos - cl1 + p->len - cl2;
+		    stillInSeq = false;
+		}
                 ActualInsert = end - start;
             }
+
+	    if(stillInSeq) status = "PropPair";
+
             InsertSizeDist[ActualInsert]++;
             fout << p->name << "\t" << maxInsert <<"\t"<<maxInsert2<< "\t" <<ActualInsert
                  << "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
                  << "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
-                 << "\tPartialPair"
+                 << "\t"<<status
                  << endl;
 
         } else
         {
-            if(!(p->strand)&& p->extra_flag&SAM_FR1 && p->extra_flag&SAM_FPP)//FR
+            if(!(p->strand) && q->strand && p->pos < q->pos)//FR
             {
                 start = p->pos;
                 end = q->pos + q->len;
                 ActualInsert = end - start;
             }
-            else if(p->strand && p->extra_flag&SAM_FR2 && p->extra_flag&SAM_FPP)//FR but rotated, should not happen in reality
+            else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
             {
                 start = q->pos;
                 end = p->pos + p->len;
