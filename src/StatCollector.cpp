@@ -720,6 +720,7 @@ int StatCollector::addSingleAlignment(SamRecord& p, const gap_opt_t* opt) //
 int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	const bwa_seq_t *q, const gap_opt_t* opt, int type, ofstream & fout)
 {//in this setting p is fastq1 and q is fastq2
+	//todo: remember to also update IsDuplicated overloaded version
 	int maxInsert(-1), maxInsert2(-1);
 	int readLength(0), seqid_p(-1), seqid_q(-1);
 	int flag1=0;
@@ -752,7 +753,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         status="RevOnly";
         readLength = pos_end(q) - q->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
         bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
-        readLength = q->len;//original read len
 
         if(q->cigar)
         {
@@ -771,15 +771,16 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         {
             if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >= (q->pos - cl3) + q->len)//soft clip stays within Flank Region
                 maxInsert2 = (q->pos - cl3) + q->len - bns->anns[seqid_q].offset;
-            else
-                maxInsert2 = (q->pos - cl3) + q->len - cl4 - bns->anns[seqid_q].offset;
+            else//has soft clip and not complete mapped
+				return 2;
         }
         else//forward
         {
             if( (q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - (q->pos - cl3);
             else
-                maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - q->pos;
+				return 2;
+
             status = "FwdOnly";
         }
 
@@ -795,7 +796,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         status="FwdOnly";
         readLength = pos_end(p) - p->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
         bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
-        readLength= p->len;//original read length
 
         if(p->cigar)
         {
@@ -815,7 +815,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >= (p->pos - cl1) + p->len)//soft clip stays within Flank Region
                 maxInsert2 = (p->pos - cl1) + p->len - bns->anns[seqid_p].offset;
             else
-                maxInsert2 = (p->pos - cl1) + p->len - cl2 - bns->anns[seqid_p].offset;
+				return 2;
+
             status = "RevOnly";
         }
         else
@@ -823,7 +824,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             if((p->pos - cl1) >=bns->anns[seqid_p].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - (p->pos - cl1);
             else
-                maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+				return 2;
         }
         fout << p->name << "\t" << maxInsert << "\t"<<maxInsert2<<"\t"<< -1
              << "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1<<"\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
@@ -872,12 +873,12 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             if( (p->pos - cl1) >= bns->anns[seqid_p].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - (p->pos - cl1);
             else
-                maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - p->pos;
+                maxInsert = -1;
 
             if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >= (q->pos - cl3) + q->len)//soft clip stays within Flank Region
                 maxInsert2 = (q->pos - cl3) + q->len - bns->anns[seqid_q].offset;
             else
-                maxInsert2 = (q->pos - cl3) + q->len - cl4 - bns->anns[seqid_q].offset;
+                maxInsert2 = -1;
 
         } else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
         {
@@ -885,12 +886,12 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             if((q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
                 maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - (q->pos - cl3);
             else
-                maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - q->pos;
+                maxInsert = -1;
 
             if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >= (p->pos - cl1) + p->len)//soft clip stays within Flank Region
                 maxInsert2 = (p->pos - cl1) + p->len - bns->anns[seqid_p].offset;
             else
-                maxInsert2 = (p->pos - cl1) + p->len - cl2 - bns->anns[seqid_p].offset;
+                maxInsert2 = -1;
         } else//other than FR, treat as DiffChrom
         {
             fout << p->name << "\t" << maxInsert <<"\t"<<maxInsert2<< "\t" << -1
@@ -923,85 +924,33 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     }
     if (p->mapQ >= 20 && q->mapQ >= 20)
     {
-        int ActualInsert(-1), start(0), end(0);
+		int ActualInsert(-1), start(0), end(0);//[start, end)
 
-
-
-        if(p->cigar||q->cigar)//not perfect match
-        {
-	    bool stillInSeq = true;
-	    status = "PartialPair";
-            if(!(p->strand) && q->strand && p->pos < q->pos)//FR
-            {
-                if(p->pos - cl1 >= bns->anns[seqid_p].offset)//add S still in seq
-                    start = p->pos - cl1;
-                else
+		status = "PartialPair";
+		if (!(p->strand) && q->strand && p->pos < q->pos)//FR
 		{
-                    start = p->pos;
-		    stillInSeq = false;
-		}
-                if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >=(q->pos - cl3)+ q->len)//add S still in seq
-                    end = q->pos-cl3 + q->len;
-                else
+			start = p->pos - cl1;
+			end = q->pos - cl3 + q->len;
+			ActualInsert = end - start;
+		} else if (!(q->strand) && p->strand && q->pos < p->pos)//FR but rotated
 		{
-                    end = q->pos - cl3 + q->len - cl4;
-		    stillInSeq = false;
-		}
-                ActualInsert = end - start;
-            }
-            else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
-            {
-                if(q->pos - cl3 >= bns->anns[seqid_q].offset)
-                    start = q->pos - cl3;
-                else
-		{
-                    start = q->pos;
-		    stillInSeq = false;
+			start = q->pos - cl3;
+			end = p->pos - cl1 + p->len;
+			ActualInsert = end - start;
 		}
 
-                if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >=(p->pos - cl1)+ p->len)
-                    end = p->pos-cl1 + p->len;
-                else
-		{
-                    end = p->pos - cl1 + p->len - cl2;
-		    stillInSeq = false;
-		}
-                ActualInsert = end - start;
-            }
+		if (maxInsert != -1 and maxInsert2 != -1) status = "PropPair";
 
-	    if(stillInSeq) status = "PropPair";
+		InsertSizeDist[ActualInsert]++;
+		fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << ActualInsert
+			 << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
+			 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+			 << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
+			 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+			 << "\t" << status
+			 << endl;
 
-            InsertSizeDist[ActualInsert]++;
-            fout << p->name << "\t" << maxInsert <<"\t"<<maxInsert2<< "\t" <<ActualInsert
-                 << "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1 << "\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
-                 << "\t"<< bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1 << "\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
-                 << "\t"<<status
-                 << endl;
-
-        } else
-        {
-            if(!(p->strand) && q->strand && p->pos < q->pos)//FR
-            {
-                start = p->pos;
-                end = q->pos + q->len;
-                ActualInsert = end - start;
-            }
-            else if(!(q->strand) && p->strand && q->pos <p->pos)//FR but rotated
-            {
-                start = q->pos;
-                end = p->pos + p->len;
-                ActualInsert = end - start;
-
-            }
-            InsertSizeDist[ActualInsert]++;
-            fout << p->name << "\t" << maxInsert << "\t" <<maxInsert2<< "\t" << ActualInsert
-                 << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" <<flag1<< "\t" <<p->len<< "\t" <<cigar_output(p->n_cigar,p->cigar,p->len)
-                 << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" <<flag2<< "\t" <<q->len<< "\t" <<cigar_output(q->n_cigar,q->cigar,q->len)
-                 << "\tPropPair"
-                 << endl;
-        }
-
-        char start_end[256];
+		char start_end[256];
         sprintf(start_end, "%d:%d", start, end);
         pair<unordered_map<string, bool>::iterator, bool> iter =
                     duplicateTable.insert(make_pair(string(start_end), true));
