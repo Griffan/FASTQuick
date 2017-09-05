@@ -82,33 +82,38 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName, doubl
         if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
         if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
         if(Status =="Abnormal" or Status == "NotPair") continue;
-        else if(Status == "FwdOnly")//Obs is NA
-        {
-            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
-            MisDist[Max]+=currVote;
-        }
-        else if(Status == "RevOnly")
-        {
-            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,1));
-            MisDist[Max2]+=currVote;
-        }
-        else if(Status == "PropPair"||Status == "PartialPair")
-        {
+//        else if(Status == "FwdOnly")//Obs is NA
+//        {
+//            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
+//            MisDist[Max]+=currVote;
+//        }
+//        else if(Status == "RevOnly")
+//        {
+//            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,1));
+//            MisDist[Max2]+=currVote;
+//        }
+//        else if(Status == "PropPair"||Status == "PartialPair")
+//        {
+//            if(Obs < 0)
+//            {
+//                std:cerr<<"observe -1 in obs"<<std::endl;
+//                exit(1);
+//            }
+////            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
+////            MisDist[Max]++;
+////            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
+////            MisDist[Max2]++;
+//            ObsDistVec[Obs].push_back(InsertSizeRecord(ReadName, Obs, Max,1));
+//            ObsDist[Obs]+=currVote;
+//           // cerr<<"ObsDist["<<Obs<<"]:"<<ObsDist[Obs]<<endl;
+//        }
+//        else {//pair end info available
+//            //continue;
 //            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
-//            MisDist[Max]++;
+//            MisDist[Max]+=0.5*currVote;
 //            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
-//            MisDist[Max2]++;
-            ObsDistVec[Obs].push_back(InsertSizeRecord(ReadName, Obs, Max,1));
-            ObsDist[Obs]+=currVote;
-           // cerr<<"ObsDist["<<Obs<<"]:"<<ObsDist[Obs]<<endl;
-        }
-        else {//pair end info available
-            //continue;
-            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
-            MisDist[Max]+=0.5*currVote;
-            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
-            MisDist[Max2]+=0.5*currVote;
-        }
+//            MisDist[Max2]+=0.5*currVote;
+//        }
 //        totalPair++;
         totalPair+=currVote;
         //ObsRecordVec.push_back(InsertSizeRecord(ReadName,Obs,Max));
