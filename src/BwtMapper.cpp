@@ -502,7 +502,8 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 //			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
 //		}
 		//for debug end
-		if (BwtIndex->RollParam.thresh!=0 && BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
+        strncpy(p->name, seq->name.s, seq->name.l);
+        if (BwtIndex->RollParam.thresh!=0 && BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
 		{
 			p->filtered |= 1;
 			if (n_seqs == n_needed) break;
@@ -513,7 +514,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
 		seq_reverse(p->len, p->rseq, is_comp);
 		//p->name = strdup((const char*)seq->name.s);
-		strncpy(p->name, seq->name.s, seq->name.l);
+		//strncpy(p->name, seq->name.s, seq->name.l);
 		{ // trim /[12]$
 			int t = strlen(p->name);
 			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
