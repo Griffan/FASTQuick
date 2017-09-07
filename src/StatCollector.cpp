@@ -725,6 +725,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 	int readLength(0), seqid_p(-1), seqid_q(-1);
 	int flag1=0;
 	int flag2=0;
+    int threshQual=20;
     string status;
 
     int cl1(0),op1(0);//p left
@@ -750,88 +751,113 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
 
     if(type ==1) //q is aligned only, read2
     {
-        status="RevOnly";
-        readLength = pos_end(q) - q->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
+        readLength = pos_end(q) -
+                     q->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
         bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
+        if(q->mapQ >=threshQual) {
+            status = "RevOnly";
 
-        if(q->cigar)
-        {
-            op3="MIDS"[__cigar_op(q->cigar[0])];//left most cigar
-            if(op3=='S') {
-                cl3 = __cigar_len(q->cigar[0]);
+
+            if (q->cigar) {
+                op3 = "MIDS"[__cigar_op(q->cigar[0])];//left most cigar
+                if (op3 == 'S') {
+                    cl3 = __cigar_len(q->cigar[0]);
+                }
+
+                op4 = "MIDS"[__cigar_op(q->cigar[q->n_cigar - 1])];//right most cigar
+                if (op4 == 'S') {
+                    cl4 = __cigar_len(q->cigar[q->n_cigar - 1]);
+                }
             }
 
-            op4="MIDS"[__cigar_op(q->cigar[q->n_cigar-1])];//right most cigar
-            if(op4=='S') {
-                cl4 = __cigar_len(q->cigar[q->n_cigar-1]);
+            if (q->strand)//reverse
+            {
+                if (bns->anns[seqid_q].offset + bns->anns[seqid_q].len >=
+                    (q->pos - cl3) + q->len)//soft clip stays within Flank Region
+                    maxInsert2 = (q->pos - cl3) + q->len - bns->anns[seqid_q].offset;
+                else//has soft clip and not complete mapped
+                    return 2;
+            } else//forward
+            {
+                if ((q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
+                    maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - (q->pos - cl3);
+                else
+                    return 2;
+
+                status = "FwdOnly";
             }
-        }
 
-        if(q->strand)//reverse
+            fout << q->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+                 << "\t" << "*" << "\t" << "*" << "\t" << flag1 << "\t" << 0 << "\t" << "*"
+                 << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
+                 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+                 << "\t" << status
+                 << endl;
+            return 0;
+        } else
         {
-            if(bns->anns[seqid_q].offset + bns->anns[seqid_q].len >= (q->pos - cl3) + q->len)//soft clip stays within Flank Region
-                maxInsert2 = (q->pos - cl3) + q->len - bns->anns[seqid_q].offset;
-            else//has soft clip and not complete mapped
-				return 2;
+            fout << q->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+                 << "\t" << "*" << "\t" << "*" << "\t" << flag1 << "\t" << 0 << "\t" << "*"
+                 << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
+                 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+                 << "\t" << "LowQual"
+                 << endl;
+            return 2; //low quality
         }
-        else//forward
-        {
-            if( (q->pos - cl3) >= bns->anns[seqid_q].offset)//soft clip stays within Flank Region
-                maxInsert = bns->anns[seqid_q].offset + bns->anns[seqid_q].len - (q->pos - cl3);
-            else
-				return 2;
-
-            status = "FwdOnly";
-        }
-
-        fout << q->name << "\t" << maxInsert << "\t" <<maxInsert2<<"\t"<< -1
-             << "\t" << "*" << "\t"<< "*"<<"\t" <<flag1<<"\t"<<0<<"\t"<<"*"
-             << "\t" << bns->anns[seqid_q].name << "\t"<< q->pos - bns->anns[seqid_q].offset + 1<<"\t"<<flag2<<"\t"<<q->len<<"\t"<<cigar_output(q->n_cigar,q->cigar,q->len)
-             << "\t" << status
-             << endl;
-        return 0;
     }
     else if (type ==3) //p is aligned only, read1
     {
-        status="FwdOnly";
-        readLength = pos_end(p) - p->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
+        readLength = pos_end(p) -
+                     p->pos; //length of read including cigar for bns tracking, length of the reference in the alignment
         bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
 
-        if(p->cigar)
-        {
-            op1="MIDS"[__cigar_op(p->cigar[0])];//left most cigar
-            if(op1=='S') {
-                cl1 = __cigar_len(p->cigar[0]);
+        if(p->mapQ>=threshQual) {
+            status = "FwdOnly";
+
+            if (p->cigar) {
+                op1 = "MIDS"[__cigar_op(p->cigar[0])];//left most cigar
+                if (op1 == 'S') {
+                    cl1 = __cigar_len(p->cigar[0]);
+                }
+
+                op2 = "MIDS"[__cigar_op(p->cigar[p->n_cigar - 1])];//right most cigar
+                if (op2 == 'S') {
+                    cl2 = __cigar_len(p->cigar[p->n_cigar - 1]);
+                }
             }
 
-            op2="MIDS"[__cigar_op(p->cigar[p->n_cigar-1])];//right most cigar
-            if(op2=='S') {
-                cl2 = __cigar_len(p->cigar[p->n_cigar-1]);
+            if (p->strand)//reverse
+            {
+                if (bns->anns[seqid_p].offset + bns->anns[seqid_p].len >=
+                    (p->pos - cl1) + p->len)//soft clip stays within Flank Region
+                    maxInsert2 = (p->pos - cl1) + p->len - bns->anns[seqid_p].offset;
+                else
+                    return 2;
+
+                status = "RevOnly";
+            } else {
+                if ((p->pos - cl1) >= bns->anns[seqid_p].offset)//soft clip stays within Flank Region
+                    maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - (p->pos - cl1);
+                else
+                    return 2;
             }
-        }
-
-        if(p->strand)//reverse
+            fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+                 << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
+                 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+                 << "\t" << "*" << "\t" << "*" << "\t" << flag2 << "\t" << 0 << "\t" << "*"
+                 << "\t" << status
+                 << endl;
+            return 0;
+        } else
         {
-            if(bns->anns[seqid_p].offset + bns->anns[seqid_p].len >= (p->pos - cl1) + p->len)//soft clip stays within Flank Region
-                maxInsert2 = (p->pos - cl1) + p->len - bns->anns[seqid_p].offset;
-            else
-				return 2;
-
-            status = "RevOnly";
+            fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+                 << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
+                 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+                 << "\t" << "*" << "\t" << "*" << "\t" << flag2 << "\t" << 0 << "\t" << "*"
+                 << "\t" << "LowQual"
+                 << endl;
+            return 2;
         }
-        else
-        {
-            if((p->pos - cl1) >=bns->anns[seqid_p].offset)//soft clip stays within Flank Region
-                maxInsert = bns->anns[seqid_p].offset + bns->anns[seqid_p].len - (p->pos - cl1);
-            else
-				return 2;
-        }
-        fout << p->name << "\t" << maxInsert << "\t"<<maxInsert2<<"\t"<< -1
-             << "\t"<< bns->anns[seqid_p].name << "\t"<< p->pos - bns->anns[seqid_p].offset + 1<<"\t"<<flag1<<"\t"<<p->len<<"\t"<<cigar_output(p->n_cigar,p->cigar,p->len)
-             << "\t" << "*" << "\t"<< "*"<<"\t"<<flag2<<"\t"<<0<<"\t"<<"*"
-             << "\t" << status
-             << endl;
-        return 0;
     }
     else if (type ==2) //both aligned
     {
@@ -922,7 +948,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
              << endl;
         return 0;
     }
-    if (p->mapQ >= 20 && q->mapQ >= 20)
+    if (p->mapQ >= threshQual && q->mapQ >= threshQual)
     {
 		int ActualInsert(-1), start(0), end(0);//[start, end)
 
@@ -1828,14 +1854,14 @@ int StatCollector::getEmpCycleDist(const string & outputPath)
 	fout.close();
 	return 0;
 }
-int StatCollector::getInsertSizeDist(const std::string &outputPath, double ratio)
+int StatCollector::getInsertSizeDist(const std::string &outputPath)
 {
 
 	std::string InFileName(outputPath+".InsertSizeTable");
 	std::string OutFileName(outputPath+".AdjustedInsertSizeDist");
 
 	InsertSizeEstimator Estimator;
-	Estimator.InputInsertSizeTable(InFileName, ratio);
+	Estimator.InputInsertSizeTable(InFileName);
 //	Estimator.Sort();
 	Estimator.UpdateWeight(OutFileName);
 //	Estimator.UpdateInsertDist();
@@ -1889,8 +1915,7 @@ int StatCollector::processCore(const string & statPrefix, const gap_opt_t* opt)
 	getEmpRepDist(statPrefix);
 	getEmpCycleDist(statPrefix);
 
-	double ratio=double(opt->num_variant_long*opt->flank_long_len)/(opt->num_variant_long*opt->flank_long_len+opt->num_variant_short*opt->flank_len);
-	getInsertSizeDist(statPrefix, ratio);
+	getInsertSizeDist(statPrefix);
 
 	getSexChromInfo(statPrefix);
 	outputPileup(statPrefix,opt);

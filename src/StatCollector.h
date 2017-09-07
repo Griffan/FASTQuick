@@ -154,7 +154,7 @@ public:
 	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
 	int getEmpRepDist(const std::string & outputPath);
 	int getEmpCycleDist(const std::string & outputPath);
-	int getInsertSizeDist(const std::string &outputPath, double ratio);
+	int getInsertSizeDist(const std::string &outputPath);
 	int getSexChromInfo(const std::string & outputPath);
 	int outputPileup(const std::string & statPrefix, const gap_opt_t* opt);
 
