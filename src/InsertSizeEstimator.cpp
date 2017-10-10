@@ -39,13 +39,14 @@ void split( vector<string> & theStringVector,  /* Altered/returned value */
 #define SAM_FR1  64 // this is read one
 #define SAM_FR2 128 // this is read two
 #define SAM_FSC 256 // secondary alignment
-int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName) {
+
+int InsertSizeEstimator::InputInsertSizeTable(std::string FileName, std::string Orientation) {
     std::ifstream fin(FileName);
     if(!fin.is_open()) std::cerr<<"File "<<FileName<<" Open Failed!"<<std::endl;
     std::string line;
     std::istringstream ss;
     vector<string> stringVector;
-    int count=1;
+    double count = 1.;
     int leftCount=0,rightCount=0;
     while(getline(fin,line))
     {
@@ -67,14 +68,12 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName) {
         ReadLen2=atoi(stringVector[12].c_str());
         Cigar2=stringVector[13];
         Status=stringVector[14];
-
-//        if(Chr1.find('L',Chr1.length()-1)==string::npos && Chr2.rfind('L',Chr2.length()-1)==string::npos) continue;
-//        cerr<<"come here and "<<ReadName<<"\t"<<Obs<<"\t"<<Max<<"\t"<<Max2<<"\t"<<Status<<endl;
-        //continue;
         if(Max>=INSERT_LIMIT) Max=INSERT_LIMIT-1;
         if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
         if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
-        if(Status =="Abnormal"  or Status == "LowQual"  or Status == "NotPair" /*or Status == "FwdOnly" or Status == "RevOnly"*/) continue;
+        if (Status == "Abnormal" or Status == "LowQual" or Status == "NotPair" or
+            Status == Orientation/*or Status == "FwdOnly" or Status == "RevOnly"*/)
+            continue;
         else if(Status == "FwdOnly")//Obs is NA
         {
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
@@ -92,29 +91,28 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName) {
         }
         else if (Status == "PartialPair")
         {
-            if(Cigar1.find('S')==Cigar1.npos )//read1 no S
+            if (Cigar1.find('S') == Cigar1.npos && Cigar2.find('S') != Cigar2.npos)//read1 no S
             {
                 if(Flag1&SAM_FSR) { // R mapped
                     MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2, 1));
-                    MisDist[Max2] += 1;
+                    MisDist[Max2] += 1.;
                     rightCount++;
                 } else // F mapped
                 {
                     MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max, 1));
-                    MisDist[Max] += 1;
+                    MisDist[Max] += 1.;
                     leftCount++;
                 }
-            }
-            else if(Cigar2.find('S')==Cigar2.npos )//read2 no S
+            } else if (Cigar1.find('S') != Cigar1.npos && Cigar2.find('S') == Cigar2.npos)//read2 no S
             {
                 if(Flag2&SAM_FSR) {// R mapped
                     MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2, 1));
-                    MisDist[Max2] += 1;
+                    MisDist[Max2] += 1.;
                     rightCount++;
                 } else// F mapped
                 {
                     MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max, 1));
-                    MisDist[Max] += 1;
+                    MisDist[Max] += 1.;
                     leftCount++;
                 }
             } else
@@ -140,14 +138,14 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string &FileName) {
         totalPair++;
         //ObsRecordVec.push_back(InsertSizeRecord(ReadName,Obs,Max));
     }
+//    cerr<<"leftCount:"<<leftCount<<"\trightCount:"<<rightCount<<std::endl;
     return 0;
 }
 
-int InsertSizeEstimator::UpdateWeight(const std::string & outputPath) {
-	ofstream fout(outputPath);
-    vector<double> F(1000,0.),f(1000,0.);
+vector<double> InsertSizeEstimator::UpdateWeight() {
+    vector<double> F(2000, 0.), f(2000, 0.);
     vector<double> G(F),g(f);
-    for (int k = 0; k <1000 ; ++k) {
+    for (int k = 0; k < 2000; ++k) {
         double m(0),n(0);
         m=MisDist[k];
         n=ObsDist[k];
@@ -168,12 +166,10 @@ int InsertSizeEstimator::UpdateWeight(const std::string & outputPath) {
             g[k] = m / double(totalPair);
             G[k]=g[k];
         }
-
-        fout << k << "\t" << f[k]<< std::endl;
+        //       cout << k << "\t" << f[k]<<"\tMaximalIS:"<<m<<"\tObsIS:"<<n<< endl;
     }
 
-    fout.close();
-    return 0;
+    return f;
 }
 
 int InsertSizeEstimator::Sort() {

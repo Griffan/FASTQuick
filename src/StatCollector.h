@@ -1,28 +1,22 @@
-/* The MIT License
+/*The MIT License (MIT)
+Copyright (c) 2017 Fan Zhang, Hyun Min Kang
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-   Copyright (c) 2009 Genome Research Ltd (GRL), 2010 Broad Institute
-
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be
-   included in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-*/
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 /* Contact: Fan Zhang <fanzhang@umich.edu> */
 
 
@@ -90,7 +84,7 @@ private:
 	std::vector<uint32_t> Q30DepthVec;
 	/****for SNP site******/
 	std::vector<std::string> SeqVec,QualVec;
-	std::vector<std::vector<unsigned int> > CycleVec;
+	std::vector<std::vector<int> > CycleVec;
 	std::vector<std::vector<unsigned char> > MaqVec;
 	std::vector<std::vector<bool> >StrandVec;
 	/************************/
@@ -121,20 +115,24 @@ private:
 	std::vector<FileStatCollector> FSCVec;
 
 private:
-	int addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt);
-	int addSingleAlignment( SamRecord& p,const gap_opt_t* opt);
-	void StatVecDistUpdate(const std::string& qual, unsigned int left_to_right_coord,
-			unsigned int tmp_index, const std::string& RefSeq, const std::string& seq,
-			unsigned int tmpCycle);
-	void AddBaseInfoToNewCoord(const std::string& Chrom, uint32_t i,
-			const std::string& qual, unsigned int left_to_right_coord,
-			const std::string& RefSeq, const std::string& seq, unsigned int tmpCycle);
-	void UpdateInfoVecAtMarker(unsigned int tmpCycleVcfTable,
-			unsigned int tmpCycle, unsigned int tmp_left_to_right_coord,
-			unsigned int left_to_right_coord, unsigned int realCoord, int cl,
-			char sign[2], bool strand, const std::string& Chrom,
-			unsigned int tmp_index, const std::string& seq, const std::string& qual,
-			int mapQ);
+	bool addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt);
+
+	bool addSingleAlignment(SamRecord &p, const gap_opt_t *opt);
+
+	void StatVecDistUpdate(const std::string &qual, int left_to_right_coord,
+						   unsigned int tmp_index, const std::string &RefSeq, const std::string &seq,
+						   int tmpCycle);
+
+	void AddBaseInfoToNewCoord(const std::string &Chrom, int i,
+							   const std::string &qual, int left_to_right_coord,
+							   const std::string &RefSeq, const std::string &seq, int tmpCycle);
+
+	void UpdateInfoVecAtMarker(int tmpCycleVcfTable,
+							   int tmpCycle, int tmp_left_to_right_coord,
+							   int left_to_right_coord, int realCoord, int cl,
+							   const char *sign, bool strand, const std::string &Chrom,
+							   unsigned int tmp_index, const std::string &seq, const std::string &qual,
+							   u_char mapQ);
 
 public:
 	StatCollector();

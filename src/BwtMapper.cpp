@@ -1,9 +1,3 @@
-/*
- * BwtMapper.cpp
- *
- *  Created on: 2014��7��9��
- *      Author: Administrator
- */
 
 #include "BwtMapper.h"
 #include <stdio.h>
