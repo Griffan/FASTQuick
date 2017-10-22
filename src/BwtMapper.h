@@ -39,7 +39,6 @@ class BwtMapper
 	StatCollector collector;
 	char *bwa_rg_line;
 	char *bwa_rg_id;
-	//bool PassFlag[READ_BUFFER_SIZE];
 public:
 
 	BwtMapper();
@@ -86,6 +85,11 @@ public:
 			<< "opt reveal end" << std::endl;
 
 	}
+
+private:
+    BwtMapper(BwtMapper const &);
+
+    void operator=(BwtMapper const &x);
 };
 
 #endif /* BWTMAPPER_H_ */
