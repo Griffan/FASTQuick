@@ -36,7 +36,6 @@ static std::string cigar_output(int n_cigar, const bwa_cigar_t *cigar, int len) 
 #define INSERT_SIZE_LIMIT 4096
 
 StatCollector::StatCollector() {
-    // TODO Auto-generated constructor stub
     //cerr << "NOTE:Using default initializer..." << endl;
     PositionTable.clear();
     VcfRecVec.clear();
@@ -1174,11 +1173,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             total_add++;
             return 2;
         }
-
-        j = 1;
         return 0;
-    } else {
-        j = pos_end(p) - p->pos; //length of read
     }
 
     //until now p is aligned
@@ -1186,8 +1181,8 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     if (q == 0 || q->type == BWA_TYPE_NO_MATCH) {
         if (addSingleAlignment(bns, p, opt)) //adding single via pair interface
         {
-            if (string(pname).find("Y") != string::npos
-                || string(pname).find("X") != string::npos) {
+            if (string(pname).find('Y') != string::npos
+                || string(pname).find('X') != string::npos) {
                 if (!isPartialAlign(p)) {
                     contigStatusTable[pname].addNumOverlappedReads();
                     contigStatusTable[pname].addNumFullyIncludedReads();
@@ -1199,10 +1194,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             total_add++;
             return 2;
         }
-        j2 = 1;
         return 0;
-    } else {
-        j2 = pos_end(q) - q->pos; //length of read
     }
 
     string qname(bns->anns[seqid2].name);
@@ -1794,17 +1786,17 @@ int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) 
         }
     }
     fout.close();
-    char cmdline[2048];
-    sprintf(cmdline, "bgzip -f %s.Pileup&", outputPath.c_str());
-    //fprintf(stderr, "[debug] before hanging\n%s\n",cmdline);
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install bgzip!\n", cmdline);
-    }
-    //fprintf(stderr, "[debug] after hanging\n");
-    sprintf(cmdline, "tabix  -s 1 -b 2 -e 2 %s.Pileup.gz", outputPath.c_str());
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install tabix!\n", cmdline);
-    }
+//    char cmdline[2048];
+//    sprintf(cmdline, "bgzip -f %s.Pileup&", outputPath.c_str());
+//    //fprintf(stderr, "[debug] before hanging\n%s\n",cmdline);
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install bgzip!\n", cmdline);
+//    }
+//    //fprintf(stderr, "[debug] after hanging\n");
+//    sprintf(cmdline, "tabix  -s 1 -b 2 -e 2 %s.Pileup.gz", outputPath.c_str());
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install tabix!\n", cmdline);
+//    }
     return 0;
 }
 
@@ -1888,7 +1880,7 @@ int StatCollector::getGenoLikelihood(const string &outputPath) {
     ofstream fout(outputPath + ".Likelihood");
     size_t numAllele[4] =
             {0};
-    char majAllele, minAllele;
+//    char majAllele, minAllele;
     int maxIndex = 0;
     //for (unsort_map::iterator i = PositionTable.begin();
     //	i != PositionTable.end(); ++i) //each chr
@@ -1904,10 +1896,10 @@ int StatCollector::getGenoLikelihood(const string &outputPath) {
 
             countAllele(numAllele, SeqVec[markerIndex]);
             maxIndex = findMaxAllele(numAllele, 4);
-            majAllele = "ACGT"[maxIndex];
+//            majAllele = "ACGT"[maxIndex];
             numAllele[maxIndex] = 0;
             maxIndex = findMaxAllele(numAllele, 4);
-            minAllele = "ACGT"[maxIndex];
+//            minAllele = "ACGT"[maxIndex];
             vector<double> tmpGL = calLikelihood(SeqVec[markerIndex],
                                                  QualVec[markerIndex],                //majAllele, minAllele);
                                                  RefStr[0], AltStr[0]);
@@ -2076,7 +2068,6 @@ int StatCollector::SummaryOutput(const string &outputPath,
 }
 
 StatCollector::~StatCollector() {
-    // TODO Auto-generated destructor stub
     releaseVcfSites();
 
 }
