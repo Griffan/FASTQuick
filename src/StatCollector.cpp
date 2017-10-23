@@ -60,7 +60,7 @@ StatCollector::StatCollector() {
     EmpCycleDist = vector<size_t>(256, 0);
     misEmpCycleDist = vector<size_t>(256, 0);
     InsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
-    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
+//    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
 
 StatCollector::StatCollector(const string &OutFile) {
@@ -87,7 +87,7 @@ StatCollector::StatCollector(const string &OutFile) {
     EmpCycleDist = vector<size_t>(256, 0);
     misEmpCycleDist = vector<size_t>(256, 0);
     InsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
-    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
+//    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
 
 void StatCollector::StatVecDistUpdate(const string &qual,
@@ -878,8 +878,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         maxInsert = INSERT_SIZE_LIMIT - 1;
     if (maxInsert2 >= INSERT_SIZE_LIMIT)
         maxInsert2 = INSERT_SIZE_LIMIT - 1;
-    MaxInsertSizeDist[maxInsert]++;
-    MaxInsertSizeDist[maxInsert2]++;
+//    MaxInsertSizeDist[maxInsert]++;
+//    MaxInsertSizeDist[maxInsert2]++;
     if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1) {
         //int ActualInsert(-1);
         //	ActualInsert=0;
@@ -1030,7 +1030,7 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
         MaxInsert = INSERT_SIZE_LIMIT - 1;
     if (MaxInsert2 >= INSERT_SIZE_LIMIT)
         MaxInsert2 = INSERT_SIZE_LIMIT - 1;
-    MaxInsertSizeDist[MaxInsert]++;
+//    MaxInsertSizeDist[MaxInsert]++;
     if (strcmp(p.getReferenceName(), q.getReferenceName()) != 0) {
 
         InsertSizeDist[0]++;

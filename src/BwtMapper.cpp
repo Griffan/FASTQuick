@@ -218,7 +218,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         notice("%d reads were actually used for QC.", total_add);
         fout.close();
         BamFile->ifclose();
-        // destroy
+		delete BamFile;// destroy
         notice("Calculate distributions... \n");
         collector.processCore(Prefix, opt);
 
@@ -935,7 +935,7 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 		infer_isize(n_seqs, seqs, ii, opt->ap_prior, bwt[0]->seq_len);
 	if (ii->avg < 0.0 && last_ii->avg > 0.0) *ii = *last_ii;
 	if (opt->force_isize) {
-		notice("[%s] discard insert size estimate as user's request.\n", __func__);
+		notice("discard insert size estimate as user's request.\n");
 		ii->low = ii->high = 0;
 		ii->avg = ii->std = -1.0;
 	}

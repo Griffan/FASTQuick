@@ -103,7 +103,7 @@ private:
 	std::vector<size_t> misEmpCycleDist;
 	std::vector<size_t> GCDist;
 	std::vector<size_t> InsertSizeDist;
-	std::vector<size_t> MaxInsertSizeDist;
+//	std::vector<size_t> MaxInsertSizeDist;
 	unsort_map GC;
 
 	bool_table VariantProxyTable;
