@@ -2,8 +2,6 @@
 #include "StatCollector.h"
 #include "InsertSizeEstimator.h"
 #include "../libbwa/bwase.h"
-//#include "../libbwa/bamlite.h"
-//#include "../libbwa/bwtaln.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -33,7 +31,44 @@ static std::string cigar_output(int n_cigar, const bwa_cigar_t *cigar, int len) 
     return tmp;
 }
 
+
+int findMaxAllele(const size_t *a, size_t len) {
+    uint32_t max = 0;
+    uint32_t maxIndex = 0;
+    for (uint32_t i = 0; i != len; ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            maxIndex = i;
+        }
+    }
+    return maxIndex;
+}
+
+int countAllele(size_t *a, const string &seq) {
+    for (uint32_t i = 0; i != seq.size(); ++i) {
+        if (seq[i] == 'A') {
+            a[0]++;
+            continue;
+        }
+        if (seq[i] == 'C') {
+            a[1]++;
+            continue;
+        }
+        if (seq[i] == 'G') {
+            a[2]++;
+            continue;
+        }
+        if (seq[i] == 'T') {
+            a[3]++;
+            continue;
+        }
+    }
+    return 0;
+}
+
 #define INSERT_SIZE_LIMIT 4096
+#define REV_PHRED(x)    pow(10.0,(x/(-10.0)))
+#define PHRED(x)    (-10)*log10(x)
 
 StatCollector::StatCollector() {
     //cerr << "NOTE:Using default initializer..." << endl;
@@ -52,7 +87,7 @@ StatCollector::StatCollector() {
     NumPositionCovered2 = 0;//larger than 1
     NumPositionCovered5 = 0;//larger than 4
     NumPositionCovered10 = 0;// larger than 9
-    DepthDist = vector<size_t>(256, 0);
+    DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
     GCDist = vector<size_t>(256, 0);
     EmpRepDist = vector<size_t>(256, 0);
@@ -79,7 +114,7 @@ StatCollector::StatCollector(const string &OutFile) {
     NumPositionCovered2 = 0;//larger than 1
     NumPositionCovered5 = 0;//larger than 4
     NumPositionCovered10 = 0;// larger than 9
-    DepthDist = vector<size_t>(256, 0);
+    DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
     GCDist = vector<size_t>(256, 0);
     EmpRepDist = vector<size_t>(256, 0);
@@ -106,6 +141,44 @@ void StatCollector::StatVecDistUpdate(const string &qual,
     }
     /************EmpCycle**************************************************************/
     EmpCycleDist[tmpCycle]++;
+}
+
+void StatCollector::AddBaseInfoToNewCoord(const string &Chrom, int i,
+                                          const string &qual, int left_to_right_coord,
+                                          const string &RefSeq, const string &seq, int tmpCycle) {
+    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
+    DepthVec.push_back(0);
+    Q30DepthVec.push_back(0);
+    Q20DepthVec.push_back(0);
+    DepthVec[index]++;
+    PositionTable[Chrom][i] = index;
+    if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
+    {
+        StatVecDistUpdate(qual, left_to_right_coord, index, RefSeq, seq,
+                          tmpCycle);
+    }
+    index++;
+}
+
+void StatCollector::UpdateInfoVecAtMarker(int tmpCycleVcfTable,
+                                          int tmpCycle, int tmp_left_to_right_coord,
+                                          int left_to_right_coord, int realCoord, int cl,
+                                          const char *sign, bool strand, const string &Chrom, unsigned int tmp_index,
+                                          const string &seq, const string &qual, u_char mapQ) {
+    tmpCycleVcfTable = tmpCycle;
+    tmp_left_to_right_coord = left_to_right_coord;
+    for (int i = realCoord; i != realCoord + cl - 1 + 1;
+         ++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord) {
+        if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
+        {
+            tmp_index = VcfTable[Chrom][i];
+            SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
+            QualVec[tmp_index] += qual[tmp_left_to_right_coord];
+            CycleVec[tmp_index].push_back(tmpCycleVcfTable);
+            MaqVec[tmp_index].push_back(mapQ + 33);
+            StrandVec[tmp_index].push_back(strand);
+        }
+    }
 }
 
 bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt) //
@@ -164,12 +237,12 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     int RefRealStart(0), RefRealEnd(0);
     if (PosName[PosName.size() - 1] == 'L') {
         realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-        RefRealStart = refCoord - opt->flank_long_len + 100;
-        RefRealEnd = refCoord + opt->flank_long_len - 100;
+        RefRealStart = refCoord - opt->flank_long_len;
+        RefRealEnd = refCoord + opt->flank_long_len;
     } else {
         realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-        RefRealStart = refCoord - opt->flank_len + 100;
-        RefRealEnd = refCoord + opt->flank_len - 100;
+        RefRealStart = refCoord - opt->flank_len;
+        RefRealEnd = refCoord + opt->flank_len;
     }
     //realCoord += 100; //
     int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0), tmp_left_to_right_coord(0);//coord on reads
@@ -378,44 +451,6 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     return true;
 }
 
-void StatCollector::AddBaseInfoToNewCoord(const string &Chrom, int i,
-                                          const string &qual, int left_to_right_coord,
-                                          const string &RefSeq, const string &seq, int tmpCycle) {
-    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-    DepthVec.push_back(0);
-    Q30DepthVec.push_back(0);
-    Q20DepthVec.push_back(0);
-    DepthVec[index]++;
-    PositionTable[Chrom][i] = index;
-    if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
-    {
-        StatVecDistUpdate(qual, left_to_right_coord, index, RefSeq, seq,
-                          tmpCycle);
-    }
-    index++;
-}
-
-void StatCollector::UpdateInfoVecAtMarker(int tmpCycleVcfTable,
-                                          int tmpCycle, int tmp_left_to_right_coord,
-                                          int left_to_right_coord, int realCoord, int cl,
-                                          const char *sign, bool strand, const string &Chrom, unsigned int tmp_index,
-                                          const string &seq, const string &qual, u_char mapQ) {
-    tmpCycleVcfTable = tmpCycle;
-    tmp_left_to_right_coord = left_to_right_coord;
-    for (int i = realCoord; i != realCoord + cl - 1 + 1;
-         ++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord) {
-        if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
-        {
-            tmp_index = VcfTable[Chrom][i];
-            SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-            QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-            CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-            MaqVec[tmp_index].push_back(mapQ + 33);
-            StrandVec[tmp_index].push_back(strand);
-        }
-    }
-}
-
 bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 {
 
@@ -433,8 +468,6 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
         return false;
 
     updateRefseqByMD(RefSeq, MD);
-
-    //cerr << p->name << "\t" << RefSeq << "\t" << seq << "\t" << MD << endl;
 
     string PosName = p.getReferenceName();
 
@@ -456,15 +489,15 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
     {
         if (PosName[PosName.size() - 1] == 'L') {
             realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-            RefRealStart = refCoord - opt->flank_long_len + 100;
-            RefRealEnd = refCoord + opt->flank_long_len - 100;
+            RefRealStart = refCoord - opt->flank_long_len;
+            RefRealEnd = refCoord + opt->flank_long_len;
         } else {
             realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-            RefRealStart = refCoord - opt->flank_len + 100;
-            RefRealEnd = refCoord + opt->flank_len - 100;
+            RefRealStart = refCoord - opt->flank_len;
+            RefRealEnd = refCoord + opt->flank_len;
         }
     } else {
-        if (VcfTable.find(Chrom) != VcfTable.end()) {
+        if (VcfTable.find(Chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
             auto bound = VcfTable[Chrom].lower_bound(pos);
 
             if (bound != VcfTable[Chrom].end())//right element exists
@@ -1616,9 +1649,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len - 100) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len - 100) * 2 + 1) * opt->num_variant_long
-                        + (501 - 100) * max_XorYmarker;
+    total_region_size = (opt->flank_len  * 2 + 1) * opt->num_variant_short
+                        + (opt->flank_long_len  * 2 + 1) * opt->num_variant_long
+                        + 501 * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1644,8 +1677,6 @@ int StatCollector::getGCDist(const string &outputPath,
     fout.close();
     return 0;
 }
-
-#define PHRED(x)    (-10)*log10(x)
 
 int StatCollector::getEmpRepDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpRepDist");
@@ -1727,8 +1758,8 @@ int StatCollector::processCore(const string &statPrefix, const gap_opt_t *opt) {
             /************DepthDist**************************************************************/
             {
                 NumBaseMapped += DepthVec[j->second];
-                if (DepthVec[j->second] > 255)
-                    DepthDist[255]++;
+                if (DepthVec[j->second] > 1023)
+                    DepthDist[1023]++;
                 else
                     DepthDist[DepthVec[j->second]]++;
             }
@@ -1786,55 +1817,8 @@ int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) 
         }
     }
     fout.close();
-//    char cmdline[2048];
-//    sprintf(cmdline, "bgzip -f %s.Pileup&", outputPath.c_str());
-//    //fprintf(stderr, "[debug] before hanging\n%s\n",cmdline);
-//    if (system(cmdline) != 0) {
-//        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install bgzip!\n", cmdline);
-//    }
-//    //fprintf(stderr, "[debug] after hanging\n");
-//    sprintf(cmdline, "tabix  -s 1 -b 2 -e 2 %s.Pileup.gz", outputPath.c_str());
-//    if (system(cmdline) != 0) {
-//        warning("Call command line:\n%s\nfailed!\nPlease rerun this command after install tabix!\n", cmdline);
-//    }
     return 0;
 }
-
-int findMaxAllele(const size_t *a, size_t len) {
-    uint32_t max = 0;
-    uint32_t maxIndex = 0;
-    for (uint32_t i = 0; i != len; ++i) {
-        if (a[i] > max) {
-            max = a[i];
-            maxIndex = i;
-        }
-    }
-    return maxIndex;
-}
-
-int countAllele(size_t *a, const string &seq) {
-    for (uint32_t i = 0; i != seq.size(); ++i) {
-        if (seq[i] == 'A') {
-            a[0]++;
-            continue;
-        }
-        if (seq[i] == 'C') {
-            a[1]++;
-            continue;
-        }
-        if (seq[i] == 'G') {
-            a[2]++;
-            continue;
-        }
-        if (seq[i] == 'T') {
-            a[3]++;
-            continue;
-        }
-    }
-    return 0;
-}
-
-#define REV_PHRED(x)    pow(10.0,(x/(-10.0)))
 
 vector<double> calLikelihood(const string &seq, const string &qual, const char &maj, const char &min)//maj:ref, min:alt
 {
@@ -1979,8 +1963,7 @@ double StatCollector::Q30BaseFraction() {
     return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped;
 }
 
-int StatCollector::SummaryOutput(const string &outputPath,
-                                 const gap_opt_t *opt) {
+int StatCollector::SummaryOutput(const string &outputPath,const gap_opt_t *opt) {
     ofstream fout(outputPath + ".Summary");
     /*	int max_XorYmarker(0);
         if (opt->num_variant_short >= 100000)
