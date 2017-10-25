@@ -114,7 +114,6 @@ create.DenDist=function(InsertTable,col1,col2){
 
 args=commandArgs(trailingOnly = TRUE)
 input=args[1]
-input="/Users/fanzhang/Downloads/FASTQuick_test/result/regular_size_output_HG01817"
 print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
