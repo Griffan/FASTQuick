@@ -114,7 +114,7 @@ create.DenDist=function(InsertTable,col1,col2){
 
 args=commandArgs(trailingOnly = TRUE)
 input=args[1]
-#input="/Users/fanzhang/Downloads/FASTQuick_test/result/regular_size_output_HG01817"
+input="/Users/fanzhang/Downloads/FASTQuick_test/result/regular_size_output_HG01817"
 print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
@@ -125,14 +125,14 @@ mydata=mydata[1:100,]
 colnames(mydata)=c("Depth","SiteCount")
 lmt=findBump(mydata,1,2,3)
 q1=ggplot(mydata,aes(x=Depth,y=SiteCount))+geom_line(color="#00BFC4")+
-  ggtitle("Depth Distribution")+xlim(mydata[lmt$MIN,1],mydata[lmt$MAX,1])+ theme(plot.title = element_text(hjust = 0.5))
+  ggtitle("Depth Distribution")+coord_cartesian(xlim=c(mydata[lmt$MIN,1],mydata[lmt$MAX,1]))+ theme(plot.title = element_text(hjust = 0.5))
 
 
 mydata= read.table(paste(input,".EmpCycleDist",sep=""),header=FALSE)
 mydata=mydata[1:100,]
 colnames(mydata)=c("Cycle","VariantCount","BaseCount","EmpericalQuality","ReadCount")
 q2=ggplot(mydata)+geom_line(aes(y=EmpericalQuality,x=Cycle),color="#00BFC4")+
-  ggtitle("Sequencing Cycle V.S. Emperical Quality")+xlim(0,100)+ylim(0,45)+
+  ggtitle("Sequencing Cycle V.S. Emperical Quality")+coord_cartesian(xlim=c(0,100))+ylim(0,45)+
   theme(plot.title = element_text(hjust = 0.5,size=10))
 
 
@@ -151,26 +151,24 @@ mydata= read.table(paste(input,".GCDist",sep=""),header=FALSE)
 mydata=mydata[2:100,]
 colnames(mydata)=c("GC","dummy1","dummy2","AvgDepth")
 q5=ggplot(mydata,aes(x=GC,y=AvgDepth))+geom_line(color="#00BFC4")+
-  ggtitle("GC Distribution")+xlim(0,100)+
+  ggtitle("GC Distribution")+coord_cartesian(xlim=c(0,100))+
   geom_abline(intercept=1, slope=0,color="red",linetype="dotted")+ theme(plot.title = element_text(hjust = 0.5))
 
 
-mydata= read.table(paste(input,".AdjustedInsertSizeDist",sep=""),colClasses=c("numeric","numeric"),header=FALSE)
+mydata= read.table(paste(input,".AdjustedInsertSizeDist",sep="",row.names=NULL),colClasses=c("numeric","numeric"),header=FALSE)
 NewTable=create.DenDist(mydata,1,2)
 Adjust.Table=NewTable[order(NewTable[,1]),]
 sumNewTable=sum(Adjust.Table[,2])
 Adjust.Table[,2]=Adjust.Table[,2]/sumNewTable
-Adjust.Table=as.data.frame(Adjust.Table)
-Adjust.Table=cbind(Adjust.Table,rep("AdjustedInsertSize",length(Adjust.Table[,1])))
+Adjust.Table=data.frame(Adjust.Table,rep("AdjustedInsertSize",length(Adjust.Table[,1])),row.names=NULL)
 colnames(Adjust.Table)=c("InsertSize","Frequency","Category")
 
-mydata= read.table(paste(input,".RawInsertSizeDist",sep=""),colClasses=c("numeric","numeric"),header=FALSE)
+mydata= read.table(paste(input,".RawInsertSizeDist",sep="",row.names=NULL),colClasses=c("numeric","numeric"),header=FALSE)
 NewTable=create.DenDist(mydata,1,2)
 Raw.Table=NewTable[order(NewTable[,1]),]
 sumNewTable=sum(Raw.Table[,2])
 Raw.Table[,2]=Raw.Table[,2]/sumNewTable
-Raw.Table=as.data.frame(Raw.Table)
-Raw.Table=cbind(Raw.Table,rep("RawInsertSize",length(Raw.Table[,1])))
+Raw.Table=data.frame(Raw.Table,rep("RawInsertSize",length(Raw.Table[,1])),row.names=NULL)
 colnames(Raw.Table)=c("InsertSize","Frequency","Category")
 
 Combined.Table=rbind(Raw.Table,Adjust.Table)
@@ -178,7 +176,7 @@ Combined.Table$Category=as.factor(Combined.Table$Category)
 
 lmt=findBump(Adjust.Table,1,2,3)
 q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_line()+
-  ggtitle("InsertSize Distribution")+xlim(Adjust.Table[lmt$MIN,1],Adjust.Table[lmt$MAX,1])+
+  ggtitle("InsertSize Distribution")+coord_cartesian(xlim=c(Adjust.Table[lmt$MIN,1],Adjust.Table[lmt$MAX,1]))+
   theme(plot.title = element_text(hjust = 0.5),legend.position=c(0.85,0.9),legend.key.size = unit(0.2, "cm"),legend.text =element_text(size=5), legend.title = element_text(size=5) )
 
 
