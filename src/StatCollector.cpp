@@ -1981,7 +1981,7 @@ double StatCollector::Q30BaseFraction() {
 
 int StatCollector::SummaryOutput(const string &outputPath,
                                  const gap_opt_t *opt) {
-    ofstream fout(outputPath + ".summary");
+    ofstream fout(outputPath + ".Summary");
     /*	int max_XorYmarker(0);
         if (opt->num_variant_short >= 100000)
         max_XorYmarker = 3000;
@@ -2069,6 +2069,5 @@ int StatCollector::SummaryOutput(const string &outputPath,
 
 StatCollector::~StatCollector() {
     releaseVcfSites();
-
 }
 
