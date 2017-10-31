@@ -2,6 +2,7 @@
 #include "StatCollector.h"
 #include "InsertSizeEstimator.h"
 #include "../libbwa/bwase.h"
+#include "../libbwa/bwtaln.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -230,21 +231,21 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     string Chrom = PosName.substr(0, colonPos);
     char *pEnd;
     int refCoord = static_cast<int>(strtol(
-            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // coordinate of variant site
+            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // absolute coordinate of variant
     //size_t slashPos = PosName.find("/");
     //string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
     int realCoord(0);
     int RefRealStart(0), RefRealEnd(0);
     if (PosName[PosName.size() - 1] == 'L') {
-        realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-        RefRealStart = refCoord - opt->flank_long_len;
+        realCoord = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
+        RefRealStart = refCoord - opt->flank_long_len;//absolute coordinate of ref start
         RefRealEnd = refCoord + opt->flank_long_len;
     } else {
-        realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+        realCoord = refCoord - opt->flank_len + pos - 1;
         RefRealStart = refCoord - opt->flank_len;
         RefRealEnd = refCoord + opt->flank_len;
     }
-    //realCoord += 100; //
+
     int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0), tmp_left_to_right_coord(0);//coord on reads
     char sign[2] =
             {1, -1};
@@ -253,8 +254,7 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     }
 
     unsigned int tmp_index = 0;
-    //cerr << p->name << "\t" << PosName<<"\t"<<pos<<"\t"<<Chrom<< "\t" << realCoord << "\t" << MD <<"\t";
-    //cigar string
+
     if (p->cigar) {
         int n_cigar = p->n_cigar;
         bwa_cigar_t *cigar = p->cigar;
@@ -294,16 +294,14 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                     if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
                         for (int i = realCoord; i != realCoord + cl - 1 + 1;
                              ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                            if (i < RefRealStart)
+                            if (i < RefRealStart + opt->read_len)
                                 continue;
-                            if (i > RefRealEnd)
+                            if (i > RefRealEnd - opt->read_len)
                                 break;
-                            //std::pair<unordered_map<int, bool>::iterator, bool> ret =
-                            //		PositionTable[Chrom].insert(make_pair(i, 1));
+
                             if (PositionTable[Chrom].find(i)
-                                != PositionTable[Chrom].end())//!ret.second) //if insert failed, this coord exists
+                                != PositionTable[Chrom].end())
                             {
-                                //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
                                 tmp_index = PositionTable[Chrom][i];
                                 DepthVec[tmp_index]++;
                                 if (dbSNPTable[Chrom].find(i)
@@ -323,9 +321,9 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                     {
                         for (int i = realCoord; i != realCoord + cl - 1 + 1;
                              ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                            if (i < RefRealStart)
+                            if (i < RefRealStart + opt->read_len)
                                 continue;
-                            if (i > RefRealEnd)
+                            if (i > RefRealEnd - opt->read_len)
                                 break;
                             //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
                             AddBaseInfoToNewCoord(Chrom, i, qual,
@@ -409,9 +407,9 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
         if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
             for (int i = realCoord; i != realCoord + p->len - 1 + 1;
                  ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                if (i < RefRealStart)
+                if (i < RefRealStart + opt->read_len)
                     continue;
-                if (i > RefRealEnd)
+                if (i > RefRealEnd - opt->read_len)
                     break;
                 //std::pair<unordered_map<int, bool>::iterator, bool> ret =
                 //		PositionTable[Chrom].insert(make_pair(i, 1));
@@ -437,9 +435,9 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
         {
             for (int i = realCoord; i != realCoord + p->len - 1 + 1;
                  ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                if (i < RefRealStart)
+                if (i < RefRealStart + opt->read_len)
                     continue;
-                if (i > RefRealEnd)
+                if (i > RefRealEnd - opt->read_len)
                     break;
                 //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
                 AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
@@ -577,9 +575,9 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
                     if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
                         for (int i = realCoord; i != realCoord + cl - 1 + 1;
                              ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                            if (i < RefRealStart)
+                            if (i < RefRealStart + opt->read_len)
                                 continue;
-                            if (i > RefRealEnd)
+                            if (i > RefRealEnd - opt->read_len)
                                 break;
                             if (PositionTable[Chrom].find(i)
                                 != PositionTable[Chrom].end()) //!ret.second) //if insert failed, this coord exists
@@ -602,9 +600,9 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
                     {
                         for (int i = realCoord; i != realCoord + cl - 1 + 1;
                              ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                            if (i < RefRealStart)
+                            if (i < RefRealStart + opt->read_len)
                                 continue;
-                            if (i > RefRealEnd)
+                            if (i > RefRealEnd - opt->read_len)
                                 break;
                             AddBaseInfoToNewCoord(Chrom, i, qual,
                                                   left_to_right_coord, RefSeq, seq, tmpCycle);
@@ -655,9 +653,9 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
             for (int i = realCoord;
                  i != realCoord + p.getReadLength() - 1 + 1;
                  ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                if (i < RefRealStart)
+                if (i < RefRealStart + opt->read_len)
                     continue;
-                if (i > RefRealEnd)
+                if (i > RefRealEnd - opt->read_len)
                     break;
                 //std::pair<unordered_map<int, bool>::iterator, bool> ret =
                 //		PositionTable[Chrom].insert(make_pair(i, 1));
@@ -684,9 +682,9 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
             for (int i = realCoord;
                  i != realCoord + p.getReadLength() - 1 + 1;
                  ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                if (i < RefRealStart)
+                if (i < RefRealStart + opt->read_len)
                     continue;
-                if (i > RefRealEnd)
+                if (i > RefRealEnd - opt->read_len)
                     break;
                 //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
                 AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
@@ -1649,9 +1647,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = (opt->flank_len  * 2 + 1) * opt->num_variant_short
-                        + (opt->flank_long_len  * 2 + 1) * opt->num_variant_long
-                        + 501 * max_XorYmarker;
+    total_region_size = ((opt->flank_len-opt->read_len)  * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len- opt->read_len)  * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len-opt->read_len)  * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {

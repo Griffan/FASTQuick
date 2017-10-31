@@ -79,7 +79,7 @@ private:
 	unsort_map PositionTable;//chrom pos absolute index of the site
 	unsigned int index;
 	//nsigned int vcf_index;
-	std::vector<uint32_t> DepthVec;
+	std::vector<uint32_t> DepthVec;//depth at each site
 	std::vector<uint32_t> Q20DepthVec;
 	std::vector<uint32_t> Q30DepthVec;
 	/****for SNP site******/

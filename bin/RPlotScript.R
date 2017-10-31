@@ -155,6 +155,7 @@ q5=ggplot(mydata,aes(x=GC,y=AvgDepth))+geom_line(color="#00BFC4")+
 
 
 mydata= read.table(paste(input,".AdjustedInsertSizeDist",sep="",row.names=NULL),colClasses=c("numeric","numeric"),header=FALSE)
+mydata=mydata[-1,]
 NewTable=create.DenDist(mydata,1,2)
 Adjust.Table=NewTable[order(NewTable[,1]),]
 sumNewTable=sum(Adjust.Table[,2])
@@ -163,6 +164,7 @@ Adjust.Table=data.frame(Adjust.Table,rep("AdjustedInsertSize",length(Adjust.Tabl
 colnames(Adjust.Table)=c("InsertSize","Frequency","Category")
 
 mydata= read.table(paste(input,".RawInsertSizeDist",sep="",row.names=NULL),colClasses=c("numeric","numeric"),header=FALSE)
+mydata=mydata[-1,]
 NewTable=create.DenDist(mydata,1,2)
 Raw.Table=NewTable[order(NewTable[,1]),]
 sumNewTable=sum(Raw.Table[,2])
@@ -175,7 +177,7 @@ Combined.Table$Category=as.factor(Combined.Table$Category)
 
 lmt=findBump(Adjust.Table,1,2,3)
 q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_line()+
-  ggtitle("InsertSize Distribution")+coord_cartesian(xlim=c(Adjust.Table[lmt$MIN,1],Adjust.Table[lmt$MAX,1]))+
+  ggtitle("InsertSize Distribution")+coord_cartesian(xlim=c(ifelse(Adjust.Table[lmt$MIN,1]>100,100,Adjust.Table[lmt$MIN,1]),ifelse(Adjust.Table[lmt$MAX,1]<1000,1000,Adjust.Table[lmt$MAX,1])))+
   theme(plot.title = element_text(hjust = 0.5),legend.position=c(0.85,0.9),legend.key.size = unit(0.2, "cm"),legend.text =element_text(size=5), legend.title = element_text(size=5) )
 
 
