@@ -28,7 +28,7 @@ class RefBuilder
 {
 public:
 	std::vector<std::string> SeqVec;
-	std::unordered_map<std::string,uint32_t > RefTableIndex;
+	std::unordered_map<std::string,uint32_t > RefTableIndex;//seq name -> index
 	//unordered_map<string,bool> longRefTable;
 	RefBuilder();
 	RefBuilder(const std::string& VcfPath, const std::string& RefPath, const std::string& NewRefPath, const std::string& DBsnpPath, const std::string& MaskPath, const gap_opt_t* opt, bool reselect);//, std::unordered_map<std::string,bool>& longRefTable);
