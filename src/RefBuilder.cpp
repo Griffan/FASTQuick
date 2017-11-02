@@ -36,7 +36,7 @@ static void CalculateGC(const int flank_len, const faidx_t *seq, char *region, c
 }
 
 static bool Skip(const string &Chrom, const int Position, const string &last_chr, const int last_pos, char *region,
-                 const string &MaskPath, const faidx_t *FastaMask, const std::vector<string> &chromWhiteList) {
+                 const string &MaskPath, const faidx_t *FastaMask, const std::vector<string> &chromWhiteList, int flank_len) {
     std::string data = Chrom;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
     size_t tmpPos = data.find("chr");
@@ -45,7 +45,7 @@ static bool Skip(const string &Chrom, const int Position, const string &last_chr
     }
     if (not binary_search(chromWhiteList.begin(), chromWhiteList.end(), data))
         return true;
-    if (Chrom == last_chr && abs(Position - last_pos) < 300)
+    if (Chrom == last_chr && abs(Position - last_pos) < flank_len)
         return true;
     int dummy;
     if (MaskPath != "Empty") {
@@ -122,7 +122,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         Position = VcfLine.get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
 
-        if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL)) continue;
+        if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_len)) continue;
 
         if (!VcfLine.write(&FoutSelectedSite, true)) {
             warning("Writing retained sites failed!\n");
@@ -176,7 +176,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         Position = VcfLine.get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
 
-        if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL)) continue;
+        if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_long_len)) continue;
 
         string FetchedSeq(fai_fetch(seq, region, &dummy));
 

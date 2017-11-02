@@ -461,12 +461,12 @@ int runAlign(int argc, char ** argv)
 	}
 	if(IL13)
 	{
-		notice("using Illumina 1.3 version quality system...");
+		notice("Using Illumina 1.3 version quality system...");
 		opt->mode |= BWA_MODE_IL13;
 	}
 	else
 	{
-		notice("using Sanger quality system...");
+		notice("Using Sanger quality system...");
 	}
 	if (loggap)
 	{

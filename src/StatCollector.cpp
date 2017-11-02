@@ -1597,9 +1597,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
+    total_region_size = ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1951,19 +1951,9 @@ double StatCollector::Q30BaseFraction() {
 
 int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt) {
     ofstream fout(outputPath + ".Summary");
-    /*	int max_XorYmarker(0);
-        if (opt->num_variant_short >= 100000)
-        max_XorYmarker = 3000;
-        else if (opt->num_variant_short >= 10000)
-        max_XorYmarker = 300;
-        else
-        max_XorYmarker = 100;
-        total_region_size = ((opt->flank_len-100) * 2 + 1) * opt->num_variant_short
-        + ((opt->flank_long_len-100) * 2 + 1) * opt->num_variant_long
-        + (501-100) * max_XorYmarker;*/
+
     long total_base(0);
     long total_reads(0);
-    //output content for file HG00858.summary
     fout << "FILE 1|FILE 2|# Reads|Average Length" << endl;
     fout << "---|---|---|---" << endl;
     for (size_t i = 0; i != FSCVec.size(); ++i) {
@@ -1984,12 +1974,29 @@ int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt)
     {	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp += i*DepthDist[i]; return double(tmp) / total_region_size; };*/
     fout << "Estimated AvgDepth : ";
     fout << ((NumPositionCovered == 0) ? 0 : NumBaseMapped / (double) NumPositionCovered) << endl;
-    fout << "Estimated percentage of accessible genome covered : "
-         << (1 - (double) DepthDist[0] / total_region_size) * 100 << "/100"
+    fout << "Estimated Percentage of Accessible Genome Covered : "
+         << (1. - (double) DepthDist[0] / total_region_size)*100<<"%"
          << endl;
+    //output for fraction figure
+    /*auto Q20BaseFraction = [&]()->double
+    {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return NumBaseMapped==0?0:double(tmp) / NumBaseMapped; };
+    auto Q30BaseFraction = [&]()->double
+    {	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; };*/
+    fout << "Total Accessible Genome Size :" << total_region_size << endl;
+    double DP1fraction = NumPositionCovered / (double) total_region_size;
+    double DP2fraction = NumPositionCovered2 / (double) total_region_size;
+    double DP5fraction = NumPositionCovered5 / (double) total_region_size;
+    double DP10fraction = NumPositionCovered10 / (double) total_region_size;
+
+    fout << "Depth 1 or above position fraction :" << DP1fraction << endl;
+    fout << "Depth 2 or above position fraction :" << DP2fraction << endl;
+    fout << "Depth 5 or above position fraction :" << DP5fraction << endl;
+    fout << "Depth 10 or above position fraction :" << DP10fraction << endl;
     /*auto Q20AvgDepth =
         [&]()->double
     {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return double(tmp) / total_region_size; };*/
+    fout << "Q20 Base Fraction :" << Q20BaseFraction() << endl;
+    fout << "Q30 Base Fraction :" << Q30BaseFraction() << endl;
     fout << "Estimated AvgDepth for Q20 bases : " << Q20AvgDepth() << endl;
     /*auto Q30AvgDepth =
         [&]()->double
@@ -2005,6 +2012,7 @@ int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt)
         }
         return 0;
     };*/
+
     fout << "Median Insert Size(>=500bp) : " << MIS500() << endl;
     /*auto MIS300 =
         [&]()->double
@@ -2017,21 +2025,6 @@ int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt)
         return 0;
     };*/
     fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
-    //output for fraction figure
-    /*auto Q20BaseFraction = [&]()->double
-    {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp += Q20DepthVec[i]; return NumBaseMapped==0?0:double(tmp) / NumBaseMapped; };
-    auto Q30BaseFraction = [&]()->double
-    {	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped; };*/
-    double DP1fraction = NumPositionCovered / (double) total_region_size;
-    double DP2fraction = NumPositionCovered2 / (double) total_region_size;
-    double DP5fraction = NumPositionCovered5 / (double) total_region_size;
-    double DP10fraction = NumPositionCovered10 / (double) total_region_size;
-    fout << "Q20 Base Fraction :" << Q20BaseFraction() << endl;
-    fout << "Q30 Base Fraction :" << Q30BaseFraction() << endl;
-    fout << "Depth 1 or above position fraction :" << DP1fraction << endl;
-    fout << "Depth 2 or above position fraction :" << DP2fraction << endl;
-    fout << "Depth 5 or above position fraction :" << DP5fraction << endl;
-    fout << "Depth 10 or above position fraction :" << DP10fraction << endl;
 
     return 0;
 }
