@@ -67,8 +67,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
     notice("Initialization of RefBwt...\n");
     //read in ref.fa and ref.fai
     //string RefFaiPath=RefPath+".fai";
-    faidx_t *seq;
-    seq = fai_load(RefPath.c_str());
+    faidx_t *seq = fai_load(RefPath.c_str());
     notice("Loading Ref fai file done!\n");
 
     faidx_t *FastaMask = 0;

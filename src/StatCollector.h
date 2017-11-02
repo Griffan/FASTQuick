@@ -89,7 +89,8 @@ private:
 	std::vector<std::vector<bool> >StrandVec;
 	/************************/
 	std::vector<VcfRecord*> VcfRecVec;
-	sort_map VcfTable;
+	sort_map VcfTable;// (chr,pos) -> index
+
 	unsort_map dbSNPTable;
 	//string_map VcfObTable;//actually covered by reads
 	std::vector<size_t> QualDist;//40*40
@@ -119,20 +120,17 @@ private:
 
 	bool addSingleAlignment(SamRecord &p, const gap_opt_t *opt);
 
-	void StatVecDistUpdate(const std::string &qual, int left_to_right_coord,
-						   unsigned int tmp_index, const std::string &RefSeq, const std::string &seq,
-						   int tmpCycle);
+	void StatVecDistUpdate(const std::string &qual, unsigned int tmpIndex, const std::string &refSeq,
+                               const std::string &seq, int tmpCycle, int relativeCoordOnRead,
+                               int relativeCoordOnRef);
 
-	void AddBaseInfoToNewCoord(const std::string &Chrom, int i,
-							   const std::string &qual, int left_to_right_coord,
-							   const std::string &RefSeq, const std::string &seq, int tmpCycle);
+	void AddBaseInfoToNewCoord(const std::string &chrom, int i, const std::string &qual,
+                                   const std::string &refSeq, const std::string &seq, int tmpCycle,
+                                   int relativeCoordOnRead, int relativeCoordOnRef);
 
-	void UpdateInfoVecAtMarker(int tmpCycleVcfTable,
-							   int tmpCycle, int tmp_left_to_right_coord,
-							   int left_to_right_coord, int realCoord, int cl,
-							   const char *sign, bool strand, const std::string &Chrom,
-							   unsigned int tmp_index, const std::string &seq, const std::string &qual,
-							   u_char mapQ);
+	void UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl, const char *sign, bool strand,
+                               const std::string &chrom, const std::string &seq, const std::string &qual,
+                               u_char mapQ, int relativeCoordOnRead);
 
 public:
 	StatCollector();
@@ -146,7 +144,7 @@ public:
 
 	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
 
-	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
+	int restoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
 	int releaseVcfSites();
 	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
 	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
@@ -184,66 +182,9 @@ public:
 		else
 			return 0;
 	}
-	inline bool ConstructFakeSeqQual(const std::string &seq, const std::string &qual,const int & n_cigar, const bwa_cigar_t* cigar,std::string & newSeq, std::string &newQual)
-	{
 
-		int last=0;
-		for( int k=0;k< n_cigar;++k)
-		{
-				int cl= __cigar_len(cigar[k]);
-				int cop= "MIDS"[__cigar_op(cigar[k])];
-				switch (cop) {
-				 case 'M':
-					 newSeq+=seq.substr(last,cl);
-					 newQual+=qual.substr(last,cl);
-					 break;
-				 case 'D':
-					 newSeq+=std::string('N',cl);
-					 newQual+=std::string('!',cl);
-					 break;
-				 case 'I':
-					 break;
-				 default:
-					 break;
-				}
-		}
-		return true;
-	}
-	int updateRefseqByMD(std::string&RefSeq, std::string&MD)
-	{
-		int last(0), total_len(0)/*pos on seq*/;
-		for (uint32_t i = 0; i != MD.size(); ++i)//remember we are making reference sequence
-			if (isdigit(MD[i]))
-				continue;
-			else if (MD[i] == '^')
-			{
-				int len = atoi(MD.substr(last, i - last).c_str());//len from last to current deletion, '^' not included
-				total_len += len;
-				int start_on_read = total_len;//1 based
-				i++;
-				std::string tmp;
-				while (!isdigit(MD[i])) // we don't need to take care of Deletion
-				{
-					i++;
-					total_len++;
-					tmp += MD[i];
-				}
-				std::string left = RefSeq.substr(0, start_on_read);
-				std::string right = RefSeq.substr(start_on_read, RefSeq.length() - start_on_read + 1);
-				RefSeq = left + tmp + right;
-				total_len--;
-				last = i;
-			}
-			else
-			{
-				int len = atoi(MD.substr(last, i - last).c_str()) + 1;//len from last to current mismatch, include mismatch
-				total_len += len;
-				//if (strcmp(p.getReadName(),"WTCHG_8105:7:66:5315:89850#0")==0){ fprintf(stderr, "we see strange i:%dth out of %d char of MD tag %s, %d out of %d on read:%s", i,MD.length(),MD.c_str(),total_len-1,RefSeq.length(), p.getReadName()); exit(EXIT_FAILURE); }
-				RefSeq[total_len - 1] = MD[i];
-				last = i + 1;
-			}
-		return 0;
-	}
+	std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString);
+    std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar);
 
 	int addFSC(FileStatCollector a);
 	int getGenomeSize(std::string RefPath);
@@ -256,6 +197,22 @@ public:
 	double Q20BaseFraction();
 	double Q30BaseFraction();
 	virtual ~StatCollector();
+
+	void AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
+                              const std::string &refSeq, const std::string &chr, int readRealStart,
+                              int refRealStart, int refRealEnd, const char *sign, bool strand, u_char mapQ,
+                              int matchLen, int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef);
+
+	void UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
+                                        const std::string &refSeq, const std::string &chr, int readRealStart,
+                                        int refRealStart, int refRealEnd, const char *sign, bool strand,
+                                        int matchLen, int tmpCycle, int relativeCoordOnRead,
+                                        int relativeCoordOnRef);
+//private:
+//    std::vector<std::string> DebugSeqVec,DebugQualVec;
+//    std::vector<std::vector<int> > DebugCycleVec;
+//    std::vector<std::vector<unsigned char> > DebugMaqVec;
+//    std::vector<std::vector<bool> >DebugStrandVec;
 };
 
 #endif /* STATCOLLECTOR_H_ */
