@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <faidx.h>
 
 using namespace std;
 
@@ -17,7 +18,7 @@ extern void warning(const char *, ...);
 
 extern void error(const char *, ...);
 
-static std::string cigar_output(int n_cigar, const bwa_cigar_t *cigar, int len) {
+static std::string Cigar2String(int n_cigar, const bwa_cigar_t *cigar, int len) {
     std::string tmp;
     int cl;
     char cop;
@@ -32,8 +33,133 @@ static std::string cigar_output(int n_cigar, const bwa_cigar_t *cigar, int len) 
     return tmp;
 }
 
+static std::vector<bwa_cigar_t> String2Cigar(const std::string &cigarString) {
 
-int findMaxAllele(const size_t *a, size_t len) {
+    std::vector<bwa_cigar_t> cigar;
+    int len = static_cast<int>(cigarString.size());
+    int digitNow(0), digitLast(0);
+    while (digitNow != len) {
+        while (isdigit(cigarString[digitNow]))
+            digitNow++;
+        int cl = atoi(
+                cigarString.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
+        digitLast = digitNow + 1;
+        char cop = cigarString[digitNow];
+        digitNow++;
+        cigar.push_back(__cigar_create(cop,cl));
+    }
+    return cigar;
+}
+
+std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString)
+{
+
+    std::vector<bwa_cigar_t> cigar= String2Cigar(cigarString);
+    return RecoverRefseqByMDandCigar(readSeq, MD, &cigar[0], cigar.size());
+
+}
+
+std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar)
+{
+    std::transform(MD.begin(), MD.end(),MD.begin(), ::toupper);
+    if(MD.find_first_of("ATCGN")==std::string::npos && atoi(MD.c_str())==readSeq.size()) return readSeq;
+    //only collect M pieces
+    std::string refSeq;
+    if(n_cigar >0) {
+        int relativeCoordOnRead = 0;
+        for (int k = 0; k < n_cigar; ++k) {
+            int cl = __cigar_len(cigar[k]);//cigar length
+            int cop = "MIDS"[__cigar_op(cigar[k])];
+            switch (cop) {
+                case 'M':
+                refSeq += readSeq.substr(relativeCoordOnRead, cl);
+                relativeCoordOnRead += cl;
+                break;
+                case 'S'://ignore soft clip
+                    relativeCoordOnRead += cl;
+                    break;
+                case 'D'://ref has base, read has no base;
+                    break;
+                case 'I'://ref has no base, read has base
+                    relativeCoordOnRead += cl;
+                    break;
+                default:
+                    warning("Unhandled cigar_op %d:%d\n", cop, cl);
+            }
+        }//end for
+    } else
+    {
+        refSeq=readSeq;
+    }
+
+
+    //end of MD modify
+    int last(0), total_len(0)/*pos on seq*/;
+    for (uint32_t i = 0; i != MD.size(); ++i)//remember we are making reference sequence
+        if (isdigit(MD[i]))
+            continue;
+        else if (MD[i] == '^')//sign for deletion
+        {
+            int len = atoi(MD.substr(last, i - last).c_str());//len from last to current deletion, '^' not included
+            total_len += len;
+            int start_on_read = total_len;//1 based
+            i++;
+            std::string tmp;
+            while (!isdigit(MD[i])) // we don't need to take care of Deletion
+            {
+                tmp += MD[i];
+                i++;
+                total_len++;
+            }
+            std::string left = refSeq.substr(0, start_on_read);
+            std::string right = refSeq.substr(start_on_read, refSeq.length() - start_on_read + 1);
+            refSeq = left + tmp + right;
+            last = i;
+        }
+        else
+        {
+            int len = atoi(MD.substr(last, i - last).c_str()) + 1;//len from last to current mismatch, include mismatch
+            total_len += len;
+            //if (strcmp(p.getReadName(),"WTCHG_8105:7:66:5315:89850#0")==0){ fprintf(stderr, "we see strange i:%dth out of %d char of MD tag %s, %d out of %d on read:%s", i,MD.length(),MD.c_str(),total_len-1,RefSeq.length(), p.getReadName()); exit(EXIT_FAILURE); }
+            refSeq[total_len - 1] = MD[i];
+            last = i + 1;
+        }
+
+    //assembly seq pieces
+    if(n_cigar >0) {
+        int relativeCoordOnBackbone = 0;
+        int relativeCoordOnRead = 0;
+        std::string backboneSeq = refSeq;
+        refSeq="";
+        for (int k = 0; k < n_cigar; ++k) {
+            int cl = __cigar_len(cigar[k]);//cigar length
+            int cop = "MIDS"[__cigar_op(cigar[k])];
+            switch (cop) {
+                case 'M':
+                    refSeq += backboneSeq.substr(relativeCoordOnBackbone, cl);
+                    relativeCoordOnRead += cl;
+                    relativeCoordOnBackbone += cl;
+                    break;
+                case 'S'://ignore soft clip
+                    refSeq += readSeq.substr(relativeCoordOnRead, cl);
+                    relativeCoordOnRead += cl;
+                    break;
+                case 'D'://ref has base, read has no base;
+                    refSeq += backboneSeq.substr(relativeCoordOnBackbone, cl);
+                    relativeCoordOnBackbone += cl;
+                    break;
+                case 'I'://ref has no base, read has base
+                    relativeCoordOnRead += cl;
+                    break;
+                default:
+                    warning("Unhandled cigar_op %d:%d\n", cop, cl);
+            }
+        }//end for
+    }
+    return refSeq;
+}
+
+static int findMaxAllele(const size_t *a, size_t len) {
     uint32_t max = 0;
     uint32_t maxIndex = 0;
     for (uint32_t i = 0; i != len; ++i) {
@@ -45,7 +171,7 @@ int findMaxAllele(const size_t *a, size_t len) {
     return maxIndex;
 }
 
-int countAllele(size_t *a, const string &seq) {
+static int countAllele(size_t *a, const string &seq) {
     for (uint32_t i = 0; i != seq.size(); ++i) {
         if (seq[i] == 'A') {
             a[0]++;
@@ -126,58 +252,119 @@ StatCollector::StatCollector(const string &OutFile) {
 //    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
 
-void StatCollector::StatVecDistUpdate(const string &qual,
-                                      int left_to_right_coord, unsigned int tmp_index,
-                                      const string &RefSeq, const string &seq, int tmpCycle) {
-    EmpRepDist[qual[left_to_right_coord]]++;
-    if (qual[left_to_right_coord] >= 20) {
-        Q20DepthVec[tmp_index]++;
-        if (qual[left_to_right_coord] >= 30) {
-            Q30DepthVec[tmp_index]++;
+void StatCollector::StatVecDistUpdate(const string &qual, unsigned int tmpIndex, const string &refSeq, const string &seq,
+                                      int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef) {
+
+    EmpRepDist[qual[relativeCoordOnRead]]++;
+    EmpCycleDist[tmpCycle]++;
+
+    if (qual[relativeCoordOnRead] >= 20) {
+        Q20DepthVec[tmpIndex]++;
+        if (qual[relativeCoordOnRead] >= 30) {
+            Q30DepthVec[tmpIndex]++;
         }
     }
-    if (RefSeq[left_to_right_coord] != seq[left_to_right_coord]) {
-        misEmpRepDist[qual[left_to_right_coord]]++;
+    if (refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead]) {
+        misEmpRepDist[qual[relativeCoordOnRead]]++;
         misEmpCycleDist[tmpCycle]++;
     }
-    /************EmpCycle**************************************************************/
-    EmpCycleDist[tmpCycle]++;
+
+    /************Debug*******/
+//    DebugSeqVec[tmpIndex] += seq[relativeCoordOnRead];
+//    DebugQualVec[tmpIndex] += qual[relativeCoordOnRead];
+//    DebugCycleVec[tmpIndex].push_back(tmpCycle);
 }
 
-void StatCollector::AddBaseInfoToNewCoord(const string &Chrom, int i,
-                                          const string &qual, int left_to_right_coord,
-                                          const string &RefSeq, const string &seq, int tmpCycle) {
+void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const string &qual, const string &refSeq,
+                                          const string &seq, int tmpCycle, int relativeCoordOnRead,
+                                          int relativeCoordOnRef) {
     //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
     DepthVec.push_back(0);
     Q30DepthVec.push_back(0);
     Q20DepthVec.push_back(0);
     DepthVec[index]++;
-    PositionTable[Chrom][i] = index;
-    if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end()) //not in dbsnp table
+    PositionTable[chrom][i] = index;
+    /*********debug*********/
+//    DebugSeqVec.push_back("");
+//    DebugQualVec.push_back("");
+//    DebugCycleVec.push_back(std::vector<int>());
+    /*********end debug*****/
+    if (dbSNPTable[chrom].find(i) == dbSNPTable[chrom].end()) //not in dbsnp table
     {
-        StatVecDistUpdate(qual, left_to_right_coord, index, RefSeq, seq,
-                          tmpCycle);
+        StatVecDistUpdate(qual, index, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
     index++;
 }
 
-void StatCollector::UpdateInfoVecAtMarker(int tmpCycleVcfTable,
-                                          int tmpCycle, int tmp_left_to_right_coord,
-                                          int left_to_right_coord, int realCoord, int cl,
-                                          const char *sign, bool strand, const string &Chrom, unsigned int tmp_index,
-                                          const string &seq, const string &qual, u_char mapQ) {
-    tmpCycleVcfTable = tmpCycle;
-    tmp_left_to_right_coord = left_to_right_coord;
-    for (int i = realCoord; i != realCoord + cl - 1 + 1;
-         ++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord) {
-        if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end()) // actual snp site
-        {
-            tmp_index = VcfTable[Chrom][i];
-            SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-            QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-            CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-            MaqVec[tmp_index].push_back(mapQ + 33);
-            StrandVec[tmp_index].push_back(strand);
+void StatCollector::UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl, const char *sign, bool strand,
+                                          const string &chrom, const string &seq, const string &qual, u_char mapQ,
+                                          int relativeCoordOnRead)//only update info at marker site
+{
+    if (VcfTable.find(chrom) != VcfTable.end()) {
+        for (int i = absoluteSite; i != absoluteSite + cl - 1 + 1;
+             ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead) {
+            if (VcfTable[chrom].find(i) != VcfTable[chrom].end()) // actual snp site
+            {
+                int tmpIndex = VcfTable[chrom][i];
+                SeqVec[tmpIndex] += seq[relativeCoordOnRead];
+                QualVec[tmpIndex] += qual[relativeCoordOnRead];
+                CycleVec[tmpIndex].push_back(tmpCycle);
+                MaqVec[tmpIndex].push_back(mapQ + 33);
+                StrandVec[tmpIndex].push_back(strand);
+            }
+        }
+    }
+}
+
+
+void StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq, const string &qual, const string &refSeq,
+                                     const string &chr, int readRealStart, int refRealStart, int refRealEnd,
+                                     const char *sign, bool strand, u_char mapQ, int matchLen, int tmpCycle,
+                                     int relativeCoordOnRead, int relativeCoordOnRef) {
+
+    UpdateInfoVecAtMarker(tmpCycle, readRealStart, matchLen, sign, strand, chr, seq, qual, mapQ, relativeCoordOnRead);
+
+    /*****************************************************************************/
+    UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart, refRealStart, refRealEnd,
+                               sign, strand, matchLen, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+}
+
+void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string &seq, const string &qual,
+                                               const string &refSeq, const string &chr, int readRealStart,
+                                               int refRealStart, int refRealEnd, const char *sign, bool strand,
+                                               int matchLen, int tmpCycle, int relativeCoordOnRead,
+                                               int relativeCoordOnRef) {
+    if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
+        for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
+             ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
+            if (i < refRealStart)// + opt->read_len)
+                continue;
+            if (i > refRealEnd)// - opt->read_len)
+                break;
+            if (PositionTable[chr].find(i)
+                != PositionTable[chr].end())
+            {
+                int tmpIndex = PositionTable[chr][i];
+                DepthVec[tmpIndex]++;
+                if (dbSNPTable[chr].find(i)
+                    == dbSNPTable[chr].end())    //not in dbsnp table
+                {
+                    StatVecDistUpdate(qual, tmpIndex, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                }
+            } else //coord not exists
+            {
+                AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+            }
+        }
+    else // chrom not exists
+    {
+        for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
+             ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
+            if (i < refRealStart)// + opt->read_len)
+                continue;
+            if (i > refRealEnd)// - opt->read_len)
+                break;
+            AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
         }
     }
 }
@@ -196,10 +383,6 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     bns_coor_pac2real(bns, p->pos, j, &seqid);
     if (p->type != BWA_TYPE_NO_MATCH
         && p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
-        //if (strcmp(p->name, "ERR018525.33349") == 0)
-        //{
-        //	fprintf(stderr, "ERR018525.33349 died here 2\n");
-        //}
         return false; //this alignment bridges two adjacent reference sequences
     }
 
@@ -215,12 +398,8 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
             seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
             qual += (char) (p->qual[p->full_len - 1 - j] - 33);//0 based
         }
-    //if (p->strand) seq_reverse(p->len, p->qual, 0);
-    //fprintf(stderr,"%s\t%s\t%d\n",p->name,p->md,p->count);
-
-    //ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
-    string RefSeq(seq), MD(p->md);
-    updateRefseqByMD(RefSeq, MD);
+    string MD(p->md);
+    string refSeq=RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
 
     string PosName = string(bns->anns[seqid].name);
 
@@ -228,222 +407,92 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 
     size_t colonPos = PosName.find(':');
     size_t atPos = PosName.find('@');
-    string Chrom = PosName.substr(0, colonPos);
+    string chrom = PosName.substr(0, colonPos);
     char *pEnd;
     int refCoord = static_cast<int>(strtol(
             PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // absolute coordinate of variant
     //size_t slashPos = PosName.find("/");
     //string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
-    int realCoord(0);
-    int RefRealStart(0), RefRealEnd(0);
+    int readRealStart(0);
+    int refRealStart(0), refRealEnd(0);
     if (PosName[PosName.size() - 1] == 'L') {
-        realCoord = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
-        RefRealStart = refCoord - opt->flank_long_len;//absolute coordinate of ref start
-        RefRealEnd = refCoord + opt->flank_long_len;
+        readRealStart = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
+        refRealStart = refCoord - opt->flank_long_len;//absolute coordinate of refSeq start
+        refRealEnd = refCoord + opt->flank_long_len;
     } else {
-        realCoord = refCoord - opt->flank_len + pos - 1;
-        RefRealStart = refCoord - opt->flank_len;
-        RefRealEnd = refCoord + opt->flank_len;
+        readRealStart = refCoord - opt->flank_len + pos - 1;
+        refRealStart = refCoord - opt->flank_len;
+        refRealEnd = refCoord + opt->flank_len;
     }
 
-    int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0), tmp_left_to_right_coord(0);//coord on reads
+    int absoluteSite=readRealStart;
+    int tmpCycle(0)/*sequencing cycle*/, relativeCoordOnRead(0)/*relative coord on reads*/, relativeCoordOnRef(0);
     char sign[2] =
             {1, -1};
     if (p->strand != 0) {
         tmpCycle = p->len - 1;
     }
 
-    unsigned int tmp_index = 0;
-
     if (p->cigar) {
+//        return true;
+//        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//        char DEBUGREGION[1024];
+//        sprintf(DEBUGREGION,"%s:%d-%d",chrom.c_str(),readRealStart,readRealStart+refSeq.size()-1);
+//        int dummy;
+//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//        if(DEBUGTEST!=refSeq) {
+//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
+//            cerr << DEBUGTEST << endl;
+//            cerr << refSeq << endl;
+//        }
         int n_cigar = p->n_cigar;
         bwa_cigar_t *cigar = p->cigar;
         for (int k = 0; k < n_cigar; ++k) {
-
-            int cl = __cigar_len(cigar[k]);
+            int cl = __cigar_len(cigar[k]);//cigar length
             int cop = "MIDS"[__cigar_op(cigar[k])];
             switch (cop) {
                 case 'M':
-                    //cerr<<"M";
-                    //cerr<< realCoord<<"-"<< realCoord + cl - 1;
                     /*************************variant site****************************************/
-
-                    if (VcfTable.find(Chrom) != VcfTable.end()) {
-//						tmpCycleVcfTable = tmpCycle;
-//						tmp_left_to_right_coord = left_to_right_coord;
-//						for (uint32_t i = realCoord; i != realCoord + cl - 1 + 1;
-//							++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
-//						{
-//							if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-//							{
-//								tmp_index = VcfTable[Chrom][i];
-//								SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-//								QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-//								CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-//								MaqVec[tmp_index].push_back(p->mapQ + 33);
-//								StrandVec[tmp_index].push_back(p->strand);
-//							}
-//						}
-                        UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
-                                              tmp_left_to_right_coord, left_to_right_coord,
-                                              realCoord, cl, sign, p->strand, Chrom, tmp_index, seq,
-                                              qual, p->mapQ);
-                    }
-
-                    /*****************************************************************************/
-                    if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-                        for (int i = realCoord; i != realCoord + cl - 1 + 1;
-                             ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                            if (i < RefRealStart + opt->read_len)
-                                continue;
-                            if (i > RefRealEnd - opt->read_len)
-                                break;
-
-                            if (PositionTable[Chrom].find(i)
-                                != PositionTable[Chrom].end())
-                            {
-                                tmp_index = PositionTable[Chrom][i];
-                                DepthVec[tmp_index]++;
-                                if (dbSNPTable[Chrom].find(i)
-                                    == dbSNPTable[Chrom].end())    //not in dbsnp table
-                                {
-                                    StatVecDistUpdate(qual, left_to_right_coord,
-                                                      tmp_index, RefSeq, seq, tmpCycle);
-                                }
-                            } else //coord not exists
-                            {
-                                //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                                AddBaseInfoToNewCoord(Chrom, i, qual,
-                                                      left_to_right_coord, RefSeq, seq, tmpCycle);
-                            }
-                        }
-                    else // chrom not exists
-                    {
-                        for (int i = realCoord; i != realCoord + cl - 1 + 1;
-                             ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                            if (i < RefRealStart + opt->read_len)
-                                continue;
-                            if (i > RefRealEnd - opt->read_len)
-                                break;
-                            //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                            AddBaseInfoToNewCoord(Chrom, i, qual,
-                                                  left_to_right_coord, RefSeq, seq, tmpCycle);
-                        }
-                    }
-                    realCoord += cl;
-                    break;
-
-                    //	 case BAM_CHARD_CLIP:
-                    //	      printf("H");
-                    //	      /* printf("[%d]", pos);  // No coverage
-                    //	      /* pos is not advanced by this operation
-                    //	      break;
-
-                case 'S':
-                    //	      printf("S");
-                    //	      /* printf("[%d]", pos);  // No coverage
-                    //	      /* pos is not advanced by this operation
+                    AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
+                                     p->strand,
+                                     p->mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                    absoluteSite += cl;
                     tmpCycle += cl * sign[p->strand];
-                    left_to_right_coord += cl;
+                    relativeCoordOnRead += cl;
+                    relativeCoordOnRef +=cl;
                     break;
-
-                case 'D':
-                    //	      printf("D");
-                    /* printf("[%d-%d]", pos, pos + cl - 1);  // Spans positions, No Coverage*/
-
-                    realCoord += cl;
-
-                    break;
-
-                    //	 case BAM_CPAD:
-                    //	      printf("P");
-                    /* printf("[%d-%d]", pos, pos + cl - 1); // Spans positions, No Coverage*/
-                    //	      pos+=cl;
-                    //	      break;
-                case 'I':
-                    //	      printf("I");
-                    /* printf("[%d]", pos); // Special case - adds <cl> bp "throughput", but not genomic position "coverage"*/
-                    /* How you handle this is application dependent*/
-                    /* pos is not advanced by this operation*/
-
+                case 'S'://ignore soft clip
                     tmpCycle += cl * sign[p->strand];
-                    left_to_right_coord += cl;
+                    relativeCoordOnRead += cl;
+                    relativeCoordOnRef +=cl;
                     break;
-
-                    //	 case BAM_CREF_SKIP:
-                    //	      printf("S");
-                    //   printf("[%d-%d]", pos, pos + cl - 1); /* Spans positions, No Coverage*/
-                    //	      pos+=cl;
-                    //	      break;
-
+                case 'D'://ref has base, read has no base;
+                    absoluteSite += cl;
+                    relativeCoordOnRef +=cl;
+                    break;
+                case 'I'://ref has no base, read has base;gGg
+                    tmpCycle += cl * sign[p->strand];
+                    relativeCoordOnRead += cl;
+                    break;
                 default:
                     warning("Unhandled cigar_op %d:%d\n", cop, cl);
             }
-        }            //end for
+        }//end for
     } else {
+//        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//        char DEBUGREGION[1024];
+//        sprintf(DEBUGREGION,"%s:%d-%d",chrom.c_str(),readRealStart,readRealStart+p->len-1);
+//        int dummy;
+//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//        if(DEBUGTEST!=refSeq) {
+//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
+//            cerr << DEBUGTEST << endl;
+//            cerr << refSeq << endl;
+//        }
         /*************************variant site****************************************/
 
-        if (VcfTable.find(Chrom) != VcfTable.end()) {
-//				tmpCycleVcfTable = tmpCycle;
-//				tmp_left_to_right_coord = left_to_right_coord;
-//				for (uint32_t i = realCoord; i != realCoord + p->len - 1 + 1;
-//					++i, tmpCycleVcfTable += 1 * sign[p->strand], ++tmp_left_to_right_coord)
-//					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-//					{
-//					tmp_index = VcfTable[Chrom][i];
-//					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-//					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-//					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-//					MaqVec[tmp_index].push_back(p->mapQ + 33);
-//					StrandVec[tmp_index].push_back(p->strand);
-//					}
-            UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
-                                  tmp_left_to_right_coord, left_to_right_coord,
-                                  realCoord, p->len, sign, p->strand, Chrom, tmp_index, seq,
-                                  qual, p->mapQ);
-
-        }
-        /************************************************************************************/
-        if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-            for (int i = realCoord; i != realCoord + p->len - 1 + 1;
-                 ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                if (i < RefRealStart + opt->read_len)
-                    continue;
-                if (i > RefRealEnd - opt->read_len)
-                    break;
-                //std::pair<unordered_map<int, bool>::iterator, bool> ret =
-                //		PositionTable[Chrom].insert(make_pair(i, 1));
-                if (PositionTable[Chrom].find(i) !=
-                    PositionTable[Chrom].end())    //!ret.second) //if insert failed, this coord exists
-                {
-                    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                    tmp_index = PositionTable[Chrom][i];
-                    DepthVec[tmp_index]++;
-                    if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
-                    {
-                        StatVecDistUpdate(qual, left_to_right_coord, tmp_index,
-                                          RefSeq, seq, tmpCycle);
-                    }
-                } else //coord not exists
-                {
-                    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                    AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
-                                          RefSeq, seq, tmpCycle);
-                }
-            }
-        else // chrom not exists
-        {
-            for (int i = realCoord; i != realCoord + p->len - 1 + 1;
-                 ++i, tmpCycle += 1 * sign[p->strand], ++left_to_right_coord) {
-                if (i < RefRealStart + opt->read_len)
-                    continue;
-                if (i > RefRealEnd - opt->read_len)
-                    break;
-                //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
-                                      RefSeq, seq, tmpCycle);
-            }
-        }
+        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, p->strand,
+                         p->mapQ, p->len, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
 
     return true;
@@ -451,7 +500,7 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 
 bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 {
-
+//TODO:unify both versions
     if (p.getFlag() & SAM_FSU) {
         return false;
     }
@@ -459,81 +508,81 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
     string seq(p.getSequence()), qual(p.getQuality()), newSeq, newQual;
 
     //ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
-    string RefSeq(seq), MD;
+    string refSeq, MD;
     if (p.getStringTag("MD") != nullptr) {
         MD = string(p.getStringTag("MD")->c_str());
     } else
         return false;
 
-    updateRefseqByMD(RefSeq, MD);
+    refSeq=RecoverRefseqByMDandCigar(refSeq, MD, p.getCigar());
 
-    string PosName = p.getReferenceName();
+    string posName = p.getReferenceName();
 
     int pos = p.get1BasedPosition();
 
-    size_t colonPos = PosName.find(':');
-    size_t atPos = PosName.find('@');
-    string Chrom = PosName.substr(0, colonPos);
+    size_t colonPos = posName.find(':');
+    size_t atPos = posName.find('@');
+    string chrom = posName.substr(0, colonPos);
 
 //    int refCoord = atoi(
-//            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
+//            posName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
     char *pEnd;
     int refCoord = static_cast<int>(strtol(
-            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10));
-    int realCoord(0);
-    int RefRealStart(0), RefRealEnd(0);
+            posName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10));
+    int readRealStart(0);
+    int refRealStart(0), refRealEnd(0);
 
     if (strchr(p.getReferenceName(), '@') != nullptr)//bam file is generated by FASTQuick itself
     {
-        if (PosName[PosName.size() - 1] == 'L') {
-            realCoord = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
-            RefRealStart = refCoord - opt->flank_long_len;
-            RefRealEnd = refCoord + opt->flank_long_len;
+        if (posName[posName.size() - 1] == 'L') {
+            readRealStart = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
+            refRealStart = refCoord - opt->flank_long_len;
+            refRealEnd = refCoord + opt->flank_long_len;
         } else {
-            realCoord = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
-            RefRealStart = refCoord - opt->flank_len;
-            RefRealEnd = refCoord + opt->flank_len;
+            readRealStart = refCoord - opt->flank_len + pos - 1; //real coordinate of current reads on reference
+            refRealStart = refCoord - opt->flank_len;
+            refRealEnd = refCoord + opt->flank_len;
         }
     } else {
-        if (VcfTable.find(Chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
-            auto bound = VcfTable[Chrom].lower_bound(pos);
+        if (VcfTable.find(chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
+            auto bound = VcfTable[chrom].lower_bound(pos);
 
-            if (bound != VcfTable[Chrom].end())//right element exists
+            if (bound != VcfTable[chrom].end())//right element exists
             {
                 auto upper(bound);
-                int overlap_right = realCoord + p.getReadLength() - 1 - (upper->first - opt->flank_len) + 1;
-                if (bound != VcfTable[Chrom].begin())//both side exists
+                int overlap_right = readRealStart + p.getReadLength() - 1 - (upper->first - opt->flank_len) + 1;
+                if (bound != VcfTable[chrom].begin())//both side exists
                 {
                     auto lower(--bound);
-                    int overlap_left = lower->first + opt->flank_len - realCoord + 1;
-                    realCoord = pos;
+                    int overlap_left = lower->first + opt->flank_len - readRealStart + 1;
+                    readRealStart = pos;
                     if (overlap_left > overlap_right) {
-                        RefRealStart = lower->first - opt->flank_len;
-                        RefRealEnd = lower->first + opt->flank_len;
+                        refRealStart = lower->first - opt->flank_len;
+                        refRealEnd = lower->first + opt->flank_len;
                     } else {
-                        RefRealStart = upper->first - opt->flank_len;
-                        RefRealEnd = upper->first + opt->flank_len;
+                        refRealStart = upper->first - opt->flank_len;
+                        refRealEnd = upper->first + opt->flank_len;
                     }
                 } else//only right exists
                 {
-                    RefRealStart = upper->first - opt->flank_len;
-                    RefRealEnd = upper->first + opt->flank_len;
+                    refRealStart = upper->first - opt->flank_len;
+                    refRealEnd = upper->first + opt->flank_len;
                 }
-            } else if (bound != VcfTable[Chrom].begin())//only left element exists
+            } else if (bound != VcfTable[chrom].begin())//only left element exists
             {
                 auto lower(--bound);
-//                int overlap_left = lower->first + opt->flank_len - realCoord + 1;
-                realCoord = pos;
-                RefRealStart = lower->first - opt->flank_len;
-                RefRealEnd = lower->first + opt->flank_len;
+//                int overlap_left = lower->first + opt->flank_len - readRealStart + 1;
+                readRealStart = pos;
+                refRealStart = lower->first - opt->flank_len;
+                refRealEnd = lower->first + opt->flank_len;
             } else//none neighbours, not possible
                 return false;
         } else
             return false;
     }
 
-
-    int tmpCycle(0), tmpCycleVcfTable(0), left_to_right_coord(0), tmp_left_to_right_coord(0);
+    int absoluteSite=readRealStart;
+    int tmpCycle(0), relativeCoordOnRead(0)/*relative coord on reads*/, relativeCoordOnRef(0);
     char sign[2] =
             {1, -1};
 
@@ -542,8 +591,6 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
     if (strand != 0) {
         tmpCycle = p.getReadLength() - 1;
     }
-
-    unsigned int tmp_index = 0;
 
     if (std::string(p.getCigar()).find_first_of("SID") != std::string::npos)//DONE: change not mapped to only M
     {
@@ -564,62 +611,27 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
             switch (cop) {
                 case 'M':
                     /*************************variant site****************************************/
-
-                    if (VcfTable.find(Chrom) != VcfTable.end()) {
-                        UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
-                                              tmp_left_to_right_coord, left_to_right_coord,
-                                              realCoord, cl, sign, strand, Chrom, tmp_index, seq,
-                                              qual, mapQ);
-                    }
-                    /*****************************************************************************/
-                    if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-                        for (int i = realCoord; i != realCoord + cl - 1 + 1;
-                             ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                            if (i < RefRealStart + opt->read_len)
-                                continue;
-                            if (i > RefRealEnd - opt->read_len)
-                                break;
-                            if (PositionTable[Chrom].find(i)
-                                != PositionTable[Chrom].end()) //!ret.second) //if insert failed, this coord exists
-                            {
-                                tmp_index = PositionTable[Chrom][i];
-                                DepthVec[tmp_index]++;
-                                if (dbSNPTable[Chrom].find(i)
-                                    == dbSNPTable[Chrom].end())    //not in dbsnp table
-                                {
-                                    StatVecDistUpdate(qual, left_to_right_coord,
-                                                      tmp_index, RefSeq, seq, tmpCycle);
-                                }
-                            } else //coord not exists
-                            {
-                                AddBaseInfoToNewCoord(Chrom, i, qual,
-                                                      left_to_right_coord, RefSeq, seq, tmpCycle);
-                            }
-                        }
-                    else // chrom not exists
-                    {
-                        for (int i = realCoord; i != realCoord + cl - 1 + 1;
-                             ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                            if (i < RefRealStart + opt->read_len)
-                                continue;
-                            if (i > RefRealEnd - opt->read_len)
-                                break;
-                            AddBaseInfoToNewCoord(Chrom, i, qual,
-                                                  left_to_right_coord, RefSeq, seq, tmpCycle);
-                        }
-                    }
-                    realCoord += cl;
+                {
+                    AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
+                                     strand,
+                                     mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                }
+                    absoluteSite += cl;
+                    tmpCycle += cl * sign[strand];
+                    relativeCoordOnRead += cl;
+                    relativeCoordOnRef +=cl;
                     break;
                 case 'S':
                     tmpCycle += cl * sign[strand];
-                    left_to_right_coord += cl;
+                    relativeCoordOnRead += cl;
                     break;
                 case 'D':
-                    realCoord += cl;
+                    absoluteSite += cl;
+                    relativeCoordOnRef +=cl;
                     break;
                 case 'I':
                     tmpCycle += cl * sign[strand];
-                    left_to_right_coord += cl;
+                    relativeCoordOnRead += cl;
                     break;
                 default:
                     warning("Unhandled cigar_op %d:%d\n", cop, cl);
@@ -627,70 +639,8 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
         }            //end for
     } else {
         /*************************variant site****************************************/
-
-        if (VcfTable.find(Chrom) != VcfTable.end()) {
-//				tmpCycleVcfTable = tmpCycle;
-//				tmp_left_to_right_coord = left_to_right_coord;
-//				for (uint32_t i = realCoord;
-//					i != realCoord + p.getReadLength() - 1 + 1;
-//					++i, tmpCycleVcfTable += 1 * sign[strand], ++tmp_left_to_right_coord)
-//					if (VcfTable[Chrom].find(i) != VcfTable[Chrom].end())// actual snp site
-//					{
-//					tmp_index = VcfTable[Chrom][i];
-//					SeqVec[tmp_index] += seq[tmp_left_to_right_coord];
-//					QualVec[tmp_index] += qual[tmp_left_to_right_coord];
-//					CycleVec[tmp_index].push_back(tmpCycleVcfTable);
-//					MaqVec[tmp_index].push_back(mapQ + 33);
-//					StrandVec[tmp_index].push_back(strand);
-//					}
-            UpdateInfoVecAtMarker(tmpCycleVcfTable, tmpCycle,
-                                  tmp_left_to_right_coord, left_to_right_coord,
-                                  realCoord, p.getReadLength(), sign, strand, Chrom, tmp_index, seq,
-                                  qual, mapQ);
-        }
-        /************************************************************************************/
-        if (PositionTable.find(Chrom) != PositionTable.end()) //chrom exists
-            for (int i = realCoord;
-                 i != realCoord + p.getReadLength() - 1 + 1;
-                 ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                if (i < RefRealStart + opt->read_len)
-                    continue;
-                if (i > RefRealEnd - opt->read_len)
-                    break;
-                //std::pair<unordered_map<int, bool>::iterator, bool> ret =
-                //		PositionTable[Chrom].insert(make_pair(i, 1));
-                if (PositionTable[Chrom].find(i) !=
-                    PositionTable[Chrom].end())    //!ret.second) //if insert failed, this coord exists
-                {
-                    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                    tmp_index = PositionTable[Chrom][i];
-                    DepthVec[tmp_index]++;
-                    if (dbSNPTable[Chrom].find(i) == dbSNPTable[Chrom].end())//not in dbsnp table
-                    {
-                        StatVecDistUpdate(qual, left_to_right_coord, tmp_index,
-                                          RefSeq, seq, tmpCycle);
-                    }
-                } else //coord not exists
-                {
-                    //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                    AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
-                                          RefSeq, seq, tmpCycle);
-                }
-            }
-        else // chrom not exists
-        {
-            for (int i = realCoord;
-                 i != realCoord + p.getReadLength() - 1 + 1;
-                 ++i, tmpCycle += 1 * sign[strand], ++left_to_right_coord) {
-                if (i < RefRealStart + opt->read_len)
-                    continue;
-                if (i > RefRealEnd - opt->read_len)
-                    break;
-                //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
-                AddBaseInfoToNewCoord(Chrom, i, qual, left_to_right_coord,
-                                      RefSeq, seq, tmpCycle);
-            }
-        }
+        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, strand,
+                         mapQ, p.getReadLength(), tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
 
     return true;
@@ -768,7 +718,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             fout << q->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
                  << "\t" << "*" << "\t" << "*" << "\t" << flag1 << "\t" << 0 << "\t" << "*"
                  << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-                 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+                 << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
                  << "\t" << status
                  << endl;
             return 0;
@@ -776,7 +726,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             fout << q->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
                  << "\t" << "*" << "\t" << "*" << "\t" << flag1 << "\t" << 0 << "\t" << "*"
                  << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-                 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+                 << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
                  << "\t" << "LowQual"
                  << endl;
             return 2; //low quality
@@ -819,7 +769,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
             }
             fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
                  << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-                 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+                 << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
                  << "\t" << "*" << "\t" << "*" << "\t" << flag2 << "\t" << 0 << "\t" << "*"
                  << "\t" << status
                  << endl;
@@ -827,7 +777,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         } else {
             fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
                  << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-                 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+                 << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
                  << "\t" << "*" << "\t" << "*" << "\t" << flag2 << "\t" << 0 << "\t" << "*"
                  << "\t" << "LowQual"
                  << endl;
@@ -896,9 +846,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         {
             fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
                  << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-                 << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+                 << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
                  << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-                 << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+                 << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
                  << "\tNotPair"
                  << endl;
             return 0;
@@ -918,9 +868,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         //cerr<<"Duplicate function exit from diff chrom"<<endl;
         fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
              << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-             << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+             << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
              << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-             << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+             << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
              << "\tNotPair"
              << endl;
         return 0;
@@ -946,9 +896,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         InsertSizeDist[ActualInsert]++;
         fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << ActualInsert
              << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-             << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+             << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
              << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-             << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+             << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
              << "\t" << status
              << endl;
 
@@ -966,9 +916,9 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
         //cerr<<"exit from LowQualf"<<endl;
         fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
              << "\t" << bns->anns[seqid_p].name << "\t" << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1
-             << "\t" << p->len << "\t" << cigar_output(p->n_cigar, p->cigar, p->len)
+             << "\t" << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
              << "\t" << bns->anns[seqid_q].name << "\t" << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2
-             << "\t" << q->len << "\t" << cigar_output(q->n_cigar, q->cigar, q->len)
+             << "\t" << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
              << "\tLowQual"
              << endl;
         return 2; //low quality
@@ -1533,15 +1483,15 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
     return 0;
 }
 
-int StatCollector::restoreVcfSites(const string &VcfPath, const gap_opt_t *opt) {
+int StatCollector::restoreVcfSites(const string &RefPath, const gap_opt_t *opt) {
 
     VcfHeader header;
     VcfFileReader reader;
-    string SelectedSite = VcfPath + ".SelectedSite.vcf.gz";
+    string SelectedSite = RefPath + ".SelectedSite.vcf.gz";
     if (!reader.open(SelectedSite.c_str(), header)) {
         warning("File open failed: %s\n", SelectedSite.c_str());
     }
-    string GCpath = VcfPath + ".gc";
+    string GCpath = RefPath + ".gc";
     ifstream FGC(GCpath, ios_base::binary);
     //int num_so_far(0);
     while (!reader.isEOF()) {
@@ -1572,7 +1522,7 @@ int StatCollector::restoreVcfSites(const string &VcfPath, const gap_opt_t *opt) 
 
     }
     reader.close();
-    string BedFile = VcfPath + ".dpSNP.subset.vcf";
+    string BedFile = RefPath + ".dpSNP.subset.vcf";
     if (!reader.open(BedFile.c_str(), header)) {
         notice("Open %s failed!\n", BedFile.c_str());
         exit(1);
@@ -1647,9 +1597,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len-opt->read_len)  * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len- opt->read_len)  * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len-opt->read_len)  * 2 + 1) * max_XorYmarker;
+    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1815,6 +1765,44 @@ int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) 
         }
     }
     fout.close();
+
+//    ofstream Dfout(outputPath + ".DebugPileup");
+//    int Dqualoffset = 33;
+//    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
+//    faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//    char DEBUGREGION[1024];
+//    int dummy;
+//
+//    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
+//    {
+//        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
+//        {
+//            if (DebugSeqVec[j->second].size() == 0)
+//                continue;
+//
+//            sprintf(DEBUGREGION,"%s:%d-%d",i->first.c_str(),j->first,j->first);
+//
+//            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//
+//
+//            Dfout << i->first << "\t" << j->first << "\t"<< DEBUGTEST <<"\t"
+//                 << DebugSeqVec[j->second].size() << "\t";
+//            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
+//                    Dfout << (char) toupper (DebugSeqVec[j->second][k]);
+//            }
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
+//                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
+//                Dfout << DebugCycleVec[j->second][k];
+//                if (k != DebugCycleVec[j->second].size() - 1)
+//                    Dfout << ",";
+//            }
+//            Dfout << endl;
+//        }
+//    }
+//    Dfout.close();
     return 0;
 }
 
@@ -1961,7 +1949,7 @@ double StatCollector::Q30BaseFraction() {
     return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped;
 }
 
-int StatCollector::SummaryOutput(const string &outputPath,const gap_opt_t *opt) {
+int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt) {
     ofstream fout(outputPath + ".Summary");
     /*	int max_XorYmarker(0);
         if (opt->num_variant_short >= 100000)

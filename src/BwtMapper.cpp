@@ -182,7 +182,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
-        notice("%d reads were actually used for QC.", total_add);
+        notice("%d reads are retained for QC.", total_add);
         fout.close();
         // BamFile->ifclose();
         // destroy
@@ -215,7 +215,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
 //PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
         PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile,
                                       StatusTracker, fout, total_add);
-        notice("%d reads were actually used for QC.", total_add);
+        notice("%d reads are retained for QC.", total_add);
         fout.close();
         BamFile->ifclose();
 		delete BamFile;// destroy
@@ -248,7 +248,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-        notice("%d reads were actually used for QC.", total_add);
+        notice("%d reads are retained for QC.", total_add);
         fout.close();
         BamFile->ifclose();
         delete BamFile;
@@ -325,7 +325,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
                 SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
             }
         }
-        notice("%d reads were actually used for QC.", total_add);
+        notice("%d reads are retained for QC.", total_add);
         fout.close();
         BamFile->ifclose();
         delete BamFile;
@@ -1626,8 +1626,8 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
 		t = clock();
 		bwa_free_read_seq(n_seqs, seqs);
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
-		fprintf(stderr, "NOTICE - %ld sequences have been filtered.\n", n_filtered);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %ld sequences are filtered.\n", n_filtered);
 		//t = clock();
 	} //end while
 	collector.addFSC(FSC);
@@ -1913,7 +1913,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 			n_seqs = n_seqs_buff;
 			seqs[j] = seqs_buff[j];
 		}
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
 
 		last_ii = ii;
 	} //end while
@@ -2224,7 +2224,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 			seqs[j] = seqs_buff[j];
 			seqs_buff[j] = tmp;
 		}
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
 
 		last_ii = ii;
 	} //end while
@@ -2603,10 +2603,10 @@ else ReadIsGood = 0;
 			seqs[j] = seqs_buff[j];
 			seqs_buff[j] = tmp;
 		}
-		fprintf(stderr, "NOTICE - %lld sequences have been loaded.\n", FSC.NumRead);
-		//fprintf(stderr, "NOTICE - %ld sequences have been filtered by hash.\n", n_filtered);
-		fprintf(stderr, "NOTICE - %ld sequences have been filtered.\n", total_filtered*2);
-		fprintf(stderr, "NOTICE - %ld sequences that are unmapped.\n", n_bwaunmap*2);
+		fprintf(stderr, "NOTICE - %lld sequences are loaded.\n", FSC.NumRead);
+		//fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n", n_filtered);
+		fprintf(stderr, "NOTICE - %ld sequences are filtered.\n", total_filtered*2);
+		fprintf(stderr, "NOTICE - %ld sequences are unmapped.\n", n_bwaunmap*2);
 
 		last_ii = ii;
 	} //end while
