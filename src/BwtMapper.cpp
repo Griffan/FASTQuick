@@ -172,7 +172,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     //std::cerr<<"Open Fastq  ... "<<endl;
     if (bwa_set_rg(opt->RG) == -1) warning("Setting @RG tag failed!\n");
     if (opt->in_bam != 0) {
-        notice(" Input alignments from Bam file...\n");
+        notice("Input alignments from Bam file...\n");
         /*
         SamFileHeader SFH;
         SamFile SFIO;*/

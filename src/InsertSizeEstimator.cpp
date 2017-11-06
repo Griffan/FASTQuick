@@ -68,9 +68,9 @@ int InsertSizeEstimator::InputInsertSizeTable(std::string FileName, std::string 
         ReadLen2=atoi(stringVector[12].c_str());
         Cigar2=stringVector[13];
         Status=stringVector[14];
-        if(Max>=INSERT_LIMIT) Max=INSERT_LIMIT-1;
-        if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
-        if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
+        if(Max>=INSERT_LIMIT or Max == -1) Max=INSERT_LIMIT-1;
+        if(Max2>=INSERT_LIMIT or Max2 == -1) Max2=INSERT_LIMIT-1;
+        if(Obs>=INSERT_LIMIT or Obs == -1) Obs=INSERT_LIMIT-1;
         if (Status == "Abnormal" or Status == "LowQual" or Status == "NotPair" or
             Status == Orientation/*or Status == "FwdOnly" or Status == "RevOnly"*/)
             continue;

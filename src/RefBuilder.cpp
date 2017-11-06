@@ -45,7 +45,7 @@ static bool Skip(const string &Chrom, const int Position, const string &last_chr
     }
     if (not binary_search(chromWhiteList.begin(), chromWhiteList.end(), data))
         return true;
-    if (Chrom == last_chr && abs(Position - last_pos) < flank_len)
+    if (Chrom == last_chr && abs(Position - last_pos) < 2*flank_len)
         return true;
     int dummy;
     if (MaskPath != "Empty") {
@@ -176,7 +176,14 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         Position = VcfLine.get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
 
+        VcfLine.setID((std::string(VcfLine.getIDStr())+"|L").c_str());
+
         if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_long_len)) continue;
+
+        if (!VcfLine.write(&FoutSelectedSite, true)) {
+            warning("Writing retained sites failed!\n");
+            exit(EXIT_FAILURE);
+        }
 
         string FetchedSeq(fai_fetch(seq, region, &dummy));
 
@@ -233,7 +240,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         Position = VcfLine.get1BasedPosition();
         int dummy;
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
-        if (Chrom == last_chr && abs(Position - last_pos) < 300)
+        if (Chrom == last_chr && abs(Position - last_pos) < opt->flank_len * 2)
             continue;
         if (MaskPath != "Empty") {
             string MaskSeq(fai_fetch(FastaMask, region, &dummy));
