@@ -18,6 +18,15 @@ extern void warning(const char *, ...);
 
 extern void error(const char *, ...);
 
+const uint16_t __cigar_table[16] = {
+        2/*D*/, 0, 0, 0,
+        0, 1/*I*/, 0, 0,
+        0, 0/*M*/, 0, 0,
+        0, 0, 0, 3/*S*/
+};
+
+#define __cigar_convert(__cigar) ((__cigar_table[__cigar - 68]))
+
 static std::string Cigar2String(int n_cigar, const bwa_cigar_t *cigar, int len) {
     std::string tmp;
     int cl;
@@ -41,40 +50,41 @@ static std::vector<bwa_cigar_t> String2Cigar(const std::string &cigarString) {
     while (digitNow != len) {
         while (isdigit(cigarString[digitNow]))
             digitNow++;
-        int cl = atoi(
+        uint16_t cl = atoi(
                 cigarString.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
         digitLast = digitNow + 1;
         char cop = cigarString[digitNow];
         digitNow++;
-        cigar.push_back(__cigar_create(cop,cl));
+        cigar.push_back(__cigar_create(__cigar_convert(cop), cl));
     }
     return cigar;
 }
 
-std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString)
-{
+std::string
+StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString) {
 
-    std::vector<bwa_cigar_t> cigar= String2Cigar(cigarString);
+    std::vector<bwa_cigar_t> cigar = String2Cigar(cigarString);
     return RecoverRefseqByMDandCigar(readSeq, MD, &cigar[0], cigar.size());
 
 }
 
-std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar)
-{
-    std::transform(MD.begin(), MD.end(),MD.begin(), ::toupper);
-    if(MD.find_first_of("ATCGN")==std::string::npos && atoi(MD.c_str())==readSeq.size()) return readSeq;
+std::string
+StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t *cigar,
+                                         int n_cigar) {
+    std::transform(MD.begin(), MD.end(), MD.begin(), ::toupper);
+    if (MD.find_first_of("ATCGN") == std::string::npos && atoi(MD.c_str()) == readSeq.size()) return readSeq;
     //only collect M pieces
     std::string refSeq;
-    if(n_cigar >0) {
+    if (n_cigar > 0) {
         int relativeCoordOnRead = 0;
         for (int k = 0; k < n_cigar; ++k) {
             int cl = __cigar_len(cigar[k]);//cigar length
             int cop = "MIDS"[__cigar_op(cigar[k])];
             switch (cop) {
                 case 'M':
-                refSeq += readSeq.substr(relativeCoordOnRead, cl);
-                relativeCoordOnRead += cl;
-                break;
+                    refSeq += readSeq.substr(relativeCoordOnRead, cl);
+                    relativeCoordOnRead += cl;
+                    break;
                 case 'S'://ignore soft clip
                     relativeCoordOnRead += cl;
                     break;
@@ -87,9 +97,8 @@ std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq,
                     warning("Unhandled cigar_op %d:%d\n", cop, cl);
             }
         }//end for
-    } else
-    {
-        refSeq=readSeq;
+    } else {
+        refSeq = readSeq;
     }
 
 
@@ -115,9 +124,7 @@ std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq,
             std::string right = refSeq.substr(start_on_read, refSeq.length() - start_on_read + 1);
             refSeq = left + tmp + right;
             last = i;
-        }
-        else
-        {
+        } else {
             int len = atoi(MD.substr(last, i - last).c_str()) + 1;//len from last to current mismatch, include mismatch
             total_len += len;
             //if (strcmp(p.getReadName(),"WTCHG_8105:7:66:5315:89850#0")==0){ fprintf(stderr, "we see strange i:%dth out of %d char of MD tag %s, %d out of %d on read:%s", i,MD.length(),MD.c_str(),total_len-1,RefSeq.length(), p.getReadName()); exit(EXIT_FAILURE); }
@@ -126,11 +133,11 @@ std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq,
         }
 
     //assembly seq pieces
-    if(n_cigar >0) {
+    if (n_cigar > 0) {
         int relativeCoordOnBackbone = 0;
         int relativeCoordOnRead = 0;
         std::string backboneSeq = refSeq;
-        refSeq="";
+        refSeq = "";
         for (int k = 0; k < n_cigar; ++k) {
             int cl = __cigar_len(cigar[k]);//cigar length
             int cop = "MIDS"[__cigar_op(cigar[k])];
@@ -141,7 +148,10 @@ std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq,
                     relativeCoordOnBackbone += cl;
                     break;
                 case 'S'://ignore soft clip
-                    refSeq += readSeq.substr(relativeCoordOnRead, cl);
+                    if (k == 0)//left clip
+                        refSeq = readSeq.substr(relativeCoordOnRead, cl);
+                    else//right
+                        refSeq += readSeq.substr(relativeCoordOnRead, cl);
                     relativeCoordOnRead += cl;
                     break;
                 case 'D'://ref has base, read has no base;
@@ -252,8 +262,9 @@ StatCollector::StatCollector(const string &OutFile) {
 //    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
 
-void StatCollector::StatVecDistUpdate(const string &qual, unsigned int tmpIndex, const string &refSeq, const string &seq,
-                                      int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef) {
+void
+StatCollector::StatVecDistUpdate(const string &qual, unsigned int tmpIndex, const string &refSeq, const string &seq,
+                                 int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef) {
 
     EmpRepDist[qual[relativeCoordOnRead]]++;
     EmpCycleDist[tmpCycle]++;
@@ -337,13 +348,12 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart)// + opt->read_len)
+            if (i < refRealStart + opt->read_len)
                 continue;
-            if (i > refRealEnd)// - opt->read_len)
+            if (i > refRealEnd - opt->read_len)
                 break;
             if (PositionTable[chr].find(i)
-                != PositionTable[chr].end())
-            {
+                != PositionTable[chr].end()) {
                 int tmpIndex = PositionTable[chr][i];
                 DepthVec[tmpIndex]++;
                 if (dbSNPTable[chr].find(i)
@@ -360,9 +370,9 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart)// + opt->read_len)
+            if (i < refRealStart + opt->read_len)
                 continue;
-            if (i > refRealEnd)// - opt->read_len)
+            if (i > refRealEnd - opt->read_len)
                 break;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
         }
@@ -398,8 +408,7 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
             seq += "TGCAN"[(int) (p)->seq[p->full_len - 1 - j]];
             qual += (char) (p->qual[p->full_len - 1 - j] - 33);//0 based
         }
-    string MD(p->md);
-    string refSeq=RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
+
 
     string PosName = string(bns->anns[seqid].name);
 
@@ -413,6 +422,10 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
             PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // absolute coordinate of variant
     //size_t slashPos = PosName.find("/");
     //string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
+
+//    string MD(p->md);
+//    string refSeq=RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
+
     int readRealStart(0);
     int refRealStart(0), refRealEnd(0);
     if (PosName[PosName.size() - 1] == 'L') {
@@ -425,7 +438,10 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
         refRealEnd = refCoord + opt->flank_len;
     }
 
-    int absoluteSite=readRealStart;
+    string MD(p->md);
+    string refSeq = RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
+
+    int absoluteSite = readRealStart;
     int tmpCycle(0)/*sequencing cycle*/, relativeCoordOnRead(0)/*relative coord on reads*/, relativeCoordOnRef(0);
     char sign[2] =
             {1, -1};
@@ -435,16 +451,9 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 
     if (p->cigar) {
 //        return true;
-//        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//        char DEBUGREGION[1024];
-//        sprintf(DEBUGREGION,"%s:%d-%d",chrom.c_str(),readRealStart,readRealStart+refSeq.size()-1);
-//        int dummy;
-//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//        if(DEBUGTEST!=refSeq) {
-//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
-//            cerr << DEBUGTEST << endl;
-//            cerr << refSeq << endl;
-//        }
+        int Debug_first_s_len = 0;
+        int Debug_last_s_len = 0;
+
         int n_cigar = p->n_cigar;
         bwa_cigar_t *cigar = p->cigar;
         for (int k = 0; k < n_cigar; ++k) {
@@ -459,16 +468,21 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                     absoluteSite += cl;
                     tmpCycle += cl * sign[p->strand];
                     relativeCoordOnRead += cl;
-                    relativeCoordOnRef +=cl;
+                    relativeCoordOnRef += cl;
                     break;
                 case 'S'://ignore soft clip
                     tmpCycle += cl * sign[p->strand];
                     relativeCoordOnRead += cl;
-                    relativeCoordOnRef +=cl;
+                    relativeCoordOnRef += cl;
+                    //debug
+                    if (k == 0)
+                        Debug_first_s_len = cl;
+                    else if (k == n_cigar)
+                        Debug_last_s_len = cl;
                     break;
                 case 'D'://ref has base, read has no base;
                     absoluteSite += cl;
-                    relativeCoordOnRef +=cl;
+                    relativeCoordOnRef += cl;
                     break;
                 case 'I'://ref has no base, read has base;gGg
                     tmpCycle += cl * sign[p->strand];
@@ -478,6 +492,18 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                     warning("Unhandled cigar_op %d:%d\n", cop, cl);
             }
         }//end for
+
+//        faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//        char DEBUGREGION[1024];
+//        sprintf(DEBUGREGION, "%s:%d-%d", chrom.c_str(), readRealStart - Debug_first_s_len,
+//                readRealStart - Debug_first_s_len + p->len - 1);
+//        int dummy;
+//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//        if (DEBUGTEST != refSeq) {
+//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
+//            cerr << DEBUGTEST << endl;
+//            cerr << refSeq << endl;
+//        }
     } else {
 //        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
 //        char DEBUGREGION[1024];
@@ -506,34 +532,39 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
     }
 
     string seq(p.getSequence()), qual(p.getQuality()), newSeq, newQual;
+    std::transform(qual.begin(), qual.end(), qual.begin(),
+                   [](unsigned char c) -> unsigned char { return c-33; });
 
-    //ConstructFakeSeqQual(seq,qual,p->n_cigar,p->cigar,newSeq,newQual);
+    string posName = p.getReferenceName();
+
+    int pos = p.get1BasedPosition();
+
+    string chrom = p.getReferenceName();
+
     string refSeq, MD;
     if (p.getStringTag("MD") != nullptr) {
         MD = string(p.getStringTag("MD")->c_str());
     } else
         return false;
 
-    refSeq=RecoverRefseqByMDandCigar(refSeq, MD, p.getCigar());
+    std::vector<bwa_cigar_t> cigar = String2Cigar(p.getCigar());
+    refSeq = RecoverRefseqByMDandCigar(seq, MD, &cigar[0], cigar.size());
 
-    string posName = p.getReferenceName();
-
-    int pos = p.get1BasedPosition();
-
-    size_t colonPos = posName.find(':');
-    size_t atPos = posName.find('@');
-    string chrom = posName.substr(0, colonPos);
-
-//    int refCoord = atoi(
-//            posName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
-    char *pEnd;
-    int refCoord = static_cast<int>(strtol(
-            posName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10));
     int readRealStart(0);
     int refRealStart(0), refRealEnd(0);
 
-    if (strchr(p.getReferenceName(), '@') != nullptr)//bam file is generated by FASTQuick itself
+    if (chrom.find('@') != std::string::npos)//bam file is generated by FASTQuick itself
     {
+        size_t colonPos = posName.find(':');
+        size_t atPos = posName.find('@');
+        chrom = posName.substr(0, colonPos);
+
+//    int refCoord = atoi(
+//            posName.substr(colonPos + 1, atPos - colonPos + 1).c_str()); // coordinate of variant site
+        char *pEnd;
+        int refCoord = static_cast<int>(strtol(
+                posName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10));
+
         if (posName[posName.size() - 1] == 'L') {
             readRealStart = refCoord - opt->flank_long_len + pos - 1; //real coordinate of current reads on reference
             refRealStart = refCoord - opt->flank_long_len;
@@ -544,44 +575,80 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
             refRealEnd = refCoord + opt->flank_len;
         }
     } else {
+        readRealStart = pos;
+        int readRealEnd = readRealStart +
+                p.getReadLength() - 1 - (__cigar_op(cigar[0])=='S'?__cigar_len(cigar[0]):0);
+        int overlap_right(0), overlap_left(0);
+        int left_flank_len(0), right_flank_len(0)/*flank length of right element*/;
         if (VcfTable.find(chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
-            auto bound = VcfTable[chrom].lower_bound(pos);
+            auto right = VcfTable[chrom].lower_bound(readRealStart);
+            if (right != VcfTable[chrom].begin() and right != VcfTable[chrom].end())
+                //meaning both right and left elements are valid
+            {
+                auto left(--right);
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
 
-            if (bound != VcfTable[chrom].end())//right element exists
-            {
-                auto upper(bound);
-                int overlap_right = readRealStart + p.getReadLength() - 1 - (upper->first - opt->flank_len) + 1;
-                if (bound != VcfTable[chrom].begin())//both side exists
-                {
-                    auto lower(--bound);
-                    int overlap_left = lower->first + opt->flank_len - readRealStart + 1;
-                    readRealStart = pos;
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+
+                if (overlap_left > 0 and overlap_right > 0) {//both overlap exist
                     if (overlap_left > overlap_right) {
-                        refRealStart = lower->first - opt->flank_len;
-                        refRealEnd = lower->first + opt->flank_len;
+                        refRealStart = left->first - left_flank_len;
+                        refRealEnd = left->first + left_flank_len;
                     } else {
-                        refRealStart = upper->first - opt->flank_len;
-                        refRealEnd = upper->first + opt->flank_len;
+                        refRealStart = right->first - right_flank_len;
+                        refRealEnd = right->first + right_flank_len;
                     }
-                } else//only right exists
-                {
-                    refRealStart = upper->first - opt->flank_len;
-                    refRealEnd = upper->first + opt->flank_len;
-                }
-            } else if (bound != VcfTable[chrom].begin())//only left element exists
+                } else if (overlap_left > 0) {//only left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else if (overlap_right > 0) {//only right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].begin())//left element is valid, but not right element isn't
             {
-                auto lower(--bound);
-//                int overlap_left = lower->first + opt->flank_len - readRealStart + 1;
-                readRealStart = pos;
-                refRealStart = lower->first - opt->flank_len;
-                refRealEnd = lower->first + opt->flank_len;
-            } else//none neighbours, not possible
-                return false;
+                auto left(--right);
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+                if (overlap_left > 0) {//left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].end())//only this element exists, which is rare
+            {
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                if (overlap_right > 0) {//right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else
+                    return false;
+            } else//meaning empty set, impossible
+            {
+                warning("read:%s cannot find adjacent variants on chrom:%s, impossible!", p.getReadName(),
+                        chrom.c_str());
+                exit(EXIT_FAILURE);
+            }
         } else
             return false;
     }
 
-    int absoluteSite=readRealStart;
+    int absoluteSite = readRealStart;
     int tmpCycle(0), relativeCoordOnRead(0)/*relative coord on reads*/, relativeCoordOnRef(0);
     char sign[2] =
             {1, -1};
@@ -592,22 +659,11 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
         tmpCycle = p.getReadLength() - 1;
     }
 
-    if (std::string(p.getCigar()).find_first_of("SID") != std::string::npos)//DONE: change not mapped to only M
+    if (cigar.size() > 1)//more than M only
     {
-
-        string cigar = p.getCigar();
-        int n_cigar = static_cast<int>(cigar.size());
-        int digitNow(0), digitLast(0);
-        //for (int k = 0; k < n_cigar; ++k)
-        while (digitNow != n_cigar) {
-            while (isdigit(cigar[digitNow]))
-                digitNow++;
-            int cl = atoi(
-                    cigar.substr(digitLast, digitNow - digitLast).c_str()); //digitNow is "SMID"
-            digitLast = digitNow + 1;
-            char cop = cigar[digitNow];
-            digitNow++;
-            //std::cerr<<cigar<<":\t"<<cop<<"\t"<<cl<<std::endl;
+        for (int i = 0; i <cigar.size() ; ++i) {
+            int cl=__cigar_len(cigar[i]);
+            char cop="MIDS"[__cigar_op(cigar[i])];
             switch (cop) {
                 case 'M':
                     /*************************variant site****************************************/
@@ -619,15 +675,16 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
                     absoluteSite += cl;
                     tmpCycle += cl * sign[strand];
                     relativeCoordOnRead += cl;
-                    relativeCoordOnRef +=cl;
+                    relativeCoordOnRef += cl;
                     break;
                 case 'S':
                     tmpCycle += cl * sign[strand];
                     relativeCoordOnRead += cl;
+                    relativeCoordOnRef += cl;
                     break;
                 case 'D':
                     absoluteSite += cl;
-                    relativeCoordOnRef +=cl;
+                    relativeCoordOnRef += cl;
                     break;
                 case 'I':
                     tmpCycle += cl * sign[strand];
@@ -953,7 +1010,7 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
 
 
         fout << q.getReadName() << "\t" << -1 << "\t" << MaxInsert2 << "\t" << -1
-             << "\t" << "*" << "\t" << "*" << "\t" << p.getFlag() << "\t" << p.getReadLength() << "\t" << p.getCigar()
+             << "\t" << "*" << "\t" << "*" << "\t" << "*" << "\t" << "*" << "\t" << "*"
              << "\t" << q.getReferenceName() << "\t" << q.get1BasedPosition() << "\t" << q.getFlag() << "\t"
              << q.getReadLength() << "\t" << q.getCigar()
              << "\tRevOnly" << endl;
@@ -980,7 +1037,7 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
         fout << p.getReadName() << "\t" << MaxInsert << "\t" << -1 << "\t" << -1
              << "\t" << p.getReferenceName() << "\t" << p.get1BasedPosition() << "\t" << p.getFlag() << "\t"
              << p.getReadLength() << "\t" << p.getCigar()
-             << "\t*" << "\t" << "*" << "\t" << q.getFlag() << "\t" << q.getReadLength() << "\t" << q.getCigar()
+             << "\t*" << "\t" << "*" << "\t" << "*" << "\t" << "*" << "\t" << "*"
              << "\tFwdOnly" << endl;
         return 0;
     } else if (type == 2) // both aligned
@@ -1597,9 +1654,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker;
+    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1631,7 +1688,7 @@ int StatCollector::getEmpRepDist(const string &outputPath) {
     for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
         fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
              << "\t"
-             << PHRED((double) (misEmpRepDist[i] + 1) / (EmpRepDist[i] + 1))
+             << PHRED((double) (misEmpRepDist[i] + 0.01) / (EmpRepDist[i] + 0.01))
              << endl;
     }
     fout.close();
@@ -1644,8 +1701,8 @@ int StatCollector::getEmpCycleDist(const string &outputPath) {
         fout << i << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
              << "\t"
              << PHRED(
-                        (double) (misEmpCycleDist[i] + 1)
-                        / (EmpCycleDist[i] + 2)) << "\t" << CycleDist[i] << endl;
+                        (double) (misEmpCycleDist[i] + 0.01)
+                        / (EmpCycleDist[i] + 0.01)) << "\t" << CycleDist[i] << endl;
     }
     fout.close();
     return 0;
@@ -1765,44 +1822,44 @@ int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) 
         }
     }
     fout.close();
+/*
+    ofstream Dfout(outputPath + ".DebugPileup");
+    int Dqualoffset = 33;
+    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
+    faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+    char DEBUGREGION[1024];
+    int dummy;
 
-//    ofstream Dfout(outputPath + ".DebugPileup");
-//    int Dqualoffset = 33;
-//    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
-//    faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//    char DEBUGREGION[1024];
-//    int dummy;
-//
-//    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
-//    {
-//        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
-//        {
-//            if (DebugSeqVec[j->second].size() == 0)
-//                continue;
-//
-//            sprintf(DEBUGREGION,"%s:%d-%d",i->first.c_str(),j->first,j->first);
-//
-//            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//
-//
-//            Dfout << i->first << "\t" << j->first << "\t"<< DEBUGTEST <<"\t"
-//                 << DebugSeqVec[j->second].size() << "\t";
-//            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
-//                    Dfout << (char) toupper (DebugSeqVec[j->second][k]);
-//            }
-//            Dfout << "\t";
-//            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
-//                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
-//            Dfout << "\t";
-//            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
-//                Dfout << DebugCycleVec[j->second][k];
-//                if (k != DebugCycleVec[j->second].size() - 1)
-//                    Dfout << ",";
-//            }
-//            Dfout << endl;
-//        }
-//    }
-//    Dfout.close();
+    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
+    {
+        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
+        {
+            if (DebugSeqVec[j->second].size() == 0)
+                continue;
+
+            sprintf(DEBUGREGION, "%s:%d-%d", i->first.c_str(), j->first, j->first);
+
+            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+
+
+            Dfout << i->first << "\t" << j->first << "\t" << DEBUGTEST << "\t"
+                  << DebugSeqVec[j->second].size() << "\t";
+            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
+                Dfout << (char) toupper(DebugSeqVec[j->second][k]);
+            }
+            Dfout << "\t";
+            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
+                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
+            Dfout << "\t";
+            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
+                Dfout << DebugCycleVec[j->second][k];
+                if (k != DebugCycleVec[j->second].size() - 1)
+                    Dfout << ",";
+            }
+            Dfout << endl;
+        }
+    }
+    Dfout.close();*/
     return 0;
 }
 
@@ -1975,7 +2032,7 @@ int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt)
     fout << "Estimated AvgDepth : ";
     fout << ((NumPositionCovered == 0) ? 0 : NumBaseMapped / (double) NumPositionCovered) << endl;
     fout << "Estimated Percentage of Accessible Genome Covered : "
-         << (1. - (double) DepthDist[0] / total_region_size)*100<<"%"
+         << (1. - (double) DepthDist[0] / total_region_size) * 100 << "%"
          << endl;
     //output for fraction figure
     /*auto Q20BaseFraction = [&]()->double
