@@ -388,6 +388,8 @@ aln_buf_t;
 #include "../libbwa/kseq.h"
 #include "../libbwa/bamlite.h"
 #include "zlib.h"
+#include "../libbwa/bwtaln.h"
+
 KSEQ_INIT_FPC(gzFile, gzread)
 struct __bwa_seqio_t {
 	// for BAM input
@@ -489,87 +491,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 
 		if (n_seqs == n_needed) break;
 	}
-	//while (1)
-	//{
-	//	double rand_num = 0;
-	//	drand48_r(&randBuffer, &rand_num);
-	//	if (rand_num > frac)
-	//	{
-	//		//notice("before length:%d", seq->seq.l);
-	//		if ((l = kseq_read4_fpc(seq)) < 0) break;
-	//		//notice("after length:%d", seq->seq.l);
-	//		continue;
-	//	}
-	//	if ((l = kseq_read3_fpc(seq)) < 0) break;
 
-	//	if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
-	//	p = &seqs[n_seqs++];
-
-	//	if (l_bc) { // then trim barcode
-	//		for (i = 0; i < l_bc; ++i)
-	//			p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
-	//		p->bc[i] = 0;
-	//		for (; i < seq->seq.l; ++i)
-	//			seq->seq.s[i - l_bc] = seq->seq.s[i];
-	//		seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
-	//		if (seq->qual.l) {
-	//			for (i = l_bc; i < seq->qual.l; ++i)
-	//				seq->qual.s[i - l_bc] = seq->qual.s[i];
-	//			seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
-	//		}
-	//		l = seq->seq.l;
-	//	}
-	//	else p->bc[0] = 0;
-	//	p->full_len = p->clip_len = p->len = l;
-	//	n_tot += p->full_len;
-	//	//if (p->len>SEQ_INIT_Len)
-	//	{
-	//		delete[] p->seq;
-	//		delete[] p->qual;
-	//		p->seq = new ubyte_t[p->len];
-	//		p->qual = new ubyte_t[p->len];
-	//	}
-	//	for (i = 0; i != p->full_len; ++i)
-	//		p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
-	//	if (seq->qual.l) { // copy quality
-	//		if (is_64)
-	//			for (i = 0; i < seq->qual.l; ++i)
-	//			{
-	//			seq->qual.s[i] -= 31;
-	//			p->qual[i] = seq->qual.s[i];
-	//			}
-	//		else
-	//		{
-	//			for (i = 0; i < seq->qual.l; ++i)
-	//			{
-	//				p->qual[i] = seq->qual.s[i];
-	//			}
-	//		}
-	//		if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
-	//	}
-
-	//	if (BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
-	//	{
-	//		p->filtered |= 1;
-	//		if (n_seqs == n_needed) break;
-	//		continue;
-	//	}
-
-	//	p->rseq = (ubyte_t*)calloc(p->full_len, 1);
-	//	memcpy(p->rseq, p->seq, p->len);
-	//	//fprintf(stderr, "I have been here: %d times!\n",i);
-	//	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
-	//	seq_reverse(p->len, p->rseq, is_comp);
-
-	//	//p->name = strdup((const char*)seq->name.s);
-	//	strncpy(p->name, seq->name.s, seq->name.l);
-	//	{ // trim /[12]$
-	//		int t = strlen(p->name);
-	//		if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-	//	}
-
-	//	if (n_seqs == n_needed) break;
-	//}
 	*n = n_seqs;
 	if (n_seqs && trim_qual >= 1)
 		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
@@ -662,13 +584,13 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
 		}
 		//for debug begin
-//		strncpy(p->name, seq->name.s, seq->name.l);
-//		{ // trim /[12]$
-//			int t = strlen(p->name);
-//			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-//		}
+		strncpy(p->name, seq->name.s, seq->name.l);
+		{ // trim /[12]$
+			int t = strlen(p->name);
+			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+		}
 		//for debug end
-        strncpy(p->name, seq->name.s, seq->name.l);
+//        strncpy(p->name, seq->name.s, seq->name.l);
         if (BwtIndex->RollParam.thresh!=0 && BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
 		{
 			p->filtered |= 1;
@@ -681,10 +603,10 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		seq_reverse(p->len, p->rseq, is_comp);
 		//p->name = strdup((const char*)seq->name.s);
 		//strncpy(p->name, seq->name.s, seq->name.l);
-		{ // trim /[12]$
-			int t = strlen(p->name);
-			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-		}
+//		{ // trim /[12]$
+//			int t = strlen(p->name);
+//			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+//		}
 
 		if (n_seqs == n_needed) break;
 	}
@@ -1158,8 +1080,8 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 
 		if (p->type == BWA_TYPE_NO_MATCH)
 		{
-			p->pos = mate->pos;
-			p->strand = mate->strand;
+//			p->pos = mate->pos;
+//			p->strand = mate->strand;
 			flag |= SAM_FSU;
 			j = 1;
 		}
@@ -1189,7 +1111,10 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		//ss<<p->name<<"\t"<<flag<<"\t"<<bns->anns[seqid].name<<"\t";
 		SR.setReadName(p->name);
 		SR.setFlag(flag);
-		SR.setReferenceName(SFH, bns->anns[seqid].name);
+		if(p->type == BWA_TYPE_NO_MATCH)
+			SR.setReferenceName(SFH, "*");
+		else
+			SR.setReferenceName(SFH, bns->anns[seqid].name);
 		//printf("%d\t%d\t", (int) (p->pos - bns->anns[seqid].offset + 1), p->mapQ);
 		//ss<<(int) (p->pos - bns->anns[seqid].offset + 1)<<"\t"<<p->mapQ;
 		SR.set1BasedPosition((int)(p->pos - bns->anns[seqid].offset + 1));
@@ -1197,16 +1122,22 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		SR.setMapQuality(p->mapQ);
 		// print CIGAR
 		ostringstream ss;
-		if (p->cigar)
+//		if (p->cigar)
+//		{
+//			for (j = 0; j != p->n_cigar; ++j)
+//				//printf("%d%c", __cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
+//				ss << __cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
+//		}
+//		else
+ 		if (p->type == BWA_TYPE_NO_MATCH)
+			//printf("*");
+			ss << "*";
+		else if (p->cigar)
 		{
 			for (j = 0; j != p->n_cigar; ++j)
 				//printf("%d%c", __cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
 				ss << __cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
-		}
-		else if (p->type == BWA_TYPE_NO_MATCH)
-			//printf("*");
-			ss << "*";
-		else
+		} else
 			//printf("%dM", p->len);
 			ss << p->len << "M";
 		SR.setCigar(ss.str().c_str());
