@@ -309,7 +309,7 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const stri
 
 void StatCollector::UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl, const char *sign, bool strand,
                                           const string &chrom, const string &seq, const string &qual, u_char mapQ,
-                                          int relativeCoordOnRead)//only update info at marker site
+                                          int relativeCoordOnRead)//only update info at marker site, for pileup output
 {
     if (VcfTable.find(chrom) != VcfTable.end()) {
         for (int i = absoluteSite; i != absoluteSite + cl - 1 + 1;
@@ -348,9 +348,9 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart)// + opt->read_len)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd)// - opt->read_len)
                 break;
             if (PositionTable[chr].find(i)
                 != PositionTable[chr].end()) {
@@ -370,9 +370,9 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart )//+ opt->read_len)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd)// - opt->read_len)
                 break;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
         }
@@ -446,52 +446,53 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     char sign[2] =
             {1, -1};
     if (p->strand != 0) {
-        tmpCycle = p->len - 1;
+        tmpCycle = p->full_len - 1;
     }
 
     if (p->cigar) {
-//        return true;
-        int Debug_first_s_len = 0;
-        int Debug_last_s_len = 0;
+//        if("MIDS"[__cigar_op(p->cigar[0])]=='S' or "MIDS"[__cigar_op(p->cigar[p->n_cigar-1])]=='S') return true;
+            int Debug_first_s_len = 0;
+            int Debug_last_s_len = 0;
 
-        int n_cigar = p->n_cigar;
-        bwa_cigar_t *cigar = p->cigar;
-        for (int k = 0; k < n_cigar; ++k) {
-            int cl = __cigar_len(cigar[k]);//cigar length
-            int cop = "MIDS"[__cigar_op(cigar[k])];
-            switch (cop) {
-                case 'M':
-                    /*************************variant site****************************************/
-                    AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
-                                     p->strand,
-                                     p->mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
-                    absoluteSite += cl;
-                    tmpCycle += cl * sign[p->strand];
-                    relativeCoordOnRead += cl;
-                    relativeCoordOnRef += cl;
-                    break;
-                case 'S'://ignore soft clip
-                    tmpCycle += cl * sign[p->strand];
-                    relativeCoordOnRead += cl;
-                    relativeCoordOnRef += cl;
-                    //debug
-                    if (k == 0)
-                        Debug_first_s_len = cl;
-                    else if (k == n_cigar)
-                        Debug_last_s_len = cl;
-                    break;
-                case 'D'://ref has base, read has no base;
-                    absoluteSite += cl;
-                    relativeCoordOnRef += cl;
-                    break;
-                case 'I'://ref has no base, read has base;gGg
-                    tmpCycle += cl * sign[p->strand];
-                    relativeCoordOnRead += cl;
-                    break;
-                default:
-                    warning("Unhandled cigar_op %d:%d\n", cop, cl);
-            }
-        }//end for
+            int n_cigar = p->n_cigar;
+            bwa_cigar_t *cigar = p->cigar;
+            for (int k = 0; k < n_cigar; ++k) {
+                int cl = __cigar_len(cigar[k]);//cigar length
+                char cop = "MIDS"[__cigar_op(cigar[k])];
+                switch (cop) {
+                    case 'M':
+                        /*************************variant site****************************************/
+                        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
+                                         p->strand,
+                                         p->mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                        absoluteSite += cl;
+                        tmpCycle += cl * sign[p->strand];
+                        relativeCoordOnRead += cl;
+                        relativeCoordOnRef += cl;
+                        break;
+                    case 'S'://ignore soft clip
+                        tmpCycle += cl * sign[p->strand];
+                        relativeCoordOnRead += cl;
+                        relativeCoordOnRef += cl;
+                        //debug
+                        if (k == 0)
+                            Debug_first_s_len = cl;
+                        else if (k == n_cigar)
+                            Debug_last_s_len = cl;
+                        break;
+                    case 'D'://ref has base, read has no base;
+                        absoluteSite += cl;
+                        relativeCoordOnRef += cl;
+                        break;
+                    case 'I'://ref has no base, read has base;gGg
+                        tmpCycle += cl * sign[p->strand];
+                        relativeCoordOnRead += cl;
+                        break;
+                    default:
+                        warning("Unhandled cigar_op %d:%d\n", cop, cl);
+                }
+            }//end for
+
 
 //        faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
 //        char DEBUGREGION[1024];
@@ -661,39 +662,42 @@ bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 
     if (cigar.size() > 1)//more than M only
     {
-        for (int i = 0; i <cigar.size() ; ++i) {
-            int cl=__cigar_len(cigar[i]);
-            char cop="MIDS"[__cigar_op(cigar[i])];
-            switch (cop) {
-                case 'M':
-                    /*************************variant site****************************************/
-                {
-                    AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
-                                     strand,
-                                     mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+//        return true;
+//        if("MIDS"[__cigar_op(cigar[0])]=='S' /*or "MIDS"[__cigar_op(cigar[cigar.size()-1])]=='S'*/) return true;
+            for (int i = 0; i < cigar.size(); ++i) {
+                int cl = __cigar_len(cigar[i]);
+                char cop = "MIDS"[__cigar_op(cigar[i])];
+                switch (cop) {
+                    case 'M':
+                        /*************************variant site****************************************/
+                    {
+                        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
+                                         strand,
+                                         mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                    }
+                        absoluteSite += cl;
+                        tmpCycle += cl * sign[strand];
+                        relativeCoordOnRead += cl;
+                        relativeCoordOnRef += cl;
+                        break;
+                    case 'S':
+                        tmpCycle += cl * sign[strand];
+                        relativeCoordOnRead += cl;
+                        relativeCoordOnRef += cl;
+                        break;
+                    case 'D':
+                        absoluteSite += cl;
+                        relativeCoordOnRef += cl;
+                        break;
+                    case 'I':
+                        tmpCycle += cl * sign[strand];
+                        relativeCoordOnRead += cl;
+                        break;
+                    default:
+                        warning("Unhandled cigar_op %d:%d\n", cop, cl);
                 }
-                    absoluteSite += cl;
-                    tmpCycle += cl * sign[strand];
-                    relativeCoordOnRead += cl;
-                    relativeCoordOnRef += cl;
-                    break;
-                case 'S':
-                    tmpCycle += cl * sign[strand];
-                    relativeCoordOnRead += cl;
-                    relativeCoordOnRef += cl;
-                    break;
-                case 'D':
-                    absoluteSite += cl;
-                    relativeCoordOnRef += cl;
-                    break;
-                case 'I':
-                    tmpCycle += cl * sign[strand];
-                    relativeCoordOnRead += cl;
-                    break;
-                default:
-                    warning("Unhandled cigar_op %d:%d\n", cop, cl);
-            }
-        }            //end for
+            }            //end for
+
     } else {
         /*************************variant site****************************************/
         AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, strand,
@@ -1654,9 +1658,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
+    total_region_size = ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1688,7 +1692,7 @@ int StatCollector::getEmpRepDist(const string &outputPath) {
     for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
         fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
              << "\t"
-             << PHRED((double) (misEmpRepDist[i] + 0.01) / (EmpRepDist[i] + 0.01))
+             << min(45.0,PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6)))
              << endl;
     }
     fout.close();
@@ -1700,9 +1704,9 @@ int StatCollector::getEmpCycleDist(const string &outputPath) {
     for (uint32_t i = 0; i != EmpCycleDist.size(); ++i) {
         fout << i << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
              << "\t"
-             << PHRED(
-                        (double) (misEmpCycleDist[i] + 0.01)
-                        / (EmpCycleDist[i] + 0.01)) << "\t" << CycleDist[i] << endl;
+             << min(45.0,PHRED(
+                        (double) (misEmpCycleDist[i] + 1e-6)
+                        / (EmpCycleDist[i] + 1e-6))) << "\t" << CycleDist[i] << endl;
     }
     fout.close();
     return 0;
