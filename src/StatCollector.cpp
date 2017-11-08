@@ -1548,7 +1548,7 @@ int StatCollector::restoreVcfSites(const string &RefPath, const gap_opt_t *opt) 
 
     VcfHeader header;
     VcfFileReader reader;
-    string SelectedSite = RefPath + ".SelectedSite.vcf.gz";
+    string SelectedSite = RefPath + ".SelectedSite.vcf";
     if (!reader.open(SelectedSite.c_str(), header)) {
         warning("File open failed: %s\n", SelectedSite.c_str());
     }
@@ -1583,7 +1583,7 @@ int StatCollector::restoreVcfSites(const string &RefPath, const gap_opt_t *opt) 
 
     }
     reader.close();
-    string BedFile = RefPath + ".dpSNP.subset.vcf";
+    string BedFile = RefPath + ".dbSNP.subset.vcf";
     if (!reader.open(BedFile.c_str(), header)) {
         notice("Open %s failed!\n", BedFile.c_str());
         exit(1);

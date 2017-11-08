@@ -5,7 +5,6 @@
 #include "../misc/general/Error.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
-#include "VcfRecord.h"
 #include "../libbwa/bwtaln.h"
 #include <fstream>
 
@@ -80,7 +79,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
     VcfFileReader reader;
 
     string SelectedSite = NewRef + ".SelectedSite.vcf";
-    InputFile FoutSelectedSite(SelectedSite.c_str(), "w");
+    InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
     string GCpath = NewRef + ".gc";
     ofstream FGC(GCpath, ios_base::binary);
     string BedPath = NewRef + ".bed";
@@ -89,16 +88,17 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
     //_GCstruct * GCstruct=new _GCstruct [opt->num_variant_long+opt->num_variant_short];
 
     reader.open(VcfPath.c_str(), header);
-    header.write(&FoutSelectedSite);
+    header.write(&FoutHapMapSelectedSite);
     char region[128];
     unsigned int nseqs(0);
     unsigned int nmarker(0);
+    unsigned int totalMarker(0);
     int last_pos = 0;
     string last_chr;
     srand(time(NULL));
 
     int dummy;
-    VcfRecord VcfLine;
+//    VcfRecord VcfLine;
     string Chrom;
     int Position;
     /* generate secret number between 1 and 10: */
@@ -113,54 +113,57 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         {
             break;
         }
-
-        reader.readRecord(VcfLine);
-        if (VcfLine.getNumRefBases() != 1||strlen(VcfLine.getAltStr()) !=1||VcfLine.getNumAlts() != 1)// filtering indel sites
+        VcfRecord* VcfLine=new VcfRecord;
+        reader.readRecord(*VcfLine);
+        if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
             continue;
 
-        Chrom = VcfLine.getChromStr();
-        Position = VcfLine.get1BasedPosition();
+        Chrom = VcfLine->getChromStr();
+        Position = VcfLine->get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
 
         if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_len)) continue;
 
-        if (!VcfLine.write(&FoutSelectedSite, true)) {
-            warning("Writing retained sites failed!\n");
-            exit(EXIT_FAILURE);
-        }
+//        if (!VcfLine.write(&FoutHapMapSelectedSite, true)) {
+//            warning("Writing retained sites failed!\n");
+//            exit(EXIT_FAILURE);
+//        }
+        VcfTable[Chrom][Position]=totalMarker+nmarker;
+        VcfVec.push_back(VcfLine);
 
         string FetchedSeq(fai_fetch(seq, region, &dummy));
 
         CalculateGC(opt->flank_len, seq, region, Chrom, Position, FGC, dummy);
 
         if (DEBUG) {
-            string RefAllele(VcfLine.getAlleles(0));
+            string RefAllele(VcfLine->getAlleles(0));
             string RefSeq = FetchedSeq.substr(0, opt->flank_len) + RefAllele +
                             FetchedSeq.substr(opt->flank_len + 1, opt->flank_len);
             if (RefSeq != FetchedSeq) {
-                cerr << "WARNING:Coordinate problem!!!!!!" << endl << "Number of Alt:" << VcfLine.getNumAlts() << endl;
+                cerr << "WARNING:Coordinate problem!!!!!!" << endl << "Number of Alt:" << VcfLine->getNumAlts() << endl;
                 //cerr<<"Region: "<<Coord<<endl;
-                cerr << VcfLine.getAlleles(0) << endl;
-                cerr << VcfLine.getAlleles(1) << endl;
+                cerr << VcfLine->getAlleles(0) << endl;
+                cerr << VcfLine->getAlleles(1) << endl;
                 cerr << RefSeq << endl;
                 cerr << FetchedSeq << endl;
                 exit(EXIT_FAILURE);
             }
         }
 
-        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_len) + string(VcfLine.getRefStr()) +
+        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_len) + string(VcfLine->getRefStr()) +
                          FetchedSeq.substr(opt->flank_len + 1, opt->flank_len));
-        sprintf(region, "%s:%d@%s/%s", Chrom.c_str(), Position, VcfLine.getRefStr(), VcfLine.getAltStr());
+        sprintf(region, "%s:%d@%s/%s", Chrom.c_str(), Position, VcfLine->getRefStr(), VcfLine->getAltStr());
         RefTableIndex.insert(make_pair(string(region), nseqs));
 
-        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
-        BedFile << region << endl;
+//        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
+//        BedFile << region << endl;
 
         nseqs++;
         nmarker++;
         last_pos = Position;
         last_chr = Chrom;
     }
+    totalMarker+=nmarker;
     // below is for long ref
     nmarker = 0;
     while (!reader.isEOF()) {
@@ -168,35 +171,39 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         {
             break;
         }
-        reader.readRecord(VcfLine);
-        if (VcfLine.getNumRefBases() != 1||strlen(VcfLine.getAltStr()) !=1||VcfLine.getNumAlts() != 1)// filtering indel sites
+        VcfRecord* VcfLine=new VcfRecord;
+        reader.readRecord(*VcfLine);
+        if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
             continue;
 
-        Chrom = VcfLine.getChromStr();
-        Position = VcfLine.get1BasedPosition();
+        Chrom = VcfLine->getChromStr();
+        Position = VcfLine->get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
 
-        VcfLine.setID((std::string(VcfLine.getIDStr())+"|L").c_str());
+        VcfLine->setID((std::string(VcfLine->getIDStr())+"|L").c_str());
 
         if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_long_len)) continue;
+//
+//        if (!VcfLine.write(&FoutHapMapSelectedSite, true)) {
+//            warning("Writing retained sites failed!\n");
+//            exit(EXIT_FAILURE);
+//        }
 
-        if (!VcfLine.write(&FoutSelectedSite, true)) {
-            warning("Writing retained sites failed!\n");
-            exit(EXIT_FAILURE);
-        }
+        VcfTable[Chrom][Position]=totalMarker+nmarker;
+        VcfVec.push_back(VcfLine);
 
         string FetchedSeq(fai_fetch(seq, region, &dummy));
 
         CalculateGC(opt->flank_long_len, seq, region, Chrom, Position, FGC, dummy);
 
-        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_long_len) + string(VcfLine.getRefStr()) +
+        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_long_len) + string(VcfLine->getRefStr()) +
                          FetchedSeq.substr(opt->flank_long_len + 1, opt->flank_long_len));
 
-        sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(), Position, VcfLine.getRefStr(), VcfLine.getAltStr());
+        sprintf(region, "%s:%d@%s/%s|L", Chrom.c_str(), Position, VcfLine->getRefStr(), VcfLine->getAltStr());
         RefTableIndex.insert(make_pair(string(region), nseqs));
 
-        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
-        BedFile << region << endl;
+//        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
+//        BedFile << region << endl;
 
         nseqs++;
         nmarker++;
@@ -204,7 +211,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         last_chr = Chrom;
 
     }
-
+    totalMarker+=nmarker;
     int max_XorYmarker(0);
     if (opt->num_variant_short >= 100000)
         max_XorYmarker = 3000;
@@ -220,11 +227,12 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         {
             break;
         }
-        reader.readRecord(VcfLine);
-        if (VcfLine.getNumRefBases() != 1||strlen(VcfLine.getAltStr()) !=1||VcfLine.getNumAlts() != 1)// filtering indel sites
+        VcfRecord* VcfLine=new VcfRecord;
+        reader.readRecord(*VcfLine);
+        if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
             continue;
 
-        Chrom=VcfLine.getChromStr();
+        Chrom=VcfLine->getChromStr();
         if (Chrom == "X" || Chrom == "x" || Chrom == "chrX" || Chrom == "chrx") {
             if (Xnmarker >= max_XorYmarker)
                 continue;
@@ -237,7 +245,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
             continue;
 
 
-        Position = VcfLine.get1BasedPosition();
+        Position = VcfLine->get1BasedPosition();
         int dummy;
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
         if (Chrom == last_chr && abs(Position - last_pos) < opt->flank_len * 2)
@@ -247,23 +255,26 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
             size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
             if (double(n) / MaskSeq.size() < 0.9)
                 continue;
-            if (!VcfLine.write(&FoutSelectedSite, 1)) {
-                warning("Writing retained sites failed!\n");
-                exit(EXIT_FAILURE);
-            }
+//            if (!VcfLine.write(&FoutHapMapSelectedSite, 1)) {
+//                warning("Writing retained sites failed!\n");
+//                exit(EXIT_FAILURE);
+//            }
         }
+
+        VcfTable[Chrom][Position]=totalMarker+Xnmarker+Ynmarker;
+        VcfVec.push_back(VcfLine);
 
         string FetchedSeq(fai_fetch(seq, region, &dummy));
 
         CalculateGC(opt->flank_len, seq, region, Chrom, Position, FGC, dummy);
 
-        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_len) + string(VcfLine.getRefStr()) + FetchedSeq.substr(opt->flank_len + 1, opt->flank_len));
-        sprintf(region, "%s:%d@%s/%s", Chrom.c_str(), Position, VcfLine.getRefStr(), VcfLine.getAltStr());
+        SeqVec.push_back(FetchedSeq.substr(0, opt->flank_len) + string(VcfLine->getRefStr()) + FetchedSeq.substr(opt->flank_len + 1, opt->flank_len));
+        sprintf(region, "%s:%d@%s/%s", Chrom.c_str(), Position, VcfLine->getRefStr(), VcfLine->getAltStr());
         RefTableIndex.insert(make_pair(string(region), nseqs));
         nseqs++;
 
-        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
-        BedFile << region << endl;
+//        sprintf(region, "%s\t%d\t%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
+//        BedFile << region << endl;
 
         if (chr_flag == 0)
             Xnmarker++;
@@ -278,41 +289,68 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
     //FGC.write((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
     //int total=(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct);
     //FGC.write((char*) &nmarker, sizeof( unsigned int));
+
+    //output vcf and bed files
+    int flank_len=0;
+    for(auto kv:VcfTable)
+    {
+        for (auto pq:kv.second) {
+            if (!VcfVec[pq.second]->write(&FoutHapMapSelectedSite, 1)) {
+                warning("Writing retained sites failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            if(std::string(VcfVec[pq.second]->getIDStr()).back()=='L')
+                flank_len=opt->flank_long_len;
+            else
+                flank_len=opt->flank_len;
+            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<endl;
+            delete VcfVec[pq.second];
+        }
+    }
     FGC.close();
     BedFile.close();
+    FoutHapMapSelectedSite.ifclose();
+
+
+    reader.open(DBsnpPath.c_str(), header);
+    reader.close();
+
+    InputFile FoutdbSNPSelectedSite(std::string(NewRef+".dbSNP.subset.vcf").c_str(), "w");
+    header.write(&FoutdbSNPSelectedSite);
+    FoutdbSNPSelectedSite.ifclose();
+
     char cmdline[2048];
-    sprintf(cmdline, "tabix  -p bed -s 1 -b 2 -e 3 -h  %s %s  > %s.dpSNP.subset.vcf", DBsnpPath.c_str(),
-            BedPath.c_str(), NewRef.c_str());
+    //subset dbsnp
+    sprintf(cmdline, "sort -k1,1 -k2,2n %s|tabix  -R  - %s  >> %s.dbSNP.subset.vcf", BedPath.c_str(),DBsnpPath.c_str(),
+             NewRef.c_str());
     int ret = system(cmdline);
     if (ret != 0) {
         warning("Building dbsnp subset.vcf failed!\n");
         exit(EXIT_FAILURE);
     }
-    FoutSelectedSite.ifclose();
-
-    sprintf(cmdline,
-            "(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp",
-            NewRef.c_str(), NewRef.c_str(), NewRef.c_str());
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\n", cmdline);
-        exit(EXIT_FAILURE);
-    }
-    sprintf(cmdline, "mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf", NewRef.c_str(), NewRef.c_str());
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\n", cmdline);
-        exit(EXIT_FAILURE);
-    }
-    sprintf(cmdline, "bgzip -f %s.SelectedSite.vcf", NewRef.c_str());
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\n", cmdline);
-        exit(EXIT_FAILURE);
-    }
-    sprintf(cmdline, "tabix -pvcf %s.SelectedSite.vcf.gz", NewRef.c_str());
-    if (system(cmdline) != 0) {
-        warning("Call command line:\n%s\nfailed!\n", cmdline);
-        exit(EXIT_FAILURE);
-    }
-    reader.close();
+//
+//    sprintf(cmdline,
+//            "(grep ^# %s.SelectedSite.vcf && grep -v  ^# %s.SelectedSite.vcf|sort -k1,1 -k2,2n) >%s.SelectedSite.vcf.tmp",
+//            NewRef.c_str(), NewRef.c_str(), NewRef.c_str());
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\n", cmdline);
+//        exit(EXIT_FAILURE);
+//    }
+//    sprintf(cmdline, "mv %s.SelectedSite.vcf.tmp %s.SelectedSite.vcf", NewRef.c_str(), NewRef.c_str());
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\n", cmdline);
+//        exit(EXIT_FAILURE);
+//    }
+//    sprintf(cmdline, "bgzip -f %s.SelectedSite.vcf", NewRef.c_str());
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\n", cmdline);
+//        exit(EXIT_FAILURE);
+//    }
+//    sprintf(cmdline, "tabix -pvcf %s.SelectedSite.vcf.gz", NewRef.c_str());
+//    if (system(cmdline) != 0) {
+//        warning("Call command line:\n%s\nfailed!\n", cmdline);
+//        exit(EXIT_FAILURE);
+//    }
 }
 
 RefBuilder::~RefBuilder() {
