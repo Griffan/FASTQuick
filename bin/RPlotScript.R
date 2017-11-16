@@ -114,6 +114,7 @@ create.DenDist=function(InsertTable,col1,col2){
 
 args=commandArgs(trailingOnly = TRUE)
 input=args[1]
+#input="output"
 print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
@@ -182,20 +183,21 @@ q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_lin
 
 
 mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
-ExpectedDepth=as.numeric(strsplit(mydata[length(mydata)-12]," ")[[1]][5])
-EstimatedDepth=as.numeric(strsplit(mydata[length(mydata)-11]," ")[[1]][4])
-AccessibleFraction=as.numeric(strsplit(strsplit(mydata[length(mydata)-10]," ")[[1]][8],"/")[[1]][1])
-EstimatedQ20Depth=as.numeric(strsplit(mydata[length(mydata)-9]," ")[[1]][7])
-EstimatedQ30Depth=as.numeric(strsplit(mydata[length(mydata)-8]," ")[[1]][7])
+ExpectedDepth=as.numeric(strsplit(mydata[length(mydata)-13]," ")[[1]][5])
+EstimatedDepth=as.numeric(strsplit(mydata[length(mydata)-12]," ")[[1]][4])
+AccessibleFraction=as.numeric(strsplit(strsplit(mydata[length(mydata)-11]," ")[[1]][8],"%")[[1]][1])
+EstimatedQ20Depth=as.numeric(strsplit(mydata[length(mydata)-3],"\\s+|:")[[1]][8])
+EstimatedQ30Depth=as.numeric(strsplit(mydata[length(mydata)-2],"\\s+|:")[[1]][8])
 
-Q20BaseFraction=as.numeric(strsplit(mydata[length(mydata)-5],":")[[1]][2])
-Q30BaseFraction=as.numeric(strsplit(mydata[length(mydata)-4],":")[[1]][2])
-Depth1=as.numeric(strsplit(mydata[length(mydata)-3],":")[[1]][2])
-Depth2=as.numeric(strsplit(mydata[length(mydata)-2],":")[[1]][2])
-Depth5=as.numeric(strsplit(mydata[length(mydata)-1],":")[[1]][2])
-Depth10=as.numeric(strsplit(mydata[length(mydata)],":")[[1]][2])
+Q20BaseFraction=as.numeric(strsplit(mydata[length(mydata)-6],":")[[1]][2])
+Q30BaseFraction=as.numeric(strsplit(mydata[length(mydata)-5],":")[[1]][2])
+Depth1=as.numeric(strsplit(mydata[length(mydata)-9],":")[[1]][2])
+Depth2=as.numeric(strsplit(mydata[length(mydata)-8],":")[[1]][2])
+Depth5=as.numeric(strsplit(mydata[length(mydata)-7],":")[[1]][2])
+Depth10=as.numeric(strsplit(mydata[length(mydata)-6],":")[[1]][2])
 
 plotdata=c(EstimatedQ30Depth,EstimatedQ20Depth,EstimatedDepth,ExpectedDepth)
+print(plotdata)
 plotname=c("EstimatedQ30Depth","EstimatedQ20Depth","EstimatedDepth","ExpectedDepth")
 mydate=cbind(read.table(text=plotname),plotdata)
 q7=ggplot(mydate,aes(x=mydate[,1],y=mydate[,2]))+ggtitle("Depth")+
