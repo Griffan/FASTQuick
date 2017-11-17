@@ -348,9 +348,9 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart)// + opt->read_len)
+            if (i < refRealStart + opt->read_len)
                 continue;
-            if (i > refRealEnd)// - opt->read_len)
+            if (i > refRealEnd - opt->read_len)
                 break;
             if (PositionTable[chr].find(i)
                 != PositionTable[chr].end()) {
@@ -370,9 +370,9 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart )//+ opt->read_len)
+            if (i < refRealStart + opt->read_len)
                 continue;
-            if (i > refRealEnd)// - opt->read_len)
+            if (i > refRealEnd - opt->read_len)
                 break;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
         }
@@ -1658,9 +1658,9 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len /*- opt->read_len*/) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker;
+    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {

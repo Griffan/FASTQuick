@@ -503,7 +503,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 	//ProfilerStop();
 	return seqs;
 }
-static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed, bwa_seq_t* seqs, int read_len)
+static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed, bwa_seq_t* seqs, int& read_len)
 {
 
 	//struct drand48_data randBuffer;
@@ -564,6 +564,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 			p->seq = (ubyte_t*)calloc(p->len, 1);
 			p->qual = (ubyte_t*)calloc(p->len, 1);
 			p->rseq = (ubyte_t*)calloc(p->len, 1);
+            read_len = p->len;//update opt->read_len
 		}
 		for (i = 0; i != p->full_len; ++i)
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
