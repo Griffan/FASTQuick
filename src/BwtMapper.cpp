@@ -1,9 +1,3 @@
-/*
- * BwtMapper.cpp
- *
- *  Created on: 2014��7��9��
- *      Author: Administrator
- */
 
 #include "BwtMapper.h"
 #include <stdio.h>
@@ -168,8 +162,180 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t * const bwt[2], int n_seqs,
 	free(w[1]);
 	gap_destroy_stack(stack);
 }
-BwtMapper::BwtMapper()
-{}
+
+
+BwtMapper::BwtMapper() : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {}
+
+BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
+                     const string &Fastq_2, const string &Prefix, const string &RefPath, const pe_opt_t *popt,
+                     gap_opt_t *opt) : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {
+    //std::cerr<<"Open Fastq  ... "<<endl;
+    if (bwa_set_rg(opt->RG) == -1) warning("Setting @RG tag failed!\n");
+    if (opt->in_bam != 0) {
+        notice("Input alignments from Bam file...\n");
+        /*
+        SamFileHeader SFH;
+        SamFile SFIO;*/
+        notice("Restore Variant Site Info...\n");
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
+        ofstream fout(Prefix + ".InsertSizeTable");
+        int total_add = 0;
+        collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
+        notice("%d reads are retained for QC.", total_add);
+        fout.close();
+        // BamFile->ifclose();
+        // destroy
+        notice("Calculate distributions...\n ");
+        collector.ProcessCore(Prefix, opt);
+    } else if (Fastq_2 != "Empty") {
+        notice("Using Pair End mapping...\n");
+        SamFileHeader SFH;
+        BamInterface BamIO;
+        IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
+        StatGenStatus StatusTracker;
+        StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+        /*********bam header init end***********/
+
+        if (!opt->out_bam) {
+            bwa_print_sam_SQ(BwtIndex.bns);
+            bwa_print_sam_PG();
+        } else {
+            if (!BamFile->isOpen()) {
+                warning("Open Bam file for writing failed, abort!\n");
+                exit(1);
+            }
+            SetSamFileHeader(SFH, BwtIndex.bns);
+            BamIO.writeHeader(BamFile, SFH, StatusTracker);
+        }
+        notice("Restore Variant Site Info...\n");
+        collector.RestoreVcfSites(RefPath, opt);
+        ofstream fout(Prefix + ".InsertSizeTable");
+        int total_add = 0;
+//PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
+        PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile,
+                                      StatusTracker, fout, total_add);
+        notice("%d reads are retained for QC.", total_add);
+        fout.close();
+        BamFile->ifclose();
+		delete BamFile;// destroy
+        notice("Calculate distributions... \n");
+        collector.ProcessCore(Prefix, opt);
+
+    } else {
+        notice("Using Single End mapping...\n");
+        SamFileHeader SFH;
+        BamInterface BamIO;
+        IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
+        StatGenStatus StatusTracker;
+        StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+        /*********bam header init end***********/
+
+        if (!opt->out_bam) {
+            bwa_print_sam_SQ(BwtIndex.bns);
+            bwa_print_sam_PG();
+        } else {
+            if (!BamFile->isOpen()) {
+                warning("Open Bam file for writing failed, abort!\n");
+                exit(1);
+            }
+            SetSamFileHeader(SFH, BwtIndex.bns);
+            BamIO.writeHeader(BamFile, SFH, StatusTracker);
+        }
+        notice("Restore Variant Site Info...\n");
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
+        ofstream fout(Prefix + ".InsertSizeTable");
+        int total_add = 0;
+        SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
+        notice("%d reads are retained for QC.", total_add);
+        fout.close();
+        BamFile->ifclose();
+        delete BamFile;
+        // destroy
+        notice("Calculate distributions...\n ");
+        collector.ProcessCore(Prefix, opt);
+    }
+}
+
+BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
+                     const string &Prefix, const string &RefPath, const pe_opt_t *popt,
+                     gap_opt_t *opt) : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {
+    bwa_set_rg(opt->RG);
+    if (opt->in_bam != 0) {
+        notice("Input alignments from Bam file...\n");
+        /*
+        SamFileHeader SFH;
+        SamFile SFIO;*/
+        notice("Restore Variant Site Info...\n");
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
+        ofstream fout(Prefix + ".InsertSizeTable");
+        int total_add = 0;
+        collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
+        notice("%d reads were calculated!\n", total_add);
+        fout.close();
+        // BamFile->ifclose();
+        notice("Calculate distributions...\n");
+        collector.ProcessCore(Prefix, opt);
+    } else {
+        notice("Open Fastq List ...\n");
+        SamFileHeader SFH;
+        BamInterface BamIO;
+        IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
+        StatGenStatus StatusTracker;
+        StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
+        if (!opt->out_bam) {
+            bwa_print_sam_SQ(BwtIndex.bns);
+            bwa_print_sam_PG();
+        } else {
+            if (!BamFile->isOpen()) {
+                warning("Open Bam file for writing failed, abort!\n");
+                exit(EXIT_FAILURE);
+            }
+            SetSamFileHeader(SFH, BwtIndex.bns);
+            BamIO.writeHeader(BamFile, SFH, StatusTracker);
+        }
+        double t_tmp = realtime();
+
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
+        notice("Restore Variant Site Info...%f sec\n", realtime() - t_tmp);
+        ofstream fout(Prefix + ".InsertSizeTable");
+        int total_add = 0;
+        ifstream fin(FaList);
+        if (!fin.is_open()) error("Open file %s failed", FaList.c_str());
+        std::string line;
+        int i(0);
+        while (getline(fin, line)) {
+            ++i;
+            std::string Fastq_1(""), Fastq_2("");
+            stringstream ss(line);
+            ss >> Fastq_1 >> Fastq_2;
+            if (Fastq_2 != "") {
+                notice("Processing Pair End mapping\t%d\n%s\n%s\n", i, Fastq_1.c_str(), Fastq_2.c_str());
+                t_tmp = realtime();
+                /*PairEndMapper*//*PairEndMapper_dev*/ PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(),
+                                                                                     Fastq_2.c_str(), popt, opt, SFH,
+                                                                                     BamIO, BamFile, StatusTracker,
+                                                                                     fout, total_add);
+                notice("Processed Pair End mapping in %f sec\n", realtime() - t_tmp);
+            } else {
+                notice("Processing Single End mapping\t%d\n%s\n", i, Fastq_1.c_str());
+                SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
+            }
+        }
+        notice("%d reads are retained for QC.", total_add);
+        fout.close();
+        BamFile->ifclose();
+        delete BamFile;
+        // destroy
+        t_tmp = realtime();
+        collector.ProcessCore(Prefix, opt);
+        notice("Calculate distributions... %f sec\n", realtime() - t_tmp);
+    }
+}
+
 int BwtMapper::bwa_cal_pac_pos(BwtIndexer& BwtIndex, int n_seqs, bwa_seq_t *seqs, int max_mm, float fnr)
 {
 	int i, j;
@@ -222,6 +388,8 @@ aln_buf_t;
 #include "../libbwa/kseq.h"
 #include "../libbwa/bamlite.h"
 #include "zlib.h"
+#include "../libbwa/bwtaln.h"
+
 KSEQ_INIT_FPC(gzFile, gzread)
 struct __bwa_seqio_t {
 	// for BAM input
@@ -323,87 +491,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 
 		if (n_seqs == n_needed) break;
 	}
-	//while (1)
-	//{
-	//	double rand_num = 0;
-	//	drand48_r(&randBuffer, &rand_num);
-	//	if (rand_num > frac)
-	//	{
-	//		//notice("before length:%d", seq->seq.l);
-	//		if ((l = kseq_read4_fpc(seq)) < 0) break;
-	//		//notice("after length:%d", seq->seq.l);
-	//		continue;
-	//	}
-	//	if ((l = kseq_read3_fpc(seq)) < 0) break;
 
-	//	if (seq->seq.l <= l_bc) continue; // sequence length equals or smaller than the barcode length
-	//	p = &seqs[n_seqs++];
-
-	//	if (l_bc) { // then trim barcode
-	//		for (i = 0; i < l_bc; ++i)
-	//			p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 < BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
-	//		p->bc[i] = 0;
-	//		for (; i < seq->seq.l; ++i)
-	//			seq->seq.s[i - l_bc] = seq->seq.s[i];
-	//		seq->seq.l -= l_bc; seq->seq.s[seq->seq.l] = 0;
-	//		if (seq->qual.l) {
-	//			for (i = l_bc; i < seq->qual.l; ++i)
-	//				seq->qual.s[i - l_bc] = seq->qual.s[i];
-	//			seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] = 0;
-	//		}
-	//		l = seq->seq.l;
-	//	}
-	//	else p->bc[0] = 0;
-	//	p->full_len = p->clip_len = p->len = l;
-	//	n_tot += p->full_len;
-	//	//if (p->len>SEQ_INIT_Len)
-	//	{
-	//		delete[] p->seq;
-	//		delete[] p->qual;
-	//		p->seq = new ubyte_t[p->len];
-	//		p->qual = new ubyte_t[p->len];
-	//	}
-	//	for (i = 0; i != p->full_len; ++i)
-	//		p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
-	//	if (seq->qual.l) { // copy quality
-	//		if (is_64)
-	//			for (i = 0; i < seq->qual.l; ++i)
-	//			{
-	//			seq->qual.s[i] -= 31;
-	//			p->qual[i] = seq->qual.s[i];
-	//			}
-	//		else
-	//		{
-	//			for (i = 0; i < seq->qual.l; ++i)
-	//			{
-	//				p->qual[i] = seq->qual.s[i];
-	//			}
-	//		}
-	//		if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
-	//	}
-
-	//	if (BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
-	//	{
-	//		p->filtered |= 1;
-	//		if (n_seqs == n_needed) break;
-	//		continue;
-	//	}
-
-	//	p->rseq = (ubyte_t*)calloc(p->full_len, 1);
-	//	memcpy(p->rseq, p->seq, p->len);
-	//	//fprintf(stderr, "I have been here: %d times!\n",i);
-	//	seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
-	//	seq_reverse(p->len, p->rseq, is_comp);
-
-	//	//p->name = strdup((const char*)seq->name.s);
-	//	strncpy(p->name, seq->name.s, seq->name.l);
-	//	{ // trim /[12]$
-	//		int t = strlen(p->name);
-	//		if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-	//	}
-
-	//	if (n_seqs == n_needed) break;
-	//}
 	*n = n_seqs;
 	if (n_seqs && trim_qual >= 1)
 		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
@@ -415,7 +503,7 @@ static bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs, 
 	//ProfilerStop();
 	return seqs;
 }
-static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed, bwa_seq_t* seqs, int read_len)
+static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed, bwa_seq_t* seqs, int& read_len)
 {
 
 	//struct drand48_data randBuffer;
@@ -476,6 +564,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 			p->seq = (ubyte_t*)calloc(p->len, 1);
 			p->qual = (ubyte_t*)calloc(p->len, 1);
 			p->rseq = (ubyte_t*)calloc(p->len, 1);
+            read_len = p->len;//update opt->read_len
 		}
 		for (i = 0; i != p->full_len; ++i)
 			p->seq[i] = nst_nt4_table[(int)seq->seq.s[i]];
@@ -496,13 +585,14 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual, p);
 		}
 		//for debug begin
-//		strncpy(p->name, seq->name.s, seq->name.l);
-//		{ // trim /[12]$
-//			int t = strlen(p->name);
-//			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-//		}
+		strncpy(p->name, seq->name.s, seq->name.l);
+		{ // trim /[12]$
+			int t = strlen(p->name);
+			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+		}
 		//for debug end
-		if (BwtIndex->RollParam.thresh!=0 && BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
+//        strncpy(p->name, seq->name.s, seq->name.l);
+        if (BwtIndex->RollParam.thresh!=0 && BwtIndex->IsReadFiltered(p->seq, p->qual, p->len))
 		{
 			p->filtered |= 1;
 			if (n_seqs == n_needed) break;
@@ -513,11 +603,11 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer* BwtIndex, bwa_seqio_t *bs, int
 		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed back in bwa_refine_gapped()//reversing here might affect hash filtering result comparing to old version that put hash after this
 		seq_reverse(p->len, p->rseq, is_comp);
 		//p->name = strdup((const char*)seq->name.s);
-		strncpy(p->name, seq->name.s, seq->name.l);
-		{ // trim /[12]$
-			int t = strlen(p->name);
-			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
-		}
+		//strncpy(p->name, seq->name.s, seq->name.l);
+//		{ // trim /[12]$
+//			int t = strlen(p->name);
+//			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+//		}
 
 		if (n_seqs == n_needed) break;
 	}
@@ -768,7 +858,7 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t * const _bwt[2], const int n_seqs,
 		infer_isize(n_seqs, seqs, ii, opt->ap_prior, bwt[0]->seq_len);
 	if (ii->avg < 0.0 && last_ii->avg > 0.0) *ii = *last_ii;
 	if (opt->force_isize) {
-		notice("[%s] discard insert size estimate as user's request.\n", __func__);
+		notice("discard insert size estimate as user's request.\n");
 		ii->low = ii->high = 0;
 		ii->avg = ii->std = -1.0;
 	}
@@ -920,10 +1010,10 @@ int BwtMapper::bwa_set_rg(const char *s)
 		bwa_rg_id=0;
 		return -1;
 	}
-	/*if (bwa_rg_line)
+    if (bwa_rg_line)
 		free(bwa_rg_line);
 	if (bwa_rg_id)
-		free(bwa_rg_id);*/
+        free(bwa_rg_id);
 	bwa_rg_line = strdup(s);
 	bwa_rg_id = 0;
 	bwa_escape(bwa_rg_line);
@@ -962,7 +1052,9 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns)
 			if (!SFH.setRGTag(tag, value.c_str(), bwa_rg_id))
 				std::cerr << "WARNING:SetRGTag failed" << endl;
 		}
-	}
+    } else {
+        std::cerr << "WARNING:@RG is empty" << endl;
+    }
 
 	for (int i = 0; i < bns->n_seqs; ++i)
 	{
@@ -989,8 +1081,8 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 
 		if (p->type == BWA_TYPE_NO_MATCH)
 		{
-			p->pos = mate->pos;
-			p->strand = mate->strand;
+//			p->pos = mate->pos;
+//			p->strand = mate->strand;
 			flag |= SAM_FSU;
 			j = 1;
 		}
@@ -1020,7 +1112,10 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		//ss<<p->name<<"\t"<<flag<<"\t"<<bns->anns[seqid].name<<"\t";
 		SR.setReadName(p->name);
 		SR.setFlag(flag);
-		SR.setReferenceName(SFH, bns->anns[seqid].name);
+		if(p->type == BWA_TYPE_NO_MATCH)
+			SR.setReferenceName(SFH, "*");
+		else
+			SR.setReferenceName(SFH, bns->anns[seqid].name);
 		//printf("%d\t%d\t", (int) (p->pos - bns->anns[seqid].offset + 1), p->mapQ);
 		//ss<<(int) (p->pos - bns->anns[seqid].offset + 1)<<"\t"<<p->mapQ;
 		SR.set1BasedPosition((int)(p->pos - bns->anns[seqid].offset + 1));
@@ -1028,16 +1123,22 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		SR.setMapQuality(p->mapQ);
 		// print CIGAR
 		ostringstream ss;
-		if (p->cigar)
+//		if (p->cigar)
+//		{
+//			for (j = 0; j != p->n_cigar; ++j)
+//				//printf("%d%c", __cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
+//				ss << __cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
+//		}
+//		else
+ 		if (p->type == BWA_TYPE_NO_MATCH)
+			//printf("*");
+			ss << "*";
+		else if (p->cigar)
 		{
 			for (j = 0; j != p->n_cigar; ++j)
 				//printf("%d%c", __cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
 				ss << __cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
-		}
-		else if (p->type == BWA_TYPE_NO_MATCH)
-			//printf("*");
-			ss << "*";
-		else
+		} else
 			//printf("%dM", p->len);
 			ss << p->len << "M";
 		SR.setCigar(ss.str().c_str());
@@ -1046,11 +1147,11 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 		// print mate coordinate
 		if (mate && mate->type != BWA_TYPE_NO_MATCH)
 		{
-			int m_seqid, m_is_N;
+            int m_seqid;
 			long long isize;
 			am = mate->seQ < p->seQ ? mate->seQ : p->seQ; // smaller single-end mapping quality
 			// redundant calculation here, but should not matter too much
-			m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
+            int m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
 			//printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
 			// ss << (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name;
 			(seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH, bns->anns[m_seqid].name);
@@ -1418,9 +1519,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 					n_bwaunmap++;
 					continue;
 				}
-				//collector.addAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
+				//collector.AddAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
 				//if (
-				collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
 				//==0)
 				//continue; //failed
 				bwa_print_sam1(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2);
@@ -1444,7 +1545,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 					continue;
 				}
 				//if (
-				collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
 				//  ==0)
 				//continue; //failed
 				SamRecord SR;
@@ -1457,11 +1558,11 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
 		t = clock();
 		bwa_free_read_seq(n_seqs, seqs);
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
-		fprintf(stderr, "NOTICE - %ld sequences have been filtered.\n", n_filtered);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %ld sequences are filtered.\n", n_filtered);
 		//t = clock();
 	} //end while
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	//bam_destroy1(b);
 	if (pacseq)
 		free(pacseq);
@@ -1688,8 +1789,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -1718,8 +1819,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -1744,12 +1845,12 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 			n_seqs = n_seqs_buff;
 			seqs[j] = seqs_buff[j];
 		}
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
 
 		last_ii = ii;
 	} //end while
 
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);
@@ -1999,8 +2100,8 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -2026,8 +2127,8 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -2055,7 +2156,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 			seqs[j] = seqs_buff[j];
 			seqs_buff[j] = tmp;
 		}
-		fprintf(stderr, "NOTICE - %d sequences have been loaded.\n", tot_seqs);
+		fprintf(stderr, "NOTICE - %d sequences are loaded.\n", tot_seqs);
 
 		last_ii = ii;
 	} //end while
@@ -2069,7 +2170,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 	free(seqs[1]);
 	free(seqs_buff[0]);
 	free(seqs_buff[1]);
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);
@@ -2354,8 +2455,8 @@ else ReadIsGood = 0;
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -2404,8 +2505,8 @@ else ReadIsGood = 0;
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -2434,10 +2535,10 @@ else ReadIsGood = 0;
 			seqs[j] = seqs_buff[j];
 			seqs_buff[j] = tmp;
 		}
-		fprintf(stderr, "NOTICE - %lld sequences have been loaded.\n", FSC.NumRead);
-		fprintf(stderr, "NOTICE - %ld sequences have been filtered by hash.\n", n_filtered);
-		fprintf(stderr, "NOTICE - %ld sequences have been totally filtered.\n", total_filtered*2);
-		fprintf(stderr, "NOTICE - %ld sequences that are unmapped.\n", n_bwaunmap*2);
+		fprintf(stderr, "NOTICE - %lld sequences are loaded.\n", FSC.NumRead);
+		//fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n", n_filtered);
+		fprintf(stderr, "NOTICE - %ld sequences are filtered.\n", total_filtered*2);
+		fprintf(stderr, "NOTICE - %ld sequences are unmapped.\n", n_bwaunmap*2);
 
 		last_ii = ii;
 	} //end while
@@ -2451,7 +2552,7 @@ else ReadIsGood = 0;
 //	free(seqs[1]);
 //	free(seqs_buff[0]);
 //	free(seqs_buff[1]);
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);
@@ -2469,194 +2570,11 @@ else ReadIsGood = 0;
 	return 0;
 }
 
-BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & Fastq_1,
-	const string & Fastq_2, const string & Prefix, const string & RefPath, const pe_opt_t* popt,
-	gap_opt_t * opt)
-{
-	//std::cerr<<"Open Fastq  ... "<<endl;
-	if(bwa_set_rg(opt->RG)==-1) warning("Setting @RG tag failed!\n");
-	if (opt->in_bam != 0)
-	{
-		notice(" Input alignments from Bam file...\n");
-		/*
-		SamFileHeader SFH;
-		SamFile SFIO;*/
-		notice("Restore Variant Site Info...\n");
-		collector.restoreVcfSites(RefPath, opt); collector.getGenomeSize(BwtIndex.RefPath);
-		ofstream fout(Prefix + ".InsertSizeTable");
-		int total_add = 0;
-		collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
-		notice("%d reads were calculated...\n", total_add);
-		fout.close();
-		// BamFile->ifclose();
-		// destroy
-		notice("Calculate distributions...\n ");
-		collector.processCore(Prefix, opt);
-	}
-	else if (Fastq_2 != "Empty")
-	{
-		notice("Using Pair End mapping...\n");
-		SamFileHeader SFH;
-		BamInterface BamIO;
-		IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
-		StatGenStatus StatusTracker;
-		StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-		/*********bam header init end***********/
-
-		if (!opt->out_bam)
-		{
-			bwa_print_sam_SQ(BwtIndex.bns);
-			bwa_print_sam_PG();
-		}
-		else
-		{
-			if (!BamFile->isOpen())
-			{
-				warning("Open Bam file for writing failed, abort!\n");
-				exit(1);
-			}
-			SetSamFileHeader(SFH, BwtIndex.bns);
-			BamIO.writeHeader(BamFile, SFH, StatusTracker);
-		}
-		notice("Restore Variant Site Info...\n");
-		collector.restoreVcfSites(RefPath, opt);
-		ofstream fout(Prefix + ".InsertSizeTable");
-		int total_add = 0;
-//PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-		PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-		notice(" %d reads were calculated...\n", total_add);
-		fout.close();
-		BamFile->ifclose();
-		// destroy
-		notice("Calculate distributions... \n");
-		collector.processCore(Prefix, opt);
-
-	}
-	else
-	{
-		notice("Using Single End mapping...\n");
-		SamFileHeader SFH;
-		BamInterface BamIO;
-		IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
-		StatGenStatus StatusTracker;
-		StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-		/*********bam header init end***********/
-
-		if (!opt->out_bam)
-		{
-			bwa_print_sam_SQ(BwtIndex.bns);
-			bwa_print_sam_PG();
-		}
-		else
-		{
-			if (!BamFile->isOpen())
-			{
-				warning("Open Bam file for writing failed, abort!\n");
-				exit(1);
-			}
-			SetSamFileHeader(SFH, BwtIndex.bns);
-			BamIO.writeHeader(BamFile, SFH, StatusTracker);
-		}
-		notice("Restore Variant Site Info...\n");
-		collector.restoreVcfSites(RefPath, opt); collector.getGenomeSize(BwtIndex.RefPath);
-		ofstream fout(Prefix + ".InsertSizeTable");
-		int total_add = 0;
-		SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-		fout.close();
-		BamFile->ifclose();
-		delete BamFile;
-		// destroy
-		notice("Calculate distributions...\n ");
-		collector.processCore(Prefix, opt);
-	}
-}
-BwtMapper::BwtMapper(BwtIndexer& BwtIndex, const string & FaList,
-	const string & Prefix, const string & RefPath, const pe_opt_t* popt,
-	gap_opt_t * opt)
-{
-	bwa_set_rg(opt->RG);
-	if (opt->in_bam != 0)
-	{
-		notice("Input alignments from Bam file...\n");
-		/*
-		SamFileHeader SFH;
-		SamFile SFIO;*/
-		notice("Restore Variant Site Info...\n");
-		collector.restoreVcfSites(RefPath, opt); collector.getGenomeSize(BwtIndex.RefPath);
-		ofstream fout(Prefix + ".InsertSizeTable");
-		int total_add = 0;
-		collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
-		notice("%d reads were calculated!\n", total_add);
-		fout.close();
-		// BamFile->ifclose();
-		notice("Calculate distributions...\n");
-		collector.processCore(Prefix, opt);
-	}
-	else
-	{
-		notice("Open Fastq List ...\n");
-		SamFileHeader SFH;
-		BamInterface BamIO;
-		IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w", InputFile::ifileCompression::BGZF);
-		StatGenStatus StatusTracker;
-		StatusTracker.setStatus(StatGenStatus::Status::SUCCESS, "Initialization when start.\n");
-		if (!opt->out_bam)
-		{
-			bwa_print_sam_SQ(BwtIndex.bns);
-			bwa_print_sam_PG();
-		}
-		else
-		{
-			if (!BamFile->isOpen())
-			{
-				warning("Open Bam file for writing failed, abort!\n");
-				exit(EXIT_FAILURE);
-			}
-			SetSamFileHeader(SFH, BwtIndex.bns);
-			BamIO.writeHeader(BamFile, SFH, StatusTracker);
-		}
-		double t_tmp = realtime();
-
-		collector.restoreVcfSites(RefPath, opt); collector.getGenomeSize(BwtIndex.RefPath);
-		notice("Restore Variant Site Info...%f sec\n", realtime() - t_tmp);
-		ofstream fout(Prefix + ".InsertSizeTable");
-		int total_add = 0;
-		ifstream fin(FaList);
-		if (!fin.is_open()) error("Open file %s failed", FaList.c_str());
-		std::string line;
-		int i(0);
-		while (getline(fin, line))
-		{
-			++i;
-			std::string Fastq_1(""), Fastq_2("");
-			stringstream ss(line);
-			ss >> Fastq_1 >> Fastq_2;
-			if (Fastq_2 != "")
-			{
-				notice("Processing Pair End mapping\t%d\n%s\n%s\n", i, Fastq_1.c_str(), Fastq_2.c_str());
-				t_tmp = realtime();
-				/*PairEndMapper*//*PairEndMapper_dev*/ PairEndMapper_without_asyncIO(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-				notice("Processed Pair End mapping in %f sec\n", realtime() - t_tmp);
-			}
-			else
-			{
-				notice("Processing Single End mapping\t%d\n%s\n", i, Fastq_1.c_str());
-				SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
-			}
-		}
-		notice("%d reads were calculated!", total_add);
-		fout.close();
-		BamFile->ifclose();
-		delete BamFile;
-		// destroy
-		t_tmp = realtime();
-		collector.processCore(Prefix, opt);
-		notice("Calculate distributions... %f sec\n", realtime() - t_tmp);
-	}
-}
-
 BwtMapper::~BwtMapper()
 {
-	// TODO Auto-generated destructor stub
+    if (bwa_rg_line)
+        free(bwa_rg_line);
+    if (bwa_rg_id)
+        free(bwa_rg_id);
 }
 

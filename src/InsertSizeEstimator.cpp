@@ -30,71 +30,106 @@ void split( vector<string> & theStringVector,  /* Altered/returned value */
                     ?  string::npos  :  end + theDelimiter.size());
     }
 }
+#define SAM_FPD   1 // paired
+#define SAM_FPP   2 // properly paired
+#define SAM_FSU   4 // self-unmapped
+#define SAM_FMU   8 // mate-unmapped
+#define SAM_FSR  16 // self on the reverse strand
+#define SAM_FMR  32 // mate on the reverse strand
+#define SAM_FR1  64 // this is read one
+#define SAM_FR2 128 // this is read two
+#define SAM_FSC 256 // secondary alignment
 
-int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
+int InsertSizeEstimator::InputInsertSizeTable(std::string FileName, std::string Orientation) {
     std::ifstream fin(FileName);
     if(!fin.is_open()) std::cerr<<"File "<<FileName<<" Open Failed!"<<std::endl;
     std::string line;
     std::istringstream ss;
     vector<string> stringVector;
+    double count = 1.;
+    int leftCount=0,rightCount=0;
     while(getline(fin,line))
     {
-//        ss.str(line);
-        std::string ReadName,Chr1,Chr2,Status;
-        int Max,Max2,Obs,Pos1,Pos2;
-//        ss>>ReadName;
-//        ss>>Max;
-//        ss>>Max2;
-//        ss>>Obs;
-//        //getline(ss,Chr1,'\t');
-//        ss>>Chr1;
-//        ss>>Pos1;
-//        ss>>Chr1;
-//        ss>>Chr1;
-//        ss>>Chr1;
-//        ss>>Chr2;
-//        ss>>Pos2;
-//        ss>>Chr2;
-//        ss>>Chr2;
-//        ss>>Chr2;
-//        ss>>Status;
-//        ss.clear();
+        std::string ReadName,Chr1,Chr2,Status,Cigar1,Cigar2;
+        int Max(0),Max2(0),Obs(0),Pos1(0),Pos2(0),ReadLen1(0),ReadLen2(0),Flag1(0),Flag2(0);
         split(stringVector,line,string("\t"));
         ReadName=stringVector[0];
-        Obs=atoi(stringVector[3].c_str());
-        Pos2=atoi(stringVector[10].c_str());
-        Chr2=stringVector[9];
         Max=atoi(stringVector[1].c_str());
         Max2=atoi(stringVector[2].c_str());
+        Obs=atoi(stringVector[3].c_str());
+        Chr1=stringVector[4];
+        Pos1=atoi(stringVector[5].c_str());
+        Flag1=atoi(stringVector[6].c_str());
+        ReadLen1=atoi(stringVector[7].c_str());
+        Cigar1=stringVector[8];
+        Chr2=stringVector[9];
+        Pos2=atoi(stringVector[10].c_str());
+        Flag2=atoi(stringVector[11].c_str());
+        ReadLen2=atoi(stringVector[12].c_str());
+        Cigar2=stringVector[13];
         Status=stringVector[14];
-        //cerr<<"come here and "<<ReadName<<"\t"<<Obs<<"\t"<<Max<<"\t"<<Max2<<"\t"<<Status<<endl;
-        //continue;
-        if(Max>=INSERT_LIMIT) Max=INSERT_LIMIT-1;
-        if(Max2>=INSERT_LIMIT) Max2=INSERT_LIMIT-1;
-        if(Obs>=INSERT_LIMIT) Obs=INSERT_LIMIT-1;
-        if(Status =="Abnormal" or Status == "DiffChrom") continue;
+        if(Max>=INSERT_LIMIT or Max == -1) Max=INSERT_LIMIT-1;
+        if(Max2>=INSERT_LIMIT or Max2 == -1) Max2=INSERT_LIMIT-1;
+        if(Obs>=INSERT_LIMIT or Obs == -1) Obs=INSERT_LIMIT-1;
+        if (Status == "Abnormal" or Status == "LowQual" or Status == "NotPair" or
+            Status == Orientation/*or Status == "FwdOnly" or Status == "RevOnly"*/)
+            continue;
         else if(Status == "FwdOnly")//Obs is NA
         {
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,1));
-            MisDist[Max]++;
+            MisDist[Max]+=count;
         }
         else if(Status == "RevOnly")
         {
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,1));
-            MisDist[Max2]++;
+            MisDist[Max2]+=count;
         }
-        else if(Status == "PropPair"||Status == "PartialPair")
+        else if(Status == "PropPair")
         {
-//            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
-//            MisDist[Max]++;
-//            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
-//            MisDist[Max2]++;
             ObsDistVec[Obs].push_back(InsertSizeRecord(ReadName, Obs, Max,1));
-            ObsDist[Obs]++;
-           // cerr<<"ObsDist["<<Obs<<"]:"<<ObsDist[Obs]<<endl;
+            ObsDist[Obs]+=count;
+        }
+        else if (Status == "PartialPair")
+        {
+            if (Cigar1.find('S') == Cigar1.npos && Cigar2.find('S') != Cigar2.npos)//read1 no S
+            {
+                if(Flag1&SAM_FSR) { // R mapped
+                    MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2, 1));
+                    MisDist[Max2] += 1.;
+                    rightCount++;
+                } else // F mapped
+                {
+                    MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max, 1));
+                    MisDist[Max] += 1.;
+                    leftCount++;
+                }
+            } else if (Cigar1.find('S') != Cigar1.npos && Cigar2.find('S') == Cigar2.npos)//read2 no S
+            {
+                if(Flag2&SAM_FSR) {// R mapped
+                    MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2, 1));
+                    MisDist[Max2] += 1.;
+                    rightCount++;
+                } else// F mapped
+                {
+                    MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max, 1));
+                    MisDist[Max] += 1.;
+                    leftCount++;
+                }
+            } else
+            {
+                continue;
+            }
+        }
+        else if ( Status == "NotPair")
+        {
+            MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
+            MisDist[Max]+=0.5;
+            MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
+            MisDist[Max2]+=0.5;
         }
         else {//pair end info available
-            //continue;
+            exit(EXIT_FAILURE);
+            continue;
             MisDistVec[Max].push_back(InsertSizeRecord(ReadName, -1, Max,0.5));
             MisDist[Max]+=0.5;
             MisDistVec[Max2].push_back(InsertSizeRecord(ReadName, -1, Max2,0.5));
@@ -103,14 +138,14 @@ int InsertSizeEstimator::InputInsertSizeTable(const std::string& FileName) {
         totalPair++;
         //ObsRecordVec.push_back(InsertSizeRecord(ReadName,Obs,Max));
     }
+//    cerr<<"leftCount:"<<leftCount<<"\trightCount:"<<rightCount<<std::endl;
     return 0;
 }
 
-int InsertSizeEstimator::UpdateWeight(const std::string & outputPath) {
-	ofstream fout(outputPath);
-    vector<double> F(1000,0.),f(1000,0.);
+vector<double> InsertSizeEstimator::UpdateWeight() {
+    vector<double> F(2000, 0.), f(2000, 0.);
     vector<double> G(F),g(f);
-    for (int k = 0; k <1000 ; ++k) {
+    for (int k = 0; k < 2000; ++k) {
         double m(0),n(0);
         m=MisDist[k];
         n=ObsDist[k];
@@ -131,12 +166,10 @@ int InsertSizeEstimator::UpdateWeight(const std::string & outputPath) {
             g[k] = m / double(totalPair);
             G[k]=g[k];
         }
-
-        fout << k << "\t" << f[k]<< std::endl;
+        //       cout << k << "\t" << f[k]<<"\tMaximalIS:"<<m<<"\tObsIS:"<<n<< endl;
     }
 
-    fout.close();
-    return 0;
+    return f;
 }
 
 int InsertSizeEstimator::Sort() {

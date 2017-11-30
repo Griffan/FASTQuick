@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.4)
 add_definitions(-D__STDC_LIMIT_MACROS)
 add_definitions(-D__ZLIB_AVAILABLE__)
 add_definitions(-D_FILE_OFFSET_BITS=64)

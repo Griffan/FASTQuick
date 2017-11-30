@@ -84,7 +84,7 @@ void catprintf(std::string &s, const char * msg, ...)
 
   va_start(ap, msg);
 
-  char buf[1000];
+    char buf[2048];
   vsprintf(buf, msg, ap);
 
   s += buf;
