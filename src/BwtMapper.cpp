@@ -177,8 +177,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         SamFileHeader SFH;
         SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
-        collector.restoreVcfSites(RefPath, opt);
-        collector.getGenomeSize(BwtIndex.RefPath);
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
@@ -187,7 +187,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         // BamFile->ifclose();
         // destroy
         notice("Calculate distributions...\n ");
-        collector.processCore(Prefix, opt);
+        collector.ProcessCore(Prefix, opt);
     } else if (Fastq_2 != "Empty") {
         notice("Using Pair End mapping...\n");
         SamFileHeader SFH;
@@ -209,7 +209,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
             BamIO.writeHeader(BamFile, SFH, StatusTracker);
         }
         notice("Restore Variant Site Info...\n");
-        collector.restoreVcfSites(RefPath, opt);
+        collector.RestoreVcfSites(RefPath, opt);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
 //PairEndMapper(BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
@@ -220,7 +220,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         BamFile->ifclose();
 		delete BamFile;// destroy
         notice("Calculate distributions... \n");
-        collector.processCore(Prefix, opt);
+        collector.ProcessCore(Prefix, opt);
 
     } else {
         notice("Using Single End mapping...\n");
@@ -243,8 +243,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
             BamIO.writeHeader(BamFile, SFH, StatusTracker);
         }
         notice("Restore Variant Site Info...\n");
-        collector.restoreVcfSites(RefPath, opt);
-        collector.getGenomeSize(BwtIndex.RefPath);
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
@@ -254,7 +254,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         delete BamFile;
         // destroy
         notice("Calculate distributions...\n ");
-        collector.processCore(Prefix, opt);
+        collector.ProcessCore(Prefix, opt);
     }
 }
 
@@ -268,8 +268,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         SamFileHeader SFH;
         SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
-        collector.restoreVcfSites(RefPath, opt);
-        collector.getGenomeSize(BwtIndex.RefPath);
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
@@ -277,7 +277,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         fout.close();
         // BamFile->ifclose();
         notice("Calculate distributions...\n");
-        collector.processCore(Prefix, opt);
+        collector.ProcessCore(Prefix, opt);
     } else {
         notice("Open Fastq List ...\n");
         SamFileHeader SFH;
@@ -298,8 +298,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         }
         double t_tmp = realtime();
 
-        collector.restoreVcfSites(RefPath, opt);
-        collector.getGenomeSize(BwtIndex.RefPath);
+        collector.RestoreVcfSites(RefPath, opt);
+        collector.GetGenomeSize(BwtIndex.RefPath);
         notice("Restore Variant Site Info...%f sec\n", realtime() - t_tmp);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
@@ -331,7 +331,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         delete BamFile;
         // destroy
         t_tmp = realtime();
-        collector.processCore(Prefix, opt);
+        collector.ProcessCore(Prefix, opt);
         notice("Calculate distributions... %f sec\n", realtime() - t_tmp);
     }
 }
@@ -1519,9 +1519,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 					n_bwaunmap++;
 					continue;
 				}
-				//collector.addAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
+				//collector.AddAlignment(string(BwtIndex.bns->anns[seqid].name),(seqs+i)->seq,(seqs+i)->qual,(seqs+i)->n_cigar,(seqs+i)->cigar,(seqs+i)->md,(int)((seqs+i)->pos - BwtIndex.bns->anns[seqid].offset + 1),opt);
 				//if (
-				collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
 				//==0)
 				//continue; //failed
 				bwa_print_sam1(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2);
@@ -1545,7 +1545,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 					continue;
 				}
 				//if (
-				collector.addAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs + i, 0, opt, fout, total_add);
 				//  ==0)
 				//continue; //failed
 				SamRecord SR;
@@ -1562,7 +1562,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer& BwtIndex, const char *fn_fa,
 		fprintf(stderr, "NOTICE - %ld sequences are filtered.\n", n_filtered);
 		//t = clock();
 	} //end while
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	//bam_destroy1(b);
 	if (pacseq)
 		free(pacseq);
@@ -1789,8 +1789,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -1819,8 +1819,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -1850,7 +1850,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const ch
 		last_ii = ii;
 	} //end while
 
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);
@@ -2100,8 +2100,8 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -2127,8 +2127,8 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -2170,7 +2170,7 @@ bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1, cons
 	free(seqs[1]);
 	free(seqs_buff[0]);
 	free(seqs_buff[1]);
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);
@@ -2455,8 +2455,8 @@ else ReadIsGood = 0;
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				//							  ==0)
 				// continue;
 				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
@@ -2505,8 +2505,8 @@ else ReadIsGood = 0;
 				}
 
 				// if (
-				collector.addAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
-					fout, total_add);
+                collector.AddAlignment(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt,
+                                       fout, total_add);
 				// == 0)// means no successfully added reads
 				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 				//continue;
@@ -2552,7 +2552,7 @@ else ReadIsGood = 0;
 //	free(seqs[1]);
 //	free(seqs_buff[0]);
 //	free(seqs_buff[1]);
-	collector.addFSC(FSC);
+    collector.AddFSC(FSC);
 	if (pacseq)
 		free(pacseq);
 	//bns_destroy(bns);

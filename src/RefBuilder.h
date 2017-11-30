@@ -22,6 +22,7 @@ SOFTWARE.
 #ifndef REFBUILDER_H_
 #define REFBUILDER_H_
 
+#include <faidx.h>
 #include "Utility.h"
 #include "../libbwa/bwtaln.h"
 #include "VcfRecord.h"
@@ -36,6 +37,8 @@ public:
 	//unordered_map<string,bool> longRefTable;
 	RefBuilder();
 	RefBuilder(const std::string& VcfPath, const std::string& RefPath, const std::string& NewRefPath, const std::string& DBsnpPath, const std::string& MaskPath, const gap_opt_t* opt, bool reselect);//, std::unordered_map<std::string,bool>& longRefTable);
+	bool Skip(const std::string &Chrom, const int Position, const std::string &last_chr, const int last_pos, char *region,
+						  const std::string &MaskPath, const faidx_t *FastaMask, const std::vector<std::string> &chromWhiteList, int flank_len);
 	virtual ~RefBuilder();
 };
 
