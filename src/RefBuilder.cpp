@@ -257,8 +257,17 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         Position = VcfLine->get1BasedPosition();
         int dummy;
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
-        if (Chrom == last_chr && abs(Position - last_pos) < opt->flank_len * 2)
-            continue;
+//        if (Chrom == last_chr && abs(Position - last_pos) < opt->flank_len * 2)
+//            continue;
+        //ensure no overlapping regions
+        if(VcfTable.find(Chrom)!=VcfTable.end())
+        {
+            auto low_iter = VcfTable[Chrom].upper_bound(Position);
+            auto up_iter = low_iter--;
+            if(abs(Position - VcfVec[low_iter->second]->get1BasedPosition()) < 2*opt->flank_len or
+               abs(Position - VcfVec[up_iter->second]->get1BasedPosition()) < 2*opt->flank_len)
+                continue;
+        }
         if (MaskPath != "Empty") {
             string MaskSeq(fai_fetch(FastaMask, region, &dummy));
             size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
