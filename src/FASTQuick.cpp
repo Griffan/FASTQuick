@@ -1,28 +1,22 @@
-/* The MIT License
+/*The MIT License (MIT)
+Copyright (c) 2017 Fan Zhang, Hyun Min Kang
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-   Copyright (c) 2009 Genome Research Ltd (GRL), 2010 Broad Institute
-
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be
-   included in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-*/
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 /* Contact: Fan Zhang <fanzhang@umich.edu> */
 #include <iostream>
 #include <sstream>
@@ -354,7 +348,8 @@ int runAlign(int argc, char ** argv)
 	std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/ Fastq_1("Empty"), Fastq_2(
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
-	bool loggap(0), /*compread(0),*/ nonstop(0), NonIL13(0), NonBamOut(0);
+	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
+	popt->force_isize =true;// disable insertsize estimation due to small number of available reads after hash filtering
 	int kmer_thresh(3);
 	paramList pl;
 
@@ -402,7 +397,7 @@ int runAlign(int argc, char ** argv)
 
 		// LONG_PARAM("c",&compread,"seed length")
 		LONG_PARAM("N", &nonstop, "[Bool] non-iterative mode: search for all n-difference hits (slooow)")
-		EXCLUSIVE_PARAM("NonI", &NonIL13, "[Bool] the input is not in the Illumina 1.3+ FASTQ-like format")
+		LONG_PARAM("I", &IL13, "[Bool] the input is in the Illumina 1.3+ FASTQ-like format")
 		LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
 		LONG_PARAM_GROUP("Additional Parameters for PairEnd ", "Additional parameters specified for Pair end mapping.[Optional]")
@@ -412,7 +407,7 @@ int runAlign(int argc, char ** argv)
 		LONG_INT_PARAM("n_multi", &popt->n_multi, "[INT] maximum hits to output for paired reads")
 		LONG_INT_PARAM("N_multi", &popt->N_multi, "[INT] maximum hits to output for discordant pairs")
 		LONG_DOUBLE_PARAM("ap_prior", &popt->ap_prior, "[Double] prior of chimeric rate (lower bound) ")
-		LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
+		//LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
 
 		LONG_PARAM_GROUP("Parameters for Statistics ", "Parameters specified for statistics and summary.[Optional]")
 		LONG_PARAM("cal_dup", &opt->cal_dup, "[Bool] enable the calculation of duplicated reads in depth calculation ")
@@ -464,15 +459,14 @@ int runAlign(int argc, char ** argv)
 		opt->mode |= BWA_MODE_NONSTOP;
 		opt->max_top2 = 0x7fffffff;
 	}
-	if (NonIL13)
+	if(IL13)
 	{
-		notice("using Sanger quality system...");
-		//opt->mode |= BWA_MODE_IL13;
+		notice("Using Illumina 1.3 version quality system...");
+		opt->mode |= BWA_MODE_IL13;
 	}
 	else
 	{
-		notice("using Illumina 1.3 version quality system...");
-		opt->mode |= BWA_MODE_IL13;
+		notice("Using Sanger quality system...");
 	}
 	if (loggap)
 	{

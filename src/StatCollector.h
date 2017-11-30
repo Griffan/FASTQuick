@@ -1,28 +1,22 @@
-/* The MIT License
+/*The MIT License (MIT)
+Copyright (c) 2017 Fan Zhang, Hyun Min Kang
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-   Copyright (c) 2009 Genome Research Ltd (GRL), 2010 Broad Institute
-
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be
-   included in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-*/
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 /* Contact: Fan Zhang <fanzhang@umich.edu> */
 
 
@@ -85,17 +79,18 @@ private:
 	unsort_map PositionTable;//chrom pos absolute index of the site
 	unsigned int index;
 	//nsigned int vcf_index;
-	std::vector<uint32_t> DepthVec;
+	std::vector<uint32_t> DepthVec;//depth at each site
 	std::vector<uint32_t> Q20DepthVec;
 	std::vector<uint32_t> Q30DepthVec;
 	/****for SNP site******/
 	std::vector<std::string> SeqVec,QualVec;
-	std::vector<std::vector<unsigned int> > CycleVec;
+	std::vector<std::vector<int> > CycleVec;
 	std::vector<std::vector<unsigned char> > MaqVec;
 	std::vector<std::vector<bool> >StrandVec;
 	/************************/
 	std::vector<VcfRecord*> VcfRecVec;
-	sort_map VcfTable;
+	sort_map VcfTable;// (chr,pos) -> index
+
 	unsort_map dbSNPTable;
 	//string_map VcfObTable;//actually covered by reads
 	std::vector<size_t> QualDist;//40*40
@@ -109,7 +104,7 @@ private:
 	std::vector<size_t> misEmpCycleDist;
 	std::vector<size_t> GCDist;
 	std::vector<size_t> InsertSizeDist;
-	std::vector<size_t> MaxInsertSizeDist;
+//	std::vector<size_t> MaxInsertSizeDist;
 	unsort_map GC;
 
 	bool_table VariantProxyTable;
@@ -121,46 +116,49 @@ private:
 	std::vector<FileStatCollector> FSCVec;
 
 private:
-	int addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,const gap_opt_t* opt);
-	int addSingleAlignment( SamRecord& p,const gap_opt_t* opt);
-	void StatVecDistUpdate(const std::string& qual, unsigned int left_to_right_coord,
-			unsigned int tmp_index, const std::string& RefSeq, const std::string& seq,
-			unsigned int tmpCycle);
-	void AddBaseInfoToNewCoord(const std::string& Chrom, uint32_t i,
-			const std::string& qual, unsigned int left_to_right_coord,
-			const std::string& RefSeq, const std::string& seq, unsigned int tmpCycle);
-	void UpdateInfoVecAtMarker(unsigned int tmpCycleVcfTable,
-			unsigned int tmpCycle, unsigned int tmp_left_to_right_coord,
-			unsigned int left_to_right_coord, unsigned int realCoord, int cl,
-			char sign[2], bool strand, const std::string& Chrom,
-			unsigned int tmp_index, const std::string& seq, const std::string& qual,
-			int mapQ);
+	bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt);
+
+	bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
+
+	void StatVecDistUpdate(const std::string &qual, unsigned int tmpIndex, const std::string &refSeq,
+                               const std::string &seq, int tmpCycle, int relativeCoordOnRead,
+                               int relativeCoordOnRef);
+
+	void AddBaseInfoToNewCoord(const std::string &chrom, int i, const std::string &qual,
+                                   const std::string &refSeq, const std::string &seq, int tmpCycle,
+                                   int relativeCoordOnRead, int relativeCoordOnRef);
+
+	void UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl, const char *sign, bool strand,
+                               const std::string &chrom, const std::string &seq, const std::string &qual,
+                               u_char mapQ, int relativeCoordOnRead);
 
 public:
 	StatCollector();
 	StatCollector(const std::string & OutFile);
 
-	int addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,const gap_opt_t* opt , std::ofstream & fout,int &);
+	int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q, const gap_opt_t *opt, std::ofstream &fout,
+                     int &total_add);
 	int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,const gap_opt_t* opt, int type, std::ofstream & fout);
 //overload functions for direct bam reading
-	int addAlignment(SamFileHeader & SFH, SamRecord * p, SamRecord* q, const gap_opt_t* opt, std::ofstream & fout, int &);
+	int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q, const gap_opt_t *opt, std::ofstream &fout,
+                     int &total_add);
 	int IsDuplicated(  SamFileHeader& SFH, SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
 
 	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
 
-	int restoreVcfSites(const std::string & VcfPath,const gap_opt_t* opt);
-	int releaseVcfSites();
-	int getDepthDist(const std::string & outputPath,const gap_opt_t* opt);
-	int getGCDist(const std::string & outputPath,const std::vector<int> & PosNum);
-	int getEmpRepDist(const std::string & outputPath);
-	int getEmpCycleDist(const std::string & outputPath);
-	int getInsertSizeDist(const std::string & outputPath);
-	int getSexChromInfo(const std::string & outputPath);
-	int outputPileup(const std::string & statPrefix, const gap_opt_t* opt);
+	int RestoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
+	int ReleaseVcfSites();
+	int GetDepthDist(const std::string &outputPath, const gap_opt_t *opt);
+	int GetGCDist(const std::string &outputPath, const std::vector<int> &PosNum);
+	int GetEmpRepDist(const std::string &outputPath);
+	int GetEmpCycleDist(const std::string &outputPath);
+	int GetInsertSizeDist(const std::string &outputPath);
+	int GetSexChromInfo(const std::string &outputPath);
+	int GetPileup(const std::string &statPrefix, const gap_opt_t *opt);
 
-	int processCore(const std::string & statPrefix, const gap_opt_t*opt);
-	int getGenoLikelihood(const std::string & statPrefix);
-	inline int isPartialAlign(const bwa_seq_t * q)
+	int ProcessCore(const std::string &statPrefix, const gap_opt_t *opt);
+	int GetGenoLikelihood(const std::string &statPrefix);
+	inline int IsPartialAlign(const bwa_seq_t *q)
 	{
 		for (int k = 0; k < q->n_cigar; ++k)
 			{
@@ -179,76 +177,19 @@ public:
 			}
 		return 0;
 	}
-	inline int isPartialAlign( SamRecord& q)
+	inline int IsPartialAlign(SamRecord &q)
 	{
 		if(std::string(q.getCigar()).find('S')!= std::string::npos)
 			return 1;
 		else
 			return 0;
 	}
-	inline bool ConstructFakeSeqQual(const std::string &seq, const std::string &qual,const int & n_cigar, const bwa_cigar_t* cigar,std::string & newSeq, std::string &newQual)
-	{
 
-		int last=0;
-		for( int k=0;k< n_cigar;++k)
-		{
-				int cl= __cigar_len(cigar[k]);
-				int cop= "MIDS"[__cigar_op(cigar[k])];
-				switch (cop) {
-				 case 'M':
-					 newSeq+=seq.substr(last,cl);
-					 newQual+=qual.substr(last,cl);
-					 break;
-				 case 'D':
-					 newSeq+=std::string('N',cl);
-					 newQual+=std::string('!',cl);
-					 break;
-				 case 'I':
-					 break;
-				 default:
-					 break;
-				}
-		}
-		return true;
-	}
-	int updateRefseqByMD(std::string&RefSeq, std::string&MD)
-	{
-		int last(0), total_len(0)/*pos on seq*/;
-		for (uint32_t i = 0; i != MD.size(); ++i)//remember we are making reference sequence
-			if (isdigit(MD[i]))
-				continue;
-			else if (MD[i] == '^')
-			{
-				int len = atoi(MD.substr(last, i - last).c_str());//len from last to current deletion, '^' not included
-				total_len += len;
-				int start_on_read = total_len;//1 based
-				i++;
-				std::string tmp;
-				while (!isdigit(MD[i])) // we don't need to take care of Deletion
-				{
-					i++;
-					total_len++;
-					tmp += MD[i];
-				}
-				std::string left = RefSeq.substr(0, start_on_read);
-				std::string right = RefSeq.substr(start_on_read, RefSeq.length() - start_on_read + 1);
-				RefSeq = left + tmp + right;
-				total_len--;
-				last = i;
-			}
-			else
-			{
-				int len = atoi(MD.substr(last, i - last).c_str()) + 1;//len from last to current mismatch, include mismatch
-				total_len += len;
-				//if (strcmp(p.getReadName(),"WTCHG_8105:7:66:5315:89850#0")==0){ fprintf(stderr, "we see strange i:%dth out of %d char of MD tag %s, %d out of %d on read:%s", i,MD.length(),MD.c_str(),total_len-1,RefSeq.length(), p.getReadName()); exit(EXIT_FAILURE); }
-				RefSeq[total_len - 1] = MD[i];
-				last = i + 1;
-			}
-		return 0;
-	}
+	std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString);
+    std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar);
 
-	int addFSC(FileStatCollector a);
-	int getGenomeSize(std::string RefPath);
+	int AddFSC(FileStatCollector a);
+	int GetGenomeSize(std::string RefPath);
 	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
 
 	double Q20AvgDepth();
@@ -258,6 +199,22 @@ public:
 	double Q20BaseFraction();
 	double Q30BaseFraction();
 	virtual ~StatCollector();
+
+	int AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
+                         const std::string &refSeq, const std::string &chr, int readRealStart,
+                         int refRealStart, int refRealEnd, const char *sign, bool strand, u_char mapQ,
+                         int matchLen, int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef);
+
+	int UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
+                                   const std::string &refSeq, const std::string &chr, int readRealStart,
+                                   int refRealStart, int refRealEnd, const char *sign, bool strand,
+                                   int matchLen, int tmpCycle, int relativeCoordOnRead,
+                                   int relativeCoordOnRef);
+//private:
+//    std::vector<std::string> DebugSeqVec,DebugQualVec;
+//    std::vector<std::vector<int> > DebugCycleVec;
+//    std::vector<std::vector<unsigned char> > DebugMaqVec;
+//    std::vector<std::vector<bool> >DebugStrandVec;
 };
 
 #endif /* STATCOLLECTOR_H_ */
