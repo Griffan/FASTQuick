@@ -169,7 +169,7 @@ StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq, std::string
     return refSeq;
 }
 
-static int findMaxAllele(const size_t *a, size_t len) {
+static int FindMaxAllele(const size_t *a, size_t len) {
     uint32_t max = 0;
     uint32_t maxIndex = 0;
     for (uint32_t i = 0; i != len; ++i) {
@@ -181,7 +181,7 @@ static int findMaxAllele(const size_t *a, size_t len) {
     return maxIndex;
 }
 
-static int countAllele(size_t *a, const string &seq) {
+static int CountAllele(size_t *a, const string &seq) {
     for (uint32_t i = 0; i != seq.size(); ++i) {
         if (seq[i] == 'A') {
             a[0]++;
@@ -328,23 +328,24 @@ void StatCollector::UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl
 }
 
 
-void StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq, const string &qual, const string &refSeq,
-                                     const string &chr, int readRealStart, int refRealStart, int refRealEnd,
-                                     const char *sign, bool strand, u_char mapQ, int matchLen, int tmpCycle,
-                                     int relativeCoordOnRead, int relativeCoordOnRef) {
+int StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq, const string &qual, const string &refSeq,
+                                    const string &chr, int readRealStart, int refRealStart, int refRealEnd,
+                                    const char *sign, bool strand, u_char mapQ, int matchLen, int tmpCycle,
+                                    int relativeCoordOnRead, int relativeCoordOnRef) {
 
     UpdateInfoVecAtMarker(tmpCycle, readRealStart, matchLen, sign, strand, chr, seq, qual, mapQ, relativeCoordOnRead);
 
     /*****************************************************************************/
-    UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart, refRealStart, refRealEnd,
+    return UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart, refRealStart, refRealEnd,
                                sign, strand, matchLen, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
 }
 
-void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string &seq, const string &qual,
-                                               const string &refSeq, const string &chr, int readRealStart,
-                                               int refRealStart, int refRealEnd, const char *sign, bool strand,
-                                               int matchLen, int tmpCycle, int relativeCoordOnRead,
-                                               int relativeCoordOnRef) {
+int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string &seq, const string &qual,
+                                              const string &refSeq, const string &chr, int readRealStart,
+                                              int refRealStart, int refRealEnd, const char *sign, bool strand,
+                                              int matchLen, int tmpCycle, int relativeCoordOnRead,
+                                              int relativeCoordOnRef) {
+    int total_effective_len=0;
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
@@ -356,6 +357,7 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
                 != PositionTable[chr].end()) {
                 int tmpIndex = PositionTable[chr][i];
                 DepthVec[tmpIndex]++;
+                total_effective_len++;
                 if (dbSNPTable[chr].find(i)
                     == dbSNPTable[chr].end())    //not in dbsnp table
                 {
@@ -363,6 +365,7 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
                 }
             } else //coord not exists
             {
+                total_effective_len++;
                 AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
             }
         }
@@ -374,13 +377,18 @@ void StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const strin
                 continue;
             if (i > refRealEnd - opt->read_len)
                 break;
+            total_effective_len++;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
         }
     }
+    return total_effective_len;
 }
 
-bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt) //
+bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt) //
 {
+    //DEBUG related variables
+    int total_effective_len(0);
+    //DEBUG related variables end
     int seqid(0);
     int j(0);
 
@@ -462,7 +470,7 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                 switch (cop) {
                     case 'M':
                         /*************************variant site****************************************/
-                        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
+                        total_effective_len+=AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign,
                                          p->strand,
                                          p->mapQ, cl, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
                         absoluteSite += cl;
@@ -518,14 +526,14 @@ bool StatCollector::addSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 //        }
         /*************************variant site****************************************/
 
-        AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, p->strand,
+        total_effective_len+=AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, p->strand,
                          p->mapQ, p->len, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
-
+//    std::cerr<<p->name<<" effective len:"<<total_effective_len<<std::endl;
     return true;
 }
 
-bool StatCollector::addSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
+bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 {
 //TODO:unify both versions
     if (p.getFlag() & SAM_FSU) {
@@ -1179,7 +1187,7 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
 }
 
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
-int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
+int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
                                 const gap_opt_t *opt, ofstream &fout, int &total_add) {
     int seqid(0), seqid2(0), j(0), j2(0);
     /*checking if reads bridges two reference contigs*/
@@ -1199,12 +1207,12 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     }
     /*done checking if reads bridges two reference contigs*/
     if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
-        if (q != 0 && addSingleAlignment(bns, q, opt)) //adding single via pair interface
+        if (q != 0 && AddSingleAlignment(bns, q, opt)) //adding single via pair interface
         {
             string qname(bns->anns[seqid2].name);
             if (string(qname).find("Y") != string::npos
                 || string(qname).find("X") != string::npos) {
-                if (!isPartialAlign(q)) {
+                if (!IsPartialAlign(q)) {
                     contigStatusTable[qname].addNumOverlappedReads();
                     contigStatusTable[qname].addNumFullyIncludedReads();
                 } else
@@ -1221,11 +1229,11 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     //until now p is aligned
     string pname(bns->anns[seqid].name);
     if (q == 0 || q->type == BWA_TYPE_NO_MATCH) {
-        if (addSingleAlignment(bns, p, opt)) //adding single via pair interface
+        if (AddSingleAlignment(bns, p, opt)) //adding single via pair interface
         {
             if (string(pname).find('Y') != string::npos
                 || string(pname).find('X') != string::npos) {
-                if (!isPartialAlign(p)) {
+                if (!IsPartialAlign(p)) {
                     contigStatusTable[pname].addNumOverlappedReads();
                     contigStatusTable[pname].addNumFullyIncludedReads();
                 } else
@@ -1241,11 +1249,11 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 
     string qname(bns->anns[seqid2].name);
     //until now both reads are aligned
-    if (isPartialAlign(p)) //p is partially aligned
+    if (IsPartialAlign(p)) //p is partially aligned
     {
         if (string(qname).find("Y") != string::npos
             || string(qname).find("X") != string::npos) {
-            if (isPartialAlign(q)) {
+            if (IsPartialAlign(q)) {
                 contigStatusTable[qname].addNumOverlappedReads();
             } else //q is perfectly aligned
             {
@@ -1259,8 +1267,8 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
         }
 
         if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
-            if (addSingleAlignment(bns, p, opt)) {
-                if (addSingleAlignment(bns, q, opt)) {
+            if (AddSingleAlignment(bns, p, opt)) {
+                if (AddSingleAlignment(bns, q, opt)) {
                     total_add += 2;
                     return 1;
                 } else {
@@ -1268,7 +1276,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
                     return 2;
                 }
             } else {
-                if (addSingleAlignment(bns, q, opt)) {
+                if (AddSingleAlignment(bns, q, opt)) {
                     total_add += 1;
                     return 2;
                 } else
@@ -1281,7 +1289,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
         // p and q are both aligned
         if (string(qname).find('Y') != string::npos
             || string(qname).find('X') != string::npos) {
-            if (isPartialAlign(q)) //q is partially aligned
+            if (IsPartialAlign(q)) //q is partially aligned
             {
                 contigStatusTable[qname].addNumOverlappedReads();
                 if (pname == qname) {
@@ -1300,8 +1308,8 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumFullyIncludedReads();
         }
         if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
-            if (addSingleAlignment(bns, p, opt)) {
-                if (addSingleAlignment(bns, q, opt)) {
+            if (AddSingleAlignment(bns, p, opt)) {
+                if (AddSingleAlignment(bns, q, opt)) {
                     total_add += 2;
                     return 1;
                 } else {
@@ -1309,7 +1317,7 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
                     return 2;
                 }
             } else {
-                if (addSingleAlignment(bns, q, opt)) {
+                if (AddSingleAlignment(bns, q, opt)) {
                     total_add += 1;
                     return 2;
                 } else
@@ -1323,9 +1331,9 @@ int StatCollector::addAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     return 1;
 }
 
-//overload of addAlignment function for direct bam reading
+//overload of AddAlignment function for direct bam reading
 //return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
-int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
+int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                                 SamRecord *q, const gap_opt_t *opt, ofstream &fout, int &total_add) {
     SamValidator Validator;
     SamValidationErrors VErrors;
@@ -1338,14 +1346,14 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
     if (p == 0 || (p->getFlag() & SAM_FSU)) {
         if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
             return 0;
-        else if (isPartialAlign(*q))  //q is partially mapped, p is not
+        else if (IsPartialAlign(*q))  //q is partially mapped, p is not
         {
             string qname(q->getReferenceName());
             if (string(qname).find('Y') != string::npos
                 || string(qname).find('X') != string::npos) {
                 contigStatusTable[qname].addNumOverlappedReads();
             }
-            if (addSingleAlignment(*q, opt)) //adding single via pair interface
+            if (AddSingleAlignment(*q, opt)) //adding single via pair interface
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
@@ -1361,7 +1369,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[qname].addNumOverlappedReads();
                 contigStatusTable[qname].addNumFullyIncludedReads();
             }
-            if (addSingleAlignment(*q, opt)) //adding single via pair interface
+            if (AddSingleAlignment(*q, opt)) //adding single via pair interface
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
@@ -1370,7 +1378,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
             } else
                 return 0;
         }
-    } else if (isPartialAlign(*p)) //p is partially aligned
+    } else if (IsPartialAlign(*p)) //p is partially aligned
     {
         if (q == 0 || (q->getFlag() & SAM_FSU)) //q is not aligned
         {
@@ -1379,7 +1387,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
                 || string(pname).find('X') != string::npos) {
                 contigStatusTable[pname].addNumOverlappedReads();
             }
-            if (addSingleAlignment(*p, opt)) //adding single via pair interface
+            if (AddSingleAlignment(*p, opt)) //adding single via pair interface
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
@@ -1392,7 +1400,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
             string pname(p->getReferenceName()), qname(q->getReferenceName());
             if (string(qname).find('Y') != string::npos
                 || string(qname).find('X') != string::npos) {
-                if (isPartialAlign(*q)) {
+                if (IsPartialAlign(*q)) {
                     contigStatusTable[qname].addNumOverlappedReads();
                 } else //q is perfectly aligned
                 {
@@ -1406,8 +1414,8 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
             }
 
             if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
-                if (addSingleAlignment(*p, opt)) {
-                    if (addSingleAlignment(*q, opt)) {
+                if (AddSingleAlignment(*p, opt)) {
+                    if (AddSingleAlignment(*q, opt)) {
                         total_add += 2;
                         return 1;
                     } else {
@@ -1415,7 +1423,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
                         return 2;
                     }
                 } else {
-                    if (addSingleAlignment(*q, opt)) {
+                    if (AddSingleAlignment(*q, opt)) {
                         total_add += 1;
                         return 2;
                     } else
@@ -1434,7 +1442,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumOverlappedReads();
                 contigStatusTable[pname].addNumFullyIncludedReads();
             }
-            if (addSingleAlignment(*p, opt)) //adding single via pair interface
+            if (AddSingleAlignment(*p, opt)) //adding single via pair interface
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
@@ -1447,7 +1455,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
             string pname(p->getReferenceName()), qname(q->getReferenceName());
             if (string(qname).find('Y') != string::npos
                 || string(qname).find('X') != string::npos) {
-                if (isPartialAlign(*q)) //q is partially aligned
+                if (IsPartialAlign(*q)) //q is partially aligned
                 {
                     contigStatusTable[qname].addNumOverlappedReads();
                     if (pname == qname) {
@@ -1467,8 +1475,8 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
             }
 
             if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
-                if (addSingleAlignment(*p, opt)) {
-                    if (addSingleAlignment(*q, opt)) {
+                if (AddSingleAlignment(*p, opt)) {
+                    if (AddSingleAlignment(*q, opt)) {
                         total_add += 2;
                         return 1;
                     } else {
@@ -1476,7 +1484,7 @@ int StatCollector::addAlignment(SamFileHeader &SFH, SamRecord *p,
                         return 2;
                     }
                 } else {
-                    if (addSingleAlignment(*q, opt)) {
+                    if (AddSingleAlignment(*q, opt)) {
                         total_add += 1;
                         return 2;
                     } else
@@ -1521,7 +1529,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             readName = string(SR->getReadName());
         if (!(SR->getFlag() & SAM_FPP)) // read is not mapped in pair
         {
-            addAlignment(SFH, SR, 0, opt, fout, total_add);
+            AddAlignment(SFH, SR, 0, opt, fout, total_add);
             delete SR;
             continue;
         } else if (pairBuffer.find(readName) == pairBuffer.end()) // mate not existed
@@ -1529,22 +1537,22 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             pairBuffer.insert(make_pair(readName, SR));
         } else {
             SamRecord *SRtmp = pairBuffer[readName];
-            addAlignment(SFH, SR, SRtmp, opt, fout, total_add);
+            AddAlignment(SFH, SR, SRtmp, opt, fout, total_add);
             delete SR;
             delete SRtmp;
             pairBuffer.erase(readName);
         }
     } //end of while
-    addFSC(FSC);
+    AddFSC(FSC);
     for (unordered_map<string, SamRecord *>::iterator iter = pairBuffer.begin();
          iter != pairBuffer.end(); ++iter) {
-        addAlignment(SFH, iter->second, 0, opt, fout, total_add);
+        AddAlignment(SFH, iter->second, 0, opt, fout, total_add);
         delete iter->second;
     }
     return 0;
 }
 
-int StatCollector::restoreVcfSites(const string &RefPath, const gap_opt_t *opt) {
+int StatCollector::RestoreVcfSites(const string &RefPath, const gap_opt_t *opt) {
 
     VcfHeader header;
     VcfFileReader reader;
@@ -1621,7 +1629,7 @@ int StatCollector::restoreVcfSites(const string &RefPath, const gap_opt_t *opt) 
     return 0;
 }
 
-int StatCollector::releaseVcfSites() {
+int StatCollector::ReleaseVcfSites() {
 
     for (int j = 0; j < VcfRecVec.size(); ++j) {
         delete VcfRecVec[j];
@@ -1638,7 +1646,7 @@ int StatCollector::releaseVcfSites() {
     return 0;
 }
 
-int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) {
+int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) {
 
     ofstream fout(outputPath + ".DepthDist");
     int max_XorYmarker(0);
@@ -1660,7 +1668,7 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
     }
     total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
                         + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker;
+                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker*2;//X and Y each
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1670,7 +1678,7 @@ int StatCollector::getDepthDist(const string &outputPath, const gap_opt_t *opt) 
     return 0;
 }
 
-int StatCollector::getGCDist(const string &outputPath,
+int StatCollector::GetGCDist(const string &outputPath,
                              const vector<int> &PosNum) {
     ofstream fout(outputPath + ".GCDist");
     double MeanDepth = NumBaseMapped / (double) NumPositionCovered;
@@ -1687,7 +1695,7 @@ int StatCollector::getGCDist(const string &outputPath,
     return 0;
 }
 
-int StatCollector::getEmpRepDist(const string &outputPath) {
+int StatCollector::GetEmpRepDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpRepDist");
     for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
         fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
@@ -1699,10 +1707,10 @@ int StatCollector::getEmpRepDist(const string &outputPath) {
     return 0;
 }
 
-int StatCollector::getEmpCycleDist(const string &outputPath) {
+int StatCollector::GetEmpCycleDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpCycleDist");
     for (uint32_t i = 0; i != EmpCycleDist.size(); ++i) {
-        fout << i << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
+        fout << i+1 << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
              << "\t"
              << min(45.0,PHRED(
                         (double) (misEmpCycleDist[i] + 1e-6)
@@ -1712,7 +1720,7 @@ int StatCollector::getEmpCycleDist(const string &outputPath) {
     return 0;
 }
 
-int StatCollector::getInsertSizeDist(const std::string &outputPath) {
+int StatCollector::GetInsertSizeDist(const std::string &outputPath) {
 
     std::string InFileName(outputPath + ".InsertSizeTable");
     std::string OutFileName(outputPath + ".AdjustedInsertSizeDist");
@@ -1742,7 +1750,7 @@ int StatCollector::getInsertSizeDist(const std::string &outputPath) {
     return 0;
 }
 
-int StatCollector::getSexChromInfo(const string &outputPath) {
+int StatCollector::GetSexChromInfo(const string &outputPath) {
     ofstream fout(outputPath + ".SexChromInfo");
     for (unordered_map<string, ContigStatus>::iterator iter =
             contigStatusTable.begin(); iter != contigStatusTable.end(); ++iter) {
@@ -1755,7 +1763,7 @@ int StatCollector::getSexChromInfo(const string &outputPath) {
     return 0;
 }
 
-int StatCollector::processCore(const string &statPrefix, const gap_opt_t *opt) {
+int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
     vector<int> PosNum(256, 0);
     //int total(0);
     for (auto i = PositionTable.begin();
@@ -1776,21 +1784,21 @@ int StatCollector::processCore(const string &statPrefix, const gap_opt_t *opt) {
             PosNum[GC[i->first][j->first]]++;
         }
     }
-    getDepthDist(statPrefix, opt);
-    getGCDist(statPrefix, PosNum);
-    getEmpRepDist(statPrefix);
-    getEmpCycleDist(statPrefix);
+    GetDepthDist(statPrefix, opt);
+    GetGCDist(statPrefix, PosNum);
+    GetEmpRepDist(statPrefix);
+    GetEmpCycleDist(statPrefix);
 
-    getInsertSizeDist(statPrefix);
+    GetInsertSizeDist(statPrefix);
 
-    getSexChromInfo(statPrefix);
-    outputPileup(statPrefix, opt);
+    GetSexChromInfo(statPrefix);
+    GetPileup(statPrefix, opt);
     SummaryOutput(statPrefix, opt);
-    getGenoLikelihood(statPrefix);
+    GetGenoLikelihood(statPrefix);
     return 0;
 }
 
-int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) {
+int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
     ofstream fout(outputPath + ".Pileup");
     int qualoffset = 33;
     if (opt->mode | BWA_MODE_IL13) qualoffset = 64;
@@ -1867,7 +1875,7 @@ int StatCollector::outputPileup(const string &outputPath, const gap_opt_t *opt) 
     return 0;
 }
 
-vector<double> calLikelihood(const string &seq, const string &qual, const char &maj, const char &min)//maj:ref, min:alt
+static vector<double> calLikelihood(const string &seq, const string &qual, const char &maj, const char &min)//maj:ref, min:alt
 {
     double GL0(0), GL1(0), GL2(0);
     {
@@ -1907,7 +1915,7 @@ vector<double> calLikelihood(const string &seq, const string &qual, const char &
     return tmp;
 }
 
-int StatCollector::getGenoLikelihood(const string &outputPath) {
+int StatCollector::GetGenoLikelihood(const string &outputPath) {
     ofstream fout(outputPath + ".Likelihood");
     size_t numAllele[4] =
             {0};
@@ -1925,11 +1933,11 @@ int StatCollector::getGenoLikelihood(const string &outputPath) {
             VcfRecord *VcfLine = VcfRecVec[markerIndex];
             string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
 
-            countAllele(numAllele, SeqVec[markerIndex]);
-            maxIndex = findMaxAllele(numAllele, 4);
+            CountAllele(numAllele, SeqVec[markerIndex]);
+            maxIndex = FindMaxAllele(numAllele, 4);
 //            majAllele = "ACGT"[maxIndex];
             numAllele[maxIndex] = 0;
-            maxIndex = findMaxAllele(numAllele, 4);
+            maxIndex = FindMaxAllele(numAllele, 4);
 //            minAllele = "ACGT"[maxIndex];
             vector<double> tmpGL = calLikelihood(SeqVec[markerIndex],
                                                  QualVec[markerIndex],                //majAllele, minAllele);
@@ -1943,12 +1951,12 @@ int StatCollector::getGenoLikelihood(const string &outputPath) {
     return 0;
 }
 
-int StatCollector::addFSC(FileStatCollector a) {
+int StatCollector::AddFSC(FileStatCollector a) {
     FSCVec.push_back(a);
     return 0;
 }
 
-int StatCollector::getGenomeSize(std::string RefPath) {
+int StatCollector::GetGenomeSize(std::string RefPath) {
     ifstream fin(RefPath + ".fai");
     if (!fin.is_open()) {
         cerr << "Open file:" << RefPath + ".fai" << " failed!" << endl;
@@ -2091,6 +2099,6 @@ int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt)
 }
 
 StatCollector::~StatCollector() {
-    releaseVcfSites();
+    ReleaseVcfSites();
 }
 
