@@ -6,6 +6,7 @@
 #include "VcfHeader.h"
 #include "../libbwa/bwtaln.h"
 #include <fstream>
+#include <string>
 
 using namespace std;
 #define DEBUG 0
@@ -126,11 +127,18 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         }
         VcfRecord* VcfLine=new VcfRecord;
         reader.readRecord(*VcfLine);
-        if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
+        if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1 )// filtering indel sites
             continue;
+
+        std::string::size_type sz;     // alias of size_t
+        double AF = std::stod(*VcfLine->getInfo().getString("AF"),&sz);
+        if(AF<0.05 or AF >0.95) continue;
 
         Chrom = VcfLine->getChromStr();
         Position = VcfLine->get1BasedPosition();
+
+//        std::cerr<<Chrom<<"\t"<<Position<<"\t"<<AF<<std::endl;
+
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_len, Position + opt->flank_len);
 
         if (Skip(Chrom, Position, last_chr, last_pos, region, MaskPath, FastaMask, autoRegionWL, opt->flank_len)) continue;
@@ -187,6 +195,10 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
             continue;
 
+        std::string::size_type sz;     // alias of size_t
+        double AF = std::stod(*VcfLine->getInfo().getString("AF"),&sz);
+        if(AF<0.05 or AF >0.95) continue;
+
         Chrom = VcfLine->getChromStr();
         Position = VcfLine->get1BasedPosition();
         sprintf(region, "%s:%d-%d", Chrom.c_str(), Position - opt->flank_long_len, Position + opt->flank_long_len);
@@ -242,6 +254,10 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         reader.readRecord(*VcfLine);
         if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
             continue;
+
+        std::string::size_type sz;     // alias of size_t
+        double AF = std::stod(*VcfLine->getInfo().getString("AF"),&sz);
+        if(AF<0.05 or AF >0.95) continue;
 
         Chrom=VcfLine->getChromStr();
         if (Chrom == "X" || Chrom == "x" || Chrom == "chrX" || Chrom == "chrx") {
