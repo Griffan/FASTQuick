@@ -34,14 +34,14 @@ static void CalculateGC(const int flank_len, const faidx_t *seq, char *region, c
 }
 
 bool RefBuilder::Skip(const string &Chrom, const int Position, const string &last_chr, const int last_pos, char *region,
-                 const string &MaskPath, const faidx_t *FastaMask, const std::vector<string> &chromWhiteList, int flank_len) {
+                 const string &MaskPath, const faidx_t *FastaMask, const std::set<std::string> &chromWhiteList, int flank_len) {
     std::string data = Chrom;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
     size_t tmpPos = data.find("chr");
     if (tmpPos != std::string::npos) {
         data = data.substr(tmpPos + 3, data.size() - 3);//strip chr
     }
-    if (not binary_search(chromWhiteList.begin(), chromWhiteList.end(), data))
+    if (chromWhiteList.find(data) == chromWhiteList.end())
         return true;
 //    if (Chrom == last_chr && abs(Position - last_pos) < 2*flank_len)//ensure no overlapping regions
 //        return true;
@@ -49,17 +49,19 @@ bool RefBuilder::Skip(const string &Chrom, const int Position, const string &las
     if(VcfTable.find(Chrom)!=VcfTable.end())
     {
         auto low_iter = VcfTable[Chrom].upper_bound(Position);
-        auto up_iter = low_iter--;
-        if(abs(Position - VcfVec[low_iter->second]->get1BasedPosition()) < 2*flank_len or
-                abs(Position - VcfVec[up_iter->second]->get1BasedPosition()) < 2*flank_len)
-            return true;
+        if(low_iter != VcfTable[Chrom].begin() and low_iter != VcfTable[Chrom].end()) {
+            auto up_iter = low_iter--;
+            if (abs(Position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len or
+                abs(Position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
+                return true;
+        }
     }
     //
     int dummy_t;
     if (MaskPath != "Empty") {
         string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
         double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-        if (n / MaskSeq.size() < 0.9)
+        if (n < MaskSeq.size())
             return true;
     }
     return false;
@@ -113,7 +115,7 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
     /* generate secret number between 1 and 10: */
     //double iSelect = (rand() % 1000 + 1)/1000.0;
     //int num_so_far=0;
-    std::vector<string> autoRegionWL =
+    std::set<std::string> autoRegionWL =
             {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
              "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
              "21", "22"};
@@ -263,15 +265,17 @@ RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const strin
         if(VcfTable.find(Chrom)!=VcfTable.end())
         {
             auto low_iter = VcfTable[Chrom].upper_bound(Position);
-            auto up_iter = low_iter--;
-            if(abs(Position - VcfVec[low_iter->second]->get1BasedPosition()) < 2*opt->flank_len or
-               abs(Position - VcfVec[up_iter->second]->get1BasedPosition()) < 2*opt->flank_len)
-                continue;
+            if(low_iter != VcfTable[Chrom].begin() and low_iter != VcfTable[Chrom].end()) {
+                auto up_iter = low_iter--;
+                if (abs(Position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * opt->flank_len or
+                    abs(Position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * opt->flank_len)
+                    continue;
+            }
         }
         if (MaskPath != "Empty") {
             string MaskSeq(fai_fetch(FastaMask, region, &dummy));
             size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-            if (double(n) / MaskSeq.size() < 0.9)
+            if (n < MaskSeq.size())
                 continue;
 //            if (!VcfLine.write(&FoutHapMapSelectedSite, 1)) {
 //                warning("Writing retained sites failed!\n");

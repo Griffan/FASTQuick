@@ -38,7 +38,7 @@ public:
 	RefBuilder();
 	RefBuilder(const std::string& VcfPath, const std::string& RefPath, const std::string& NewRefPath, const std::string& DBsnpPath, const std::string& MaskPath, const gap_opt_t* opt, bool reselect);//, std::unordered_map<std::string,bool>& longRefTable);
 	bool Skip(const std::string &Chrom, const int Position, const std::string &last_chr, const int last_pos, char *region,
-						  const std::string &MaskPath, const faidx_t *FastaMask, const std::vector<std::string> &chromWhiteList, int flank_len);
+						  const std::string &MaskPath, const faidx_t *FastaMask, const std::set<std::string> &chromWhiteList, int flank_len);
 	virtual ~RefBuilder();
 };
 

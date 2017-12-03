@@ -392,7 +392,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     int seqid(0);
     int j(0);
 
-    if (p->type == BWA_TYPE_NO_MATCH) {
+    if (p->type == BWA_TYPE_NO_MATCH or p->mapQ ==0) {
         return false;
     }
 
@@ -536,7 +536,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 {
 //TODO:unify both versions
-    if (p.getFlag() & SAM_FSU) {
+    if (p.getFlag() & SAM_FSU or p.getMapQuality()==0) {
         return false;
     }
 
@@ -1186,10 +1186,11 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
     return 0;
 }
 
-//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
+//return value: 0 failed, 1 add single success, 2 add pair success by using add pair interface
 int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
-                                const gap_opt_t *opt, ofstream &fout, int &total_add) {
+                                const gap_opt_t *opt, ofstream &fout, long &total_add_failed) {
     int seqid(0), seqid2(0), j(0), j2(0);
+
     /*checking if reads bridges two reference contigs*/
     if (p and p->type != BWA_TYPE_NO_MATCH) {
         j = pos_end(p) - p->pos; //length of read
@@ -1220,8 +1221,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             }
             //TO-DO: adding IsDup function here to generate single end MAX insersize info
             IsDuplicated(bns, p, q, opt, 1, fout);//only q
-            total_add++;
-            return 2;
+            return 1;
         }
         return 0;
     }
@@ -1241,8 +1241,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             }
             //TO-DO:adding IsDup function here to generate single end MAX insersize info
             IsDuplicated(bns, p, q, opt, 3, fout);//only p
-            total_add++;
-            return 2;
+            return 1;
         }
         return 0;
     }
@@ -1266,23 +1265,21 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
         }
 
-        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
+        if (opt->cal_dup||IsDuplicated(bns, p, q, opt, 2, fout) != 1 ) {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 2;
-                    return 1;
-                } else {
-                    total_add += 1;
                     return 2;
+                } else {
+                    return 1;
                 }
             } else {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 1;
-                    return 2;
+                    return 1;
                 } else
                     return 0;
             }
         }
+        total_add_failed+=2;
         return 0;
     } else //p is perfectly aligned
     {
@@ -1307,34 +1304,32 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
             contigStatusTable[pname].addNumFullyIncludedReads();
         }
-        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
+        if (opt->cal_dup||IsDuplicated(bns, p, q, opt, 2, fout) != 1) {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 2;
-                    return 1;
-                } else {
-                    total_add += 1;
                     return 2;
+                } else {
+                    return 1;
                 }
             } else {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 1;
-                    return 2;
+                    return 1;
                 } else
                     return 0;
             }
         } else {
+            total_add_failed+=2;
             return 0;
         }
     }
-    //cerr << "currently added reads " << total_add << endl;
-    return 1;
+    cerr << "currently added reads " << total_add_failed << endl;
+    return 0;
 }
 
 //overload of AddAlignment function for direct bam reading
-//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
+//return value: 0 failed, 1 add single success, 2 add pair success by using add pair interface
 int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
-                                SamRecord *q, const gap_opt_t *opt, ofstream &fout, int &total_add) {
+                                SamRecord *q, const gap_opt_t *opt, ofstream &fout, long &total_add_failed) {
     SamValidator Validator;
     SamValidationErrors VErrors;
     Validator.isValid(SFH, *p, VErrors);
@@ -1357,8 +1352,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
-                total_add++;
-                return 2;
+                return 1;
             }
             return 0;
         } else // q is perfectly aligned, p is not
@@ -1373,8 +1367,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
-                total_add++;
-                return 2;
+                return 1;
             } else
                 return 0;
         }
@@ -1391,8 +1384,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
-                total_add++;
-                return 2;
+                return 1;
             }
             return 0;
         } else // p is partially aligned q is aligned too
@@ -1413,23 +1405,21 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumOverlappedReads();
             }
 
-            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
+            if (opt->cal_dup||IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 ) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 2;
-                        return 1;
-                    } else {
-                        total_add += 1;
                         return 2;
+                    } else {
+                        return 1;
                     }
                 } else {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 1;
-                        return 2;
+                        return 1;
                     } else
                         return 0;
                 }
             }
+            total_add_failed+=2;
             return 0;
         }
     } else //p is perfectly aligned
@@ -1446,8 +1436,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
-                total_add++;
-                return 2;
+                return 1;
             } else
                 return 0;
         } else // p and q are both aligned
@@ -1474,24 +1463,23 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumFullyIncludedReads();
             }
 
-            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
+            if (opt->cal_dup||IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 ) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 2;
-                        return 1;
-                    } else {
-                        total_add += 1;
                         return 2;
+                    } else {
+                        return 1;
                     }
                 } else {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 1;
-                        return 2;
+                        return 1;
                     } else
                         return 0;
                 }
-            } else
+            } else {
+                total_add_failed+=2;
                 return 0;
+            }
         }
     }
     //cerr << "currently added reads " << total_add << endl;
@@ -1500,6 +1488,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
 
 int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
                                         const char *BamFile, std::ofstream &fout, int &total_add) {
+    long total_dup(0);
     SamFileHeader SFH;
     SamFile SFIO;
     if (!SFIO.OpenForRead(BamFile, &SFH)) {
@@ -1529,7 +1518,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             readName = string(SR->getReadName());
         if (!(SR->getFlag() & SAM_FPP)) // read is not mapped in pair
         {
-            AddAlignment(SFH, SR, 0, opt, fout, total_add);
+            total_add+=AddAlignment(SFH, SR, 0, opt, fout, total_dup);
             delete SR;
             continue;
         } else if (pairBuffer.find(readName) == pairBuffer.end()) // mate not existed
@@ -1537,7 +1526,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             pairBuffer.insert(make_pair(readName, SR));
         } else {
             SamRecord *SRtmp = pairBuffer[readName];
-            AddAlignment(SFH, SR, SRtmp, opt, fout, total_add);
+            total_add+=AddAlignment(SFH, SR, SRtmp, opt, fout, total_dup);
             delete SR;
             delete SRtmp;
             pairBuffer.erase(readName);
@@ -1546,7 +1535,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
     AddFSC(FSC);
     for (unordered_map<string, SamRecord *>::iterator iter = pairBuffer.begin();
          iter != pairBuffer.end(); ++iter) {
-        AddAlignment(SFH, iter->second, 0, opt, fout, total_add);
+        total_add+=AddAlignment(SFH, iter->second, 0, opt, fout, total_dup);
         delete iter->second;
     }
     return 0;
@@ -1834,44 +1823,44 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
         }
     }
     fout.close();
-/*
-    ofstream Dfout(outputPath + ".DebugPileup");
-    int Dqualoffset = 33;
-    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
-    faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-    char DEBUGREGION[1024];
-    int dummy;
 
-    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
-    {
-        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
-        {
-            if (DebugSeqVec[j->second].size() == 0)
-                continue;
-
-            sprintf(DEBUGREGION, "%s:%d-%d", i->first.c_str(), j->first, j->first);
-
-            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-
-
-            Dfout << i->first << "\t" << j->first << "\t" << DEBUGTEST << "\t"
-                  << DebugSeqVec[j->second].size() << "\t";
-            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
-                Dfout << (char) toupper(DebugSeqVec[j->second][k]);
-            }
-            Dfout << "\t";
-            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
-                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
-            Dfout << "\t";
-            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
-                Dfout << DebugCycleVec[j->second][k];
-                if (k != DebugCycleVec[j->second].size() - 1)
-                    Dfout << ",";
-            }
-            Dfout << endl;
-        }
-    }
-    Dfout.close();*/
+//    ofstream Dfout(outputPath + ".DebugPileup");
+//    int Dqualoffset = 33;
+//    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
+//    faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//    char DEBUGREGION[1024];
+//    int dummy;
+//
+//    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
+//    {
+//        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
+//        {
+//            if (DebugSeqVec[j->second].size() == 0)
+//                continue;
+//
+//            sprintf(DEBUGREGION, "%s:%d-%d", i->first.c_str(), j->first, j->first);
+//
+//            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//
+//
+//            Dfout << i->first << "\t" << j->first << "\t" << DEBUGTEST << "\t"
+//                  << DebugSeqVec[j->second].size() << "\t";
+//            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
+//                Dfout << (char) toupper(DebugSeqVec[j->second][k]);
+//            }
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
+//                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
+//                Dfout << DebugCycleVec[j->second][k];
+//                if (k != DebugCycleVec[j->second].size() - 1)
+//                    Dfout << ",";
+//            }
+//            Dfout << endl;
+//        }
+//    }
+//    Dfout.close();
     return 0;
 }
 

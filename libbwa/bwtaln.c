@@ -43,7 +43,7 @@ gap_opt_t *gap_init_opt()
 	o->out_bam=1;
 	o->in_bam=0;
 	o->RG=0;
-	o->cal_dup=0;
+	o->cal_dup=1;
 	o->frac=1;
 	o->read_len = 151;
 	return o;
