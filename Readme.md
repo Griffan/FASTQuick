@@ -63,12 +63,12 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --sam_out Bool  If output sam file[default output bam file]
     --in_idx_prefix	STR	Input prefix of all the index files
     --out_prefix	STR	prefix of variety of output files
-    --n	float	Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT. In the latter case, the maximum edit distance is automatically chosen for different read lengths. [0.04]
+    --n	FLOAT	Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT. In the latter case, the maximum edit distance is automatically chosen for different read lengths. [0.04]
     --o	INT	Maximum number of gap opens [1]
     --e	INT	Maximum number of gap extensions, -1 for k-difference mode (disallowing long gaps) [-1]
     --i	INT	Disallow an indel within INT bp towards the ends [5]
     --d	INT	Disallow a long deletion within INT bp towards the 3’-end [16]
-    --l	INT	Take the first INT subsequence as seed. If INT is larger than the query sequence, seeding will be disabled. For long reads, this option is typically ranged from 25 to 35 for ‘-k 2’. [inf]
+    --l	INT	Take the first INT subsequence as seed. If INT is larger than the query sequence, seeding will be disabled. For long reads, this option is typically ranged from 25 to 35 for ‘-k 2’. [32]
     --k	INT	Maximum edit distance in the seed [2]
     --m	INT	Maximum entries in the queue [2000000]
     --t	INT	Number of threads [1]
