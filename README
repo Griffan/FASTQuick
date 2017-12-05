@@ -18,6 +18,7 @@ Index database sequences, using known variant sites to anchor informative region
 --dbsnpVCF	STR	path of input dbsnp site vcf file
 --ref	STR	path of reference genome fasta file
 --mask	STR	path of repetitive region  mask fasta file
+--predefinedVCF STR path of predefined marker set vcf file
 --flank_len	INT	flanking region length of short-flanking-region variant
 --var_short	INT	number of short-flanking-region variant
 --flank_long_len	INT flanking region length of long-flanking-region variant

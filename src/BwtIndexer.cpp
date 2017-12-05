@@ -686,13 +686,14 @@ void BwtIndexer::AddSeq2HashCore(const std::string & Seq, int iter, const std::v
 	//printf("the DATUM is : %x    the hash value is :%d as well as:%x\n",datum,roll_hash_table[datum], LOMEGA(min_only(RollParam.kmer_size,OVERFLOWED_KMER_SIZE)));
 }
 /******************************/
-bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, string & OldRef,string & NewRef,
+bool BwtIndexer::BuildIndex(RefBuilder & ArtiRef, std::string & OldRef, std::string & NewRef,
 		const gap_opt_t * opt)
 {
 	//NewRef += ".FASTQuick.fa";
 	RefPath = OldRef;
 	string str;
-	Fa2Pac(ArtiRef, NewRef.c_str(), opt); //dump .pac
+//	Fa2Pac(ArtiRef, NewRef.c_str(), opt); //dump .pac
+	Fa2Pac(NewRef.c_str(), opt);
 
 	/*debug hash print*/
 	//DebugHashPrint();
@@ -770,7 +771,7 @@ bool BwtIndexer::LoadIndex(string & NewRef)
 	return true;
 }
 
-bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
+/*bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 		const gap_opt_t* opt)
 {
 	// initialization
@@ -921,6 +922,154 @@ bool BwtIndexer::Fa2Pac(RefBuilder & ArtiRef, const char *prefix,
 	l_buf = 0;
 	return 0;
 }
+*/
+bool BwtIndexer::Fa2Pac(const char *prefix, const gap_opt_t* opt)
+{
+	// initialization
+	//seq = kseq_init(fp_fa);
+	char name[1024];
+	int32_t m_seqs, m_holes;
+	uint32_t i;
+	bntamb1_t *q;
+	FILE *fp;
+
+	bns = (bntseq_t*) calloc(1, sizeof(bntseq_t));
+	bns->seed = 11; // fixed seed for random generator
+	srand48(bns->seed);
+	m_seqs = m_holes = 8;
+	bns->anns = (bntann1_t*) calloc(m_seqs, sizeof(bntann1_t));
+	bns->ambs = (bntamb1_t*) calloc(m_holes, sizeof(bntamb1_t));
+	q = bns->ambs;
+	l_buf = 0; //base counter
+	m_pac_buf = 0x40000; //limit of number of reads
+	int32_t size_pac_buf = 0x10000;
+	pac_buf = (unsigned char *) calloc(size_pac_buf, sizeof(unsigned char));
+	strcpy(name, prefix);
+	strcat(name, ".pac");
+	fp = xopen(name, "wb");
+	// read sequences
+	//while ((l = kseq_read(seq)) >= 0) {
+	DBG(fprintf(stderr,"NOTE:Come into Fa2Pac...\n");)
+	string RefInput(prefix);
+	//RefInput+=".FASTQuick.fa";
+	ifstream FIN(RefInput);
+	string CurrentSeqName;
+	string CurrentSeq;
+
+	while(std::getline(FIN, CurrentSeqName))
+	{
+		std::vector<char> alleles;
+		alleles.push_back(CurrentSeqName[CurrentSeqName.find('@')+1]);
+		alleles.push_back(CurrentSeqName[CurrentSeqName.find('@')+3]);
+
+		std::getline(FIN, CurrentSeq);
+		//if (debug_flag) std::cerr << CurrentSeq << endl;
+		AddSeq2Hash(CurrentSeq, alleles);
+		//if (debug_flag) std::cerr << string(CurrentSeq.rbegin(), CurrentSeq.rend()) << endl;
+		//AddSeq2Hash(string(CurrentSeq.rbegin(), CurrentSeq.rend()), alleles);
+		string tmp_rev_cmp = ReverseComplement(CurrentSeq);
+		//if (debug_flag) std::cerr << tmp_rev_cmp << endl;
+		AddSeq2Hash(tmp_rev_cmp, alleles);
+		//if (debug_flag) std::cerr << string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()) << endl;
+		//AddSeq2Hash(string(tmp_rev_cmp.rbegin(), tmp_rev_cmp.rend()), alleles);
+		//if (debug_flag) exit(EXIT_FAILURE);
+		//DBG(fprintf(stderr,"Come into outer loop...%s\n%s\n",CurrentSeqName.c_str(),CurrentSeq.c_str());)
+		//DBG(fprintf(stderr,"We got in seqs : %d ...\n%s\n", vec_iter,CurrentSeq.c_str());)
+		bntann1_t *p; // tmp ann object
+		int lasts;
+		if (bns->n_seqs == m_seqs)
+		{
+			m_seqs <<= 1; // double the space to store number of sequences
+			bns->anns = (bntann1_t*) realloc(bns->anns,
+											 m_seqs * sizeof(bntann1_t));
+		}
+		p = bns->anns + bns->n_seqs; // next sequence
+		//p->name = strdup((char*)seq->name.s);
+		p->name = strdup(const_cast<char*>(CurrentSeqName.c_str()));
+		//p->anno = seq->comment.s? strdup((char*)seq->comment.s) : strdup("(null)");
+		p->anno = strdup("(null)");
+		p->gi = 0;
+		p->len = CurrentSeq.length(); //length of the sequence
+		p->offset = (bns->n_seqs == 0) ? 0 : (p - 1)->offset + (p - 1)->len; // start position of new sequence
+		p->n_ambs = 0;
+		for (i = 0, lasts = 0; i < CurrentSeq.length(); ++i)
+		{
+			int c = nst_nt4_table[(int) CurrentSeq[i]];
+			if (c >= 4)
+			{ // N
+				if (lasts == CurrentSeq[i])
+				{ // contiguous N
+					++q->len;
+				}
+				else
+				{
+					if (bns->n_holes == m_holes)
+					{
+						m_holes <<= 1;
+						bns->ambs = (bntamb1_t*) realloc(bns->ambs,
+														 m_holes * sizeof(bntamb1_t));
+					}
+					q = bns->ambs + bns->n_holes;
+					q->len = 1;
+					q->offset = p->offset + i;
+					q->amb = CurrentSeq[i];
+					++p->n_ambs;
+					++bns->n_holes;
+				}
+			}
+			lasts = CurrentSeq[i];
+			{ // fill buffer
+				if (c >= 4)
+					c = lrand48() & 0x3;
+				//if (l_buf == 0x40000) {
+				if (l_buf == m_pac_buf)
+				{
+					//fwrite(buf, 1, 0x10000, fp);
+					//fwrite(pac_buf, 1, 0x10000, fp);
+					//memset(buf, 0, 0x10000);
+					//l_buf = 0;
+					m_pac_buf += 0x40000;
+					int32_t tmp_size_pac_buf = size_pac_buf + 0x10000;
+					ubyte_t * tmp_pac_buf = (unsigned char *) calloc(
+							tmp_size_pac_buf, sizeof(unsigned char));
+					memcpy(tmp_pac_buf, pac_buf, size_pac_buf);
+					free(pac_buf);
+					pac_buf = tmp_pac_buf;
+					size_pac_buf = tmp_size_pac_buf;
+
+					//pac_buf = (unsigned char*)realloc(pac_buf, size_pac_buf * sizeof(char));
+				}
+				pac_buf[l_buf >> 2] |= c << ((3 - (l_buf & 3)) << 1);
+				++l_buf;
+			}
+		}
+		++bns->n_seqs;
+		bns->l_pac += CurrentSeq.length();
+		//}//inner for-loop
+	} //outer for-loop
+	//clean tmp variables
+	FIN.close();
+	xassert(bns->l_pac, "zero length sequence.");
+	{ // finalize .pac file
+		ubyte_t ct;
+		fwrite(pac_buf, 1, (l_buf >> 2) + ((l_buf & 3) == 0 ? 0 : 1), fp);
+		// the following codes make the pac file size always (l_pac/4+1+1)
+		if (bns->l_pac % 4 == 0)
+		{
+			ct = 0;
+			fwrite(&ct, 1, 1, fp);
+		}
+		ct = bns->l_pac % 4;
+		fwrite(&ct, 1, 1, fp);
+		// close .pac file
+		fclose(fp);
+	}
+	bns->to_pac_buf = pac_buf;
+	//DBG(fprintf(stderr,"l_pac: %d\nbns->pac_buf: %x\n",bns->l_pac,bns->to_pac_buf);)
+	l_buf = 0;
+	return 0;
+}
+
 bool BwtIndexer::Fa2RevPac(const char * prefix)
 {//TODO: check usage of j
 	int64_t seq_len, i;

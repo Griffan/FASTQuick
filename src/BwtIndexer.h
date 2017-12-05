@@ -84,6 +84,8 @@ public:
 
 	bool Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_t* op);
 
+	bool Fa2Pac(const char *prefix, const gap_opt_t* opt);
+
 	bool Fa2RevPac(const char * prefix);
 
 	bwt_t* Pac2Bwt(unsigned char * pac);

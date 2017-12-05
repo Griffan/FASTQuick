@@ -29,6 +29,7 @@ SOFTWARE.
 #include "PopulationIdentifier.h"
 #include "../misc/params.h"
 #include "ContaminationEstimator.h"
+#include "../libbwa/bwtaln.h"
 //#include <gperftools/profiler.h>
 using namespace std;
 
@@ -255,7 +256,7 @@ int runIndex(int argc, char ** argv)
 	* Parameters
 	*
 	*/
-	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty");
+	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty"), PreDefinedVcf("Empty");
 	bool reselect(false);
 	//std::string Prefix("Empty");
 	paramList pl;
@@ -266,6 +267,7 @@ int runIndex(int argc, char ** argv)
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("out_index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
+        LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] Select flanking region based on predefined VCF file")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
 		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
@@ -308,8 +310,13 @@ int runIndex(int argc, char ** argv)
 	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
-		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath, opt, reselect);
-		//Indexer.longRefTable);
+		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
+						   opt->flank_len, opt->flank_long_len, opt->num_variant_short, opt->num_variant_long);
+        if(PreDefinedVcf=="Empty")
+		    ArtiRef.SelectMarker();
+        else
+            ArtiRef.InputPredefinedMarker(PreDefinedVcf);
+		ArtiRef.PrepareRefSeq();
 		Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
 	}
 	else //load ref index
