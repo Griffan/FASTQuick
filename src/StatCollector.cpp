@@ -1265,7 +1265,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
         }
 
-        if (opt->cal_dup||IsDuplicated(bns, p, q, opt, 2, fout) != 1 ) {
+        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)//test IsDuplicated first to get insert size info
+        {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
                     return 2;
@@ -1304,7 +1305,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
             contigStatusTable[pname].addNumFullyIncludedReads();
         }
-        if (opt->cal_dup||IsDuplicated(bns, p, q, opt, 2, fout) != 1) {
+        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup) {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
                     return 2;
@@ -1405,7 +1406,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumOverlappedReads();
             }
 
-            if (opt->cal_dup||IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 ) {
+            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
                         return 2;
@@ -1463,7 +1464,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumFullyIncludedReads();
             }
 
-            if (opt->cal_dup||IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 ) {
+            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
                         return 2;
