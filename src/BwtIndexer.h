@@ -61,13 +61,11 @@ public:
 	unsigned char* bwt_buf;
 	unsigned char* rbwt_buf;
 	bntseq_t *bns;
-	int l_buf;
-	int32_t m_pac_buf, m_rpac_buf, m_bwt_buf, m_rbwt_buf;
+    uint64_t l_buf;
+    uint64_t m_pac_buf, m_rpac_buf, m_bwt_buf, m_rbwt_buf;
 
 	bwt_t *bwt_d;
 	bwt_t *rbwt_d;
-
-	std::unordered_map<std::string, bool> longRefTable;
 
 	BwtIndexer();
 
@@ -84,8 +82,17 @@ public:
 
 	bool Fa2Pac(RefBuilder & ArtiRef, const char *prefix, const gap_opt_t* op);
 
-	bool Fa2Pac(const char *prefix, const gap_opt_t* opt);
+	bool Fa2Pac(const char *prefix);
+/**************begin of function for whole genome index******/
+    bool LoadIndexFromWholeGenome(std::string & NewRef);
 
+    bool BuildIndexFromWholeGenome(RefBuilder & ArtiRef, std::string & OldRef, std::string & NewRef,
+                                               const gap_opt_t * opt);
+
+    bool Fa2PacFromWholeGenome();//write .pac file free(pac_buf)
+
+    bool FillHashTable(const char *prefix);
+/**************end of function for whole genome index******/
 	bool Fa2RevPac(const char * prefix);
 
 	bwt_t* Pac2Bwt(unsigned char * pac);
@@ -211,6 +218,10 @@ public:
 
 #endif
 	virtual ~BwtIndexer();
+
+	void ConvertSeq2Pac(uint32_t& m_seqs, uint32_t& m_holes, bntamb1_t *q, uint64_t& size_pac_buf,
+									const std::string &CurrentSeqName, const std::string &CurrentSeqNameAnno,
+									const std::string &CurrentSeq);
 };
 static double QualQuickTable[46] =
 { 1, 0.7943, 0.6310, 0.5012, 0.3981, 0.3162, 0.2512, 0.1995, 0.1585, 0.1259,
