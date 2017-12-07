@@ -776,8 +776,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
                                 const bwa_seq_t *q, const gap_opt_t *opt, int type,
                                 ofstream &fout) {//in this setting p is fastq1 and q is fastq2
     //todo: remember to also update IsDuplicated overloaded version
-    return 0;
-    //
+
     int maxInsert(-1), maxInsert2(-1);
     int readLength(0), seqid_p(-1), seqid_q(-1);
     int flag1 = 0;
@@ -1395,9 +1394,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
     Validator.isValid(SFH, *p, VErrors);
     if (VErrors.numErrors() > 0)
         fprintf(stderr, "%s", VErrors.getNextError()->getMessage());
-    //CycleDist[p->getReadLength()]++;
-    //CycleDist[q->getReadLength()]++;
-    //	if (p->type == BWA_TYPE_NO_MATCH)
+
     if (p == 0 || (p->getFlag() & SAM_FSU)) {
         if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
             return 0;
