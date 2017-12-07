@@ -418,33 +418,111 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
         }
 
 
-    string PosName = string(bns->anns[seqid].name);
+    string chrName = string(bns->anns[seqid].name);
 
     int pos = static_cast<int>(p->pos - bns->anns[seqid].offset + 1);
 
-    size_t colonPos = PosName.find(':');
-    size_t atPos = PosName.find('@');
-    string chrom = PosName.substr(0, colonPos);
-    char *pEnd;
-    int refCoord = static_cast<int>(strtol(
-            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // absolute coordinate of variant
-    //size_t slashPos = PosName.find("/");
-    //string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
 
-//    string MD(p->md);
-//    string refSeq=RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
+
 
     int readRealStart(0);
     int refRealStart(0), refRealEnd(0);
-    if (PosName[PosName.size() - 1] == 'L') {
-        readRealStart = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
-        refRealStart = refCoord - opt->flank_long_len;//absolute coordinate of refSeq start
-        refRealEnd = refCoord + opt->flank_long_len;
-    } else {
-        readRealStart = refCoord - opt->flank_len + pos - 1;
-        refRealStart = refCoord - opt->flank_len;
-        refRealEnd = refCoord + opt->flank_len;
+    size_t atPos;
+    string chrom;
+    char *pEnd;
+    int refCoord; // absolute coordinate of variant
+    size_t colonPos = chrName.find(':');
+    if(colonPos!=std::string::npos)//FASTQuick own alignment
+    {
+        atPos = chrName.find('@');
+        chrom = chrName.substr(0, colonPos);
+        refCoord = static_cast<int>(strtol(
+                chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
+                10)); // absolute coordinate of variant
+        if (chrName[chrName.size() - 1] == 'L') {
+            readRealStart = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
+            refRealStart = refCoord - opt->flank_long_len;//absolute coordinate of refSeq start
+            refRealEnd = refCoord + opt->flank_long_len;
+        } else {
+            readRealStart = refCoord - opt->flank_len + pos - 1;
+            refRealStart = refCoord - opt->flank_len;
+            refRealEnd = refCoord + opt->flank_len;
+        }
+    } else//External alignment
+    {
+        readRealStart = pos;
+        int readRealEnd = readRealStart + p->len;
+        int overlap_right(0), overlap_left(0);
+        int left_flank_len(0), right_flank_len(0)/*flank length of right element*/;
+        if (VcfTable.find(chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
+            auto right = VcfTable[chrom].lower_bound(readRealStart);
+            if (right != VcfTable[chrom].begin() and right != VcfTable[chrom].end())
+                //meaning both right and left elements are valid
+            {
+                auto left(--right);
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
+
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+
+                if (overlap_left > 0 and overlap_right > 0) {//both overlap exist
+                    if (overlap_left > overlap_right) {
+                        refRealStart = left->first - left_flank_len;
+                        refRealEnd = left->first + left_flank_len;
+                    } else {
+                        refRealStart = right->first - right_flank_len;
+                        refRealEnd = right->first + right_flank_len;
+                    }
+                } else if (overlap_left > 0) {//only left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else if (overlap_right > 0) {//only right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].begin())//left element is valid, but not right element isn't
+            {
+                auto left(--right);
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+                if (overlap_left > 0) {//left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].end())//only this element exists, which is rare
+            {
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                if (overlap_right > 0) {//right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else
+                    return false;
+            } else//meaning empty set, impossible
+            {
+                warning("read:%s cannot find adjacent variants on chrom:%s, impossible!", p->name,
+                        chrom.c_str());
+                exit(EXIT_FAILURE);
+            }
+        } else
+            return false;
     }
+
+
 
     string MD(p->md);
     string refSeq = RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);

@@ -305,9 +305,9 @@ int runIndex(int argc, char ** argv)
 	//build ref index
 	BwtIndexer Indexer;
 	std::string NewRef = Prefix + ".FASTQuick.fa";
-	std::string BwtPath = NewRef + ".bwt";
-	//string BwtPathR = RefPath + ".rbwt";
-	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
+//	std::string BwtPath = NewRef + ".bwt";
+	std::string WholeGenomeBwtPath = RefPath + ".bwt";
+	if (stat(WholeGenomeBwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
 		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
@@ -317,7 +317,7 @@ int runIndex(int argc, char ** argv)
         else
             ArtiRef.InputPredefinedMarker(PreDefinedVcf);
 		ArtiRef.PrepareRefSeq();
-		Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
+		Indexer.BuildIndexFromWholeGenome(ArtiRef, RefPath, NewRef, opt);
 	}
 	else //load ref index
 	{
@@ -492,9 +492,15 @@ int runAlign(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 	std::string ParaStr,TmpStr;
+    std::string RefPath;
 	std::getline(ParamIn, ParaStr);//RefPath
-	std::getline(ParamIn, ParaStr);//variant long
 	stringstream ss(ParaStr);
+	ss >> RefPath >> RefPath;
+	Indexer.RefPath=RefPath;
+	std::getline(ParamIn, ParaStr);//variant long
+	ss.str("");
+	ss.clear();
+	ss<<ParaStr;
 	ss >> TmpStr;
 	if (TmpStr == "var_long:") ss >> opt->num_variant_long;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
@@ -524,8 +530,8 @@ int runAlign(int argc, char ** argv)
 
 
 	std::string BwtPath = NewRef + ".bwt";
-	//string BwtPathR = RefPath + ".rbwt";
-	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
+	std::string WholeBwtPathR = RefPath + ".bwt";
+	if (stat(BwtPath.c_str(), &sb) != 0 and stat(WholeBwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, please build index file first...\n");
 		return 0;
@@ -533,7 +539,7 @@ int runAlign(int argc, char ** argv)
 	else //load ref index
 	{
 		t_tmp = realtime();
-		Indexer.LoadIndex(NewRef);
+		Indexer.LoadIndexFromWholeGenome(NewRef);
 		notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
 		t_tmp = realtime();
 		if (FaList != "Empty")
