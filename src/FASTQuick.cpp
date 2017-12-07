@@ -317,7 +317,7 @@ int runIndex(int argc, char ** argv)
         else
             ArtiRef.InputPredefinedMarker(PreDefinedVcf);
 		ArtiRef.PrepareRefSeq();
-		Indexer.BuildIndexFromWholeGenome(ArtiRef, RefPath, NewRef, opt);
+		Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
 	}
 	else //load ref index
 	{
@@ -539,7 +539,7 @@ int runAlign(int argc, char ** argv)
 	else //load ref index
 	{
 		t_tmp = realtime();
-		Indexer.LoadIndexFromWholeGenome(NewRef);
+		Indexer.LoadIndex(NewRef);
 		notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
 		t_tmp = realtime();
 		if (FaList != "Empty")
