@@ -452,6 +452,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     {
         readRealStart = pos;
         int readRealEnd = readRealStart + p->len;
+        chrom = chrName;
         int overlap_right(0), overlap_left(0);
         int left_flank_len(0), right_flank_len(0)/*flank length of right element*/;
         if (VcfTable.find(chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
@@ -578,30 +579,8 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                         warning("Unhandled cigar_op %d:%d\n", cop, cl);
                 }
             }//end for
-
-
-//        faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//        char DEBUGREGION[1024];
-//        sprintf(DEBUGREGION, "%s:%d-%d", chrom.c_str(), readRealStart - Debug_first_s_len,
-//                readRealStart - Debug_first_s_len + p->len - 1);
-//        int dummy;
-//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//        if (DEBUGTEST != refSeq) {
-//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
-//            cerr << DEBUGTEST << endl;
-//            cerr << refSeq << endl;
-//        }
     } else {
-//        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//        char DEBUGREGION[1024];
-//        sprintf(DEBUGREGION,"%s:%d-%d",chrom.c_str(),readRealStart,readRealStart+p->len-1);
-//        int dummy;
-//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//        if(DEBUGTEST!=refSeq) {
-//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
-//            cerr << DEBUGTEST << endl;
-//            cerr << refSeq << endl;
-//        }
+
         /*************************variant site****************************************/
 
         total_effective_len+=AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, p->strand,
@@ -797,6 +776,8 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
                                 const bwa_seq_t *q, const gap_opt_t *opt, int type,
                                 ofstream &fout) {//in this setting p is fastq1 and q is fastq2
     //todo: remember to also update IsDuplicated overloaded version
+    return 0;
+    //
     int maxInsert(-1), maxInsert2(-1);
     int readLength(0), seqid_p(-1), seqid_q(-1);
     int flag1 = 0;
