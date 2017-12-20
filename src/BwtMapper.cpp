@@ -429,8 +429,9 @@ bwa_read_seq_with_hash(BwtIndexer *BwtIndex, bwa_seqio_t *bs, int n_needed, int 
     /*while ((l = kseq_read(seq)) >= 0) {*/
 
     /*if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, 0, 0, seq->seq.l, frac)) continue;*/
+    double rand_num = 0;
     while (1) {
-        double rand_num = randGen.Next();
+        rand_num = randGen.Next();
         //drand48_r(&randBuffer,&rand_num);
 
         if (rand_num > frac) {
@@ -530,8 +531,9 @@ bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs, int n_needed, 
     //if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp, trim_qual); // l_bc has no effect for BAM input
     n_seqs = 0;
     //ProfilerStart("FastPopCon.prof");
+    double rand_num = 0;
     while (1) {
-        double rand_num = randGen.Next();
+        rand_num = randGen.Next();
         //drand48_r(&randBuffer, &rand_num);
         if (rand_num > frac) {
             if ((l = kseq_read4_fpc(seq)) < 0) {
@@ -1014,6 +1016,8 @@ int BwtMapper::bwa_set_rg(const char *s) {
 }
 
 extern int64_t pos_end_multi(const bwt_multi1_t *p, int len); // analogy to pos_end()
+
+#define BAM_DEBUG 1
 bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH, const bntseq_t *bns) {
 
     /*PACKAGE_VERSION*/
@@ -1038,13 +1042,21 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH, const bntseq_t *bns) {
     }
 
     for (int i = 0; i < bns->n_seqs; ++i) {
-
+#ifdef BAM_DEBUG
+        std::string chrName = std::string(bns->anns[i].name);
+        size_t colonPos = chrName.find(':');
+        std::string chrom = chrName.substr(0, colonPos);
+        SFH.setSQTag("LN", std::to_string(static_cast<long long int>(bns->anns[i].len)).c_str(),
+                     chrom.c_str());
+//            std::cerr << "WARNING:SetSQTag failed" << endl;
+        //printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
+#else
         if (!SFH.setSQTag("LN", std::to_string(static_cast<long long int>(bns->anns[i].len)).c_str(),
                           bns->anns[i].name))
             std::cerr << "WARNING:SetSQTag failed" << endl;
         //printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
+#endif
     }
-
     return 0;
 }
 
@@ -1087,13 +1099,39 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
         //ss<<p->name<<"\t"<<flag<<"\t"<<bns->anns[seqid].name<<"\t";
         SR.setReadName(p->name);
         SR.setFlag(flag);
+
+#ifdef BAM_DEBUG
+        int readRealStart = 0;
+        if (p->type == BWA_TYPE_NO_MATCH) {
+            SR.setReferenceName(SFH, "*");
+            SR.set1BasedPosition(0);
+        } else {
+            std::string chrName = std::string(bns->anns[seqid].name);
+            int pos = static_cast<int>(p->pos - bns->anns[seqid].offset + 1);
+            size_t atPos = chrName.find('@');
+            size_t colonPos = chrName.find(':');
+            char *pEnd;
+            std::string chrom = chrName.substr(0, colonPos);
+            int refCoord = static_cast<int>(strtol(
+                    chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
+                    10)); // absolute coordinate of variant
+            if (chrName[chrName.size() - 1] == 'L') {
+                readRealStart = refCoord - 1000 + pos - 1; //absolute coordinate of current reads on reference
+
+            } else {
+                readRealStart = refCoord - 250 + pos - 1;
+            }
+            SR.setReferenceName(SFH, chrom.c_str());
+            SR.set1BasedPosition(readRealStart);
+        }
+#else
         if (p->type == BWA_TYPE_NO_MATCH)
             SR.setReferenceName(SFH, "*");
         else
             SR.setReferenceName(SFH, bns->anns[seqid].name);
-        //printf("%d\t%d\t", (int) (p->pos - bns->anns[seqid].offset + 1), p->mapQ);
-        //ss<<(int) (p->pos - bns->anns[seqid].offset + 1)<<"\t"<<p->mapQ;
         SR.set1BasedPosition((int) (p->pos - bns->anns[seqid].offset + 1));
+
+#endif
         //SR.set0BasedPosition((int) (p->pos - bns->anns[seqid].offset ));
         SR.setMapQuality(p->mapQ);
         // print CIGAR
@@ -1127,8 +1165,30 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
             int m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
             //printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
             // ss << (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name;
-            (seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH,
-                                                                                             bns->anns[m_seqid].name);
+
+#ifdef BAM_DEBUG
+            std::string chrName = std::string(bns->anns[m_seqid].name);
+            int pos = static_cast<int>(mate->pos - bns->anns[m_seqid].offset + 1);
+            size_t atPos = chrName.find('@');
+            size_t colonPos = chrName.find(':');
+            char *pEnd;
+            std::string chrom = chrName.substr(0, colonPos);
+            int refCoord = static_cast<int>(strtol(
+                    chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
+                    10)); // absolute coordinate of variant
+            if (chrName[chrName.size() - 1] == 'L') {
+                readRealStart = refCoord - 1000 + pos - 1; //absolute coordinate of current reads on reference
+            } else {
+                readRealStart = refCoord - 250 + pos - 1;
+            }
+            (seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH, chrom.c_str());
+            isize = (seqid == m_seqid) ? pos_5(mate) - pos_5(p) : 0;
+            if (p->type == BWA_TYPE_NO_MATCH)
+                isize = 0;
+            SR.set1BasedMatePosition(readRealStart);
+            SR.setInsertSize(isize);
+#else
+            (seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=") : SR.setMateReferenceName(SFH, bns->anns[m_seqid].name);
             isize = (seqid == m_seqid) ? pos_5(mate) - pos_5(p) : 0;
             if (p->type == BWA_TYPE_NO_MATCH)
                 isize = 0;
@@ -1136,12 +1196,17 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
             //ss<<(int) (mate->pos - bns->anns[m_seqid].offset + 1)<<"\t"<<isize;
             SR.set1BasedMatePosition((int) (mate->pos - bns->anns[m_seqid].offset + 1));
             SR.setInsertSize(isize);
-        } else if (mate)
+#endif
+        } else if (mate)//mate is unmapped
             //printf("\t=\t%d\t0\t", (int) (p->pos - bns->anns[seqid].offset + 1));
             //ss<<"\t=\t"<<(int) (p->pos - bns->anns[seqid].offset + 1)<<"\t0\t";
         {
             SR.setMateReferenceName(SFH, "=");
+#ifdef BAM_DEBUG
+            SR.set1BasedMatePosition(readRealStart);
+#else
             SR.set1BasedMatePosition((int) (p->pos - bns->anns[seqid].offset + 1));
+#endif
             SR.setInsertSize(0);
         } else
             //printf("\t*\t0\t0\t");

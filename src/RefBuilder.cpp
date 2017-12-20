@@ -547,7 +547,7 @@ RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC
     }
     sprintf(region, "%s:%d-%d", VcfLine->getChromStr(), VcfLine->get1BasedPosition() - flank_len,
             VcfLine->get1BasedPosition() + flank_len);
-    string FetchedSeq(fai_fetch(seq, region, &dummy));
+    std::string FetchedSeq(fai_fetch(seq, region, &dummy));
 
     CalculateGC(flank_len, seq, VcfLine->getChromStr(), VcfLine->get1BasedPosition(), FGC);
 
@@ -557,7 +557,8 @@ RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC
 //    RefTableIndex.insert(make_pair(string(region), nseqs));
 //    nseqs++;
     FaOut<<newChrName<<std::endl;
-    FaOut<<FetchedSeq.substr(0, flank_len) + string(VcfLine->getRefStr()) + FetchedSeq.substr(flank_len + 1, flank_len)<<std::endl;
+    FaOut << FetchedSeq.substr(0, flank_len) + std::string(VcfLine->getRefStr()) +
+             FetchedSeq.substr(flank_len + 1, flank_len) << std::endl;
 }
 int RefBuilder::PrepareRefSeq()
 {

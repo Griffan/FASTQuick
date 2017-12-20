@@ -781,7 +781,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     int readLength(0), seqid_p(-1), seqid_q(-1);
     int flag1 = 0;
     int flag2 = 0;
-    int threshQual = 20;
+    int threshQual = 0;
     string status;
 
     int cl1(0), op1(0);//p left
