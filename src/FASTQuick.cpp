@@ -305,9 +305,9 @@ int runIndex(int argc, char ** argv)
 	//build ref index
 	BwtIndexer Indexer;
 	std::string NewRef = Prefix + ".FASTQuick.fa";
-//	std::string BwtPath = NewRef + ".bwt";
-	std::string WholeGenomeBwtPath = RefPath + ".bwt";
-	if (stat(WholeGenomeBwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
+    std::string BwtPath = NewRef + ".bwt";
+//	std::string WholeGenomeBwtPath = RefPath + ".bwt";
+    if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
 		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
@@ -356,7 +356,7 @@ int runAlign(int argc, char ** argv)
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
-	popt->force_isize =true;// disable insertsize estimation due to small number of available reads after hash filtering
+    popt->force_isize = 0;// disable insertsize estimation due to small number of available reads after hash filtering
 	int kmer_thresh(3);
 	paramList pl;
 
