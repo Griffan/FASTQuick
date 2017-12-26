@@ -1728,7 +1728,7 @@ int StatCollector::GetGCDist(const string &outputPath,
                              const vector<int> &PosNum) {
     ofstream fout(outputPath + ".GCDist");
     double MeanDepth = NumBaseMapped / (double) NumPositionCovered;
-    for (uint32_t i = 0; i != GCDist.size(); ++i) {
+    for (uint32_t i = 0; i != 101; ++i) {
         fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
         if (PosNum[i] == 0) {
             fout << 0;
