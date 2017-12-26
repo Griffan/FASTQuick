@@ -89,21 +89,21 @@ findBump<-function(m,x,y,z)
   
   return(list(MAX=max,MIN=min))
 }
-create.DenDist=function(InsertTable,col1,col2){
-  start_pos=InsertTable[1,col1]
-  count=InsertTable[1,col2]
+create.DenDist=function(InsertTable,positionCol,countCol){
+  start_pos=InsertTable[1,positionCol]
+  count=InsertTable[1,countCol]
   NewT=c(-1,0)
-  for(i in 1:length(InsertTable[,col1]))
+  for(i in 1:length(InsertTable[,positionCol]))
   {
-    if(InsertTable[i,col1]<start_pos+5)
+    if(InsertTable[i,positionCol]<start_pos+5)
     {
-      count=count+InsertTable[i,col2]
+      count=count+InsertTable[i,countCol]
     }
     else
     {
       NewT=rbind(c(start_pos,count),NewT)
-      start_pos=InsertTable[i,col1]
-      count=InsertTable[i,col2]
+      start_pos=InsertTable[i,positionCol]
+      count=InsertTable[i,countCol]
     }
   }
   return(NewT)
