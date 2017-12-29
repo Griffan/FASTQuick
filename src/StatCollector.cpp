@@ -349,9 +349,9 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart/* + opt->read_len*/)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd /*- opt->read_len*/)
                 break;
             if (PositionTable[chr].find(i)
                 != PositionTable[chr].end()) {
@@ -373,9 +373,9 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart/* + opt->read_len*/)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd /*- opt->read_len*/)
                 break;
             total_effective_len++;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
@@ -1712,9 +1712,9 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker*2;//X and Y each
+    total_region_size = ((opt->flank_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker*2;//X and Y each
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
@@ -1743,11 +1743,14 @@ int StatCollector::GetGCDist(const string &outputPath,
 
 int StatCollector::GetEmpRepDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpRepDist");
+    double prevQual=0;
     for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
         fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
              << "\t"
-             << min(45.0,PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6)))
+             << (misEmpRepDist[i] == 0?prevQual:PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6)))
              << endl;
+        if(misEmpRepDist[i]!=0)
+            prevQual = PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6));
     }
     fout.close();
     return 0;
@@ -1755,12 +1758,16 @@ int StatCollector::GetEmpRepDist(const string &outputPath) {
 
 int StatCollector::GetEmpCycleDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpCycleDist");
+    double prevQual=0;
     for (uint32_t i = 0; i != EmpCycleDist.size(); ++i) {
         fout << i+1 << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
              << "\t"
-             << min(45.0,PHRED(
+             << (misEmpCycleDist[i]==0?prevQual:PHRED(
                         (double) (misEmpCycleDist[i] + 1e-6)
-                        / (EmpCycleDist[i] + 1e-6))) << "\t" << CycleDist[i] << endl;
+                        / (EmpCycleDist[i] + 1e-6)))
+             << "\t" << CycleDist[i] << endl;
+        if(misEmpCycleDist[i]!=0)
+            prevQual = PHRED((double) (misEmpCycleDist[i] + 1e-6)/ (EmpCycleDist[i] + 1e-6));
     }
     fout.close();
     return 0;
