@@ -103,6 +103,7 @@ private:
 	std::vector<size_t> EmpCycleDist;
 	std::vector<size_t> misEmpCycleDist;
 	std::vector<size_t> GCDist;
+	std::vector<size_t> PosNum;
 	std::vector<size_t> InsertSizeDist;
 //	std::vector<size_t> MaxInsertSizeDist;
 	unsort_map GC;
@@ -149,7 +150,7 @@ public:
 	int RestoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
 	int ReleaseVcfSites();
 	int GetDepthDist(const std::string &outputPath, const gap_opt_t *opt);
-	int GetGCDist(const std::string &outputPath, const std::vector<int> &PosNum);
+	int GetGCDist(const std::string &outputPath);
 	int GetEmpRepDist(const std::string &outputPath);
 	int GetEmpCycleDist(const std::string &outputPath);
 	int GetInsertSizeDist(const std::string &outputPath);
@@ -190,7 +191,7 @@ public:
 
 	int AddFSC(FileStatCollector a);
 	int GetGenomeSize(std::string RefPath);
-	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
+	int SummaryOutput(const std::string & outputPath);
 
 	double Q20AvgDepth();
 	double Q30AvgDepth();

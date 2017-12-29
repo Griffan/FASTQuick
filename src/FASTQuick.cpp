@@ -414,7 +414,7 @@ int runAlign(int argc, char ** argv)
 		LONG_INT_PARAM("n_multi", &popt->n_multi, "[INT] maximum hits to output for paired reads")
 		LONG_INT_PARAM("N_multi", &popt->N_multi, "[INT] maximum hits to output for discordant pairs")
 		LONG_DOUBLE_PARAM("ap_prior", &popt->ap_prior, "[Double] prior of chimeric rate (lower bound) ")
-		//LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
+		LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
 
 		LONG_PARAM_GROUP("Parameters for Statistics ", "Parameters specified for statistics and summary.[Optional]")
 		LONG_PARAM("cal_dup", &opt->cal_dup, "[Bool] enable the calculation of duplicated reads in depth calculation ")

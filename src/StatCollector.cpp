@@ -254,6 +254,7 @@ StatCollector::StatCollector(const string &OutFile) {
     DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
     GCDist = vector<size_t>(256, 0);
+    PosNum = vector<size_t>(256, 0);
     EmpRepDist = vector<size_t>(256, 0);
     misEmpRepDist = vector<size_t>(256, 0);
     EmpCycleDist = vector<size_t>(256, 0);
@@ -1724,10 +1725,28 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
     return 0;
 }
 
-int StatCollector::GetGCDist(const string &outputPath,
-                             const vector<int> &PosNum) {
+int StatCollector::GetGCDist(const string &outputPath) {
     ofstream fout(outputPath + ".GCDist");
-    double MeanDepth = NumBaseMapped / (double) NumPositionCovered;
+    for (auto i = PositionTable.begin();
+         i != PositionTable.end(); ++i) //each chr
+    {
+        for (auto j =
+                i->second.begin(); j != i->second.end(); ++j) //each site
+        {
+            /************DepthDist**************************************************************/
+            {
+                NumBaseMapped += DepthVec[j->second];
+                if (DepthVec[j->second] > 1023)
+                    DepthDist[1023]++;
+                else
+                    DepthDist[DepthVec[j->second]]++;
+            }
+            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
+            if(DepthVec[j->second]>0)
+                PosNum[GC[i->first][j->first]]++;
+        }
+    }
+    double MeanDepth = NumBaseMapped / (double) NumPositionCovered;/*i.e. coverage in qplot*/
     for (uint32_t i = 0; i != 101; ++i) {
         fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
         if (PosNum[i] == 0) {
@@ -1817,28 +1836,9 @@ int StatCollector::GetSexChromInfo(const string &outputPath) {
 }
 
 int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
-    vector<int> PosNum(256, 0);
-    //int total(0);
-    for (auto i = PositionTable.begin();
-         i != PositionTable.end(); ++i) //each chr
-    {
-        for (auto j =
-                i->second.begin(); j != i->second.end(); ++j) //each site
-        {
-            /************DepthDist**************************************************************/
-            {
-                NumBaseMapped += DepthVec[j->second];
-                if (DepthVec[j->second] > 1023)
-                    DepthDist[1023]++;
-                else
-                    DepthDist[DepthVec[j->second]]++;
-            }
-            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
-            PosNum[GC[i->first][j->first]]++;
-        }
-    }
+    GetGCDist(statPrefix);
     GetDepthDist(statPrefix, opt);
-    GetGCDist(statPrefix, PosNum);
+
     GetEmpRepDist(statPrefix);
     GetEmpCycleDist(statPrefix);
 
@@ -1846,7 +1846,7 @@ int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
 
     GetSexChromInfo(statPrefix);
     GetPileup(statPrefix, opt);
-    SummaryOutput(statPrefix, opt);
+    SummaryOutput(statPrefix);
     GetGenoLikelihood(statPrefix);
     return 0;
 }
@@ -2071,7 +2071,7 @@ double StatCollector::Q30BaseFraction() {
     return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped;
 }
 
-int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt) {
+int StatCollector::SummaryOutput(const string &outputPath) {
     ofstream fout(outputPath + ".Summary");
 
     long total_base(0);
