@@ -1696,6 +1696,27 @@ int StatCollector::ReleaseVcfSites() {
 int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) {
 
     ofstream fout(outputPath + ".DepthDist");
+
+    for (auto i = PositionTable.begin();
+         i != PositionTable.end(); ++i) //each chr
+    {
+        for (auto j =
+                i->second.begin(); j != i->second.end(); ++j) //each site
+        {
+            /************DepthDist**************************************************************/
+            {
+                NumBaseMapped += DepthVec[j->second];
+                if (DepthVec[j->second] > 1023)
+                    DepthDist[1023]++;
+                else
+                    DepthDist[DepthVec[j->second]]++;
+            }
+            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
+            if(DepthVec[j->second]>0)
+                PosNum[GC[i->first][j->first]]++;
+        }
+    }
+
     int max_XorYmarker(0);
     if (opt->num_variant_short >= 100000)
         max_XorYmarker = 3000;
@@ -1727,25 +1748,7 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
 
 int StatCollector::GetGCDist(const string &outputPath) {
     ofstream fout(outputPath + ".GCDist");
-    for (auto i = PositionTable.begin();
-         i != PositionTable.end(); ++i) //each chr
-    {
-        for (auto j =
-                i->second.begin(); j != i->second.end(); ++j) //each site
-        {
-            /************DepthDist**************************************************************/
-            {
-                NumBaseMapped += DepthVec[j->second];
-                if (DepthVec[j->second] > 1023)
-                    DepthDist[1023]++;
-                else
-                    DepthDist[DepthVec[j->second]]++;
-            }
-            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
-            if(DepthVec[j->second]>0)
-                PosNum[GC[i->first][j->first]]++;
-        }
-    }
+
     double MeanDepth = NumBaseMapped / (double) NumPositionCovered;/*i.e. coverage in qplot*/
     for (uint32_t i = 0; i != 101; ++i) {
         fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
@@ -1836,9 +1839,9 @@ int StatCollector::GetSexChromInfo(const string &outputPath) {
 }
 
 int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
-    GetGCDist(statPrefix);
-    GetDepthDist(statPrefix, opt);
 
+    GetDepthDist(statPrefix, opt);
+    GetGCDist(statPrefix);
     GetEmpRepDist(statPrefix);
     GetEmpCycleDist(statPrefix);
 
