@@ -356,7 +356,6 @@ int runAlign(int argc, char ** argv)
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
-    popt->force_isize = 0;// disable insertsize estimation due to small number of available reads after hash filtering
 	int kmer_thresh(3);
 	paramList pl;
 

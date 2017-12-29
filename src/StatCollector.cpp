@@ -226,6 +226,8 @@ StatCollector::StatCollector() {
     NumPositionCovered10 = 0;// larger than 9
     DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
+    GCDist = vector<size_t>(101, 0);
+    PosNum = vector<size_t>(101, 0);
     GCDist = vector<size_t>(256, 0);
     EmpRepDist = vector<size_t>(256, 0);
     misEmpRepDist = vector<size_t>(256, 0);
@@ -253,8 +255,8 @@ StatCollector::StatCollector(const string &OutFile) {
     NumPositionCovered10 = 0;// larger than 9
     DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
-    GCDist = vector<size_t>(256, 0);
-    PosNum = vector<size_t>(256, 0);
+    GCDist = vector<size_t>(101, 0);
+    PosNum = vector<size_t>(101, 0);
     EmpRepDist = vector<size_t>(256, 0);
     misEmpRepDist = vector<size_t>(256, 0);
     EmpCycleDist = vector<size_t>(256, 0);
@@ -1695,7 +1697,6 @@ int StatCollector::ReleaseVcfSites() {
 
 int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) {
 
-    ofstream fout(outputPath + ".DepthDist");
 
     for (auto i = PositionTable.begin();
          i != PositionTable.end(); ++i) //each chr
@@ -1737,6 +1738,8 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
     total_region_size = ((opt->flank_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_short
                         + ((opt->flank_long_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_long
                         + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker*2;//X and Y each
+
+    ofstream fout(outputPath + ".DepthDist");
     fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
     for (uint32_t i = 1; i != DepthDist.size(); ++i) {
