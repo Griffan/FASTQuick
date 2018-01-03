@@ -492,7 +492,7 @@ bwa_read_seq_with_hash(BwtIndexer *BwtIndex, bwa_seqio_t *bs, int n_needed, int 
 
         p->name = strdup((const char *) seq->name.s);
         { // trim /[12]$
-            int t = strlen(p->name);
+            int t = seq->name.l;
             if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2'))
                 p->name[t - 2] = '\0';
         }
@@ -594,7 +594,7 @@ bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs, int n_needed, 
         //for debug begin
         strncpy(p->name, seq->name.s, seq->name.l);
         { // trim /[12]$
-            int t = strlen(p->name);
+            int t = seq->name.l;
             if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] == '2'))
                 p->name[t - 2] = '\0';
         }
@@ -1072,8 +1072,8 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
         char XT[2];
 
         if (p->type == BWA_TYPE_NO_MATCH) {
-//			p->pos = mate->pos;
-//			p->strand = mate->strand;
+			p->pos = mate->pos;
+			p->strand = mate->strand;
             flag |= SAM_FSU;
             j = 1;
         } else
@@ -2499,7 +2499,6 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
                 BamIO.writeRecord(BamFile, SFH, SR[0], SamRecord::SequenceTranslation::NONE);
                 //std::cerr<<"\nPassed Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1, [](bwa_seq_t* s, int j ){return  "ACGTN"[(int) *s+j];})<<endl;
                 BamIO.writeRecord(BamFile, SFH, SR[1], SamRecord::SequenceTranslation::NONE);
-
             }
         }
 
