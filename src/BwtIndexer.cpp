@@ -69,7 +69,7 @@ extern bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is);
 
 extern void bwa_pac_rev_core(const char *fn, const char *fn_rev);
 
-BwtIndexer::BwtIndexer() : RefPath(),
+BwtIndexer::BwtIndexer() : RefPath(),ref_genome_size(0),
                            pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
                 0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
                 0) {
@@ -100,7 +100,7 @@ BwtIndexer::BwtIndexer() : RefPath(),
 
 }
 
-BwtIndexer::BwtIndexer(int thresh) : RefPath(), pac_buf(0), rpac_buf(0),
+BwtIndexer::BwtIndexer(int thresh) : RefPath(),ref_genome_size(0), pac_buf(0), rpac_buf(0),
                                      bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0),
                                      m_pac_buf(0), m_rpac_buf(0), m_bwt_buf(0),
                                      m_rbwt_buf(0), bwt_d(0), rbwt_d(0) {
@@ -131,7 +131,7 @@ BwtIndexer::BwtIndexer(int thresh) : RefPath(), pac_buf(0), rpac_buf(0),
 
 }
 
-BwtIndexer::BwtIndexer(RefBuilder &ArtiRef, string &prefix) : RefPath(prefix),
+BwtIndexer::BwtIndexer(RefBuilder &ArtiRef, string &prefix) : RefPath(prefix),ref_genome_size(0),
                                                               pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0),
                                                               l_buf(0), m_pac_buf(
                 0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
@@ -162,7 +162,7 @@ BwtIndexer::BwtIndexer(RefBuilder &ArtiRef, string &prefix) : RefPath(prefix),
     InitializeRollHashTable(3);
 }
 
-BwtIndexer::BwtIndexer(string &prefix) : RefPath(prefix),
+BwtIndexer::BwtIndexer(string &prefix) : RefPath(prefix),ref_genome_size(0),
                                          pac_buf(0), rpac_buf(0), bwt_buf(0), rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(
                 0), m_rpac_buf(0), m_bwt_buf(0), m_rbwt_buf(0), bwt_d(0), rbwt_d(
                 0) {
@@ -726,12 +726,30 @@ bool BwtIndexer::BuildIndex(RefBuilder &ArtiRef, std::string &OldRef, std::strin
     return true;
 }
 
+int BwtIndexer::LoadContigSize() {
+    ifstream fin(RefPath + ".fai");
+    if (!fin.is_open()) {
+        cerr << "Open file:" << RefPath + ".fai" << " failed!" << endl;
+        exit(1);
+    }
+    std::string line, chr, length;
+    while (getline(fin, line)) {
+        stringstream ss(line);
+        ss >> chr;
+        ss >> length;
+        contigSize.push_back(std::make_pair(chr,atoi(length.c_str())));
+        ref_genome_size += atoi(length.c_str());
+    }
+    fin.close();
+    return 0;
+}
 bool BwtIndexer::LoadIndex(string &NewRef) {
     string str;
     ifstream ParamIN(NewRef + ".param");
     std::getline(ParamIN, str);
     stringstream ss(str);
     ss >> RefPath >> RefPath;
+    LoadContigSize();
     //RefPath=NewRef;
     ReadRollHashTable(NewRef);
     str = NewRef + ".bwt";

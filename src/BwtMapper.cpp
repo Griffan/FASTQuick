@@ -188,7 +188,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
         SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
         collector.RestoreVcfSites(RefPath, opt);
-        collector.GetGenomeSize(BwtIndex.RefPath);
+        collector.SetGenomeSize(BwtIndex.ref_genome_size);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
@@ -215,7 +215,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
                 warning("Open Bam file for writing failed, abort!\n");
                 exit(1);
             }
-            SetSamFileHeader(SFH, BwtIndex.bns);
+            SetSamFileHeader(SFH, BwtIndex);
             BamIO.writeHeader(BamFile, SFH, StatusTracker);
         }
         notice("Restore Variant Site Info...\n");
@@ -249,12 +249,12 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
                 warning("Open Bam file for writing failed, abort!\n");
                 exit(1);
             }
-            SetSamFileHeader(SFH, BwtIndex.bns);
+            SetSamFileHeader(SFH, BwtIndex);
             BamIO.writeHeader(BamFile, SFH, StatusTracker);
         }
         notice("Restore Variant Site Info...\n");
         collector.RestoreVcfSites(RefPath, opt);
-        collector.GetGenomeSize(BwtIndex.RefPath);
+        collector.SetGenomeSize(BwtIndex.ref_genome_size);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile, StatusTracker, fout, total_add);
@@ -279,7 +279,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         SamFile SFIO;*/
         notice("Restore Variant Site Info...\n");
         collector.RestoreVcfSites(RefPath, opt);
-        collector.GetGenomeSize(BwtIndex.RefPath);
+        collector.SetGenomeSize(BwtIndex.ref_genome_size);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
         collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout, total_add);
@@ -303,13 +303,13 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
                 warning("Open Bam file for writing failed, abort!\n");
                 exit(EXIT_FAILURE);
             }
-            SetSamFileHeader(SFH, BwtIndex.bns);
+            SetSamFileHeader(SFH, BwtIndex);
             BamIO.writeHeader(BamFile, SFH, StatusTracker);
         }
         double t_tmp = realtime();
 
         collector.RestoreVcfSites(RefPath, opt);
-        collector.GetGenomeSize(BwtIndex.RefPath);
+        collector.SetGenomeSize(BwtIndex.ref_genome_size);
         notice("Restore Variant Site Info...%f sec\n", realtime() - t_tmp);
         ofstream fout(Prefix + ".InsertSizeTable");
         int total_add = 0;
@@ -1018,7 +1018,7 @@ int BwtMapper::bwa_set_rg(const char *s) {
 extern int64_t pos_end_multi(const bwt_multi1_t *p, int len); // analogy to pos_end()
 
 #define BAM_DEBUG 1
-bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH, const bntseq_t *bns) {
+bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH, const BwtIndexer &BwtIndex) {
 
     /*PACKAGE_VERSION*/
     if (!SFH.setPGTag("VN", "1.0.0", "FastqA"))
@@ -1041,22 +1041,26 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH, const bntseq_t *bns) {
         std::cerr << "WARNING:@RG is empty" << endl;
     }
 
-    for (int i = 0; i < bns->n_seqs; ++i) {
+
+
 #ifdef BAM_DEBUG
-        std::string chrName = std::string(bns->anns[i].name);
-        size_t colonPos = chrName.find(':');
-        std::string chrom = chrName.substr(0, colonPos);
-        SFH.setSQTag("LN", std::to_string(static_cast<long long int>(bns->anns[i].len)).c_str(),
-                     chrom.c_str());
+
+    for (int i = 0; i < BwtIndex.contigSize.size(); ++i) {
+        std::string chrom = BwtIndex.contigSize[i].first;
+        int len = BwtIndex.contigSize[i].second;
+        SFH.setSQTag("LN", std::to_string(len).c_str(), chrom.c_str());
 //            std::cerr << "WARNING:SetSQTag failed" << endl;
         //printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
+    }
 #else
+    for (int i = 0; i < bns->n_seqs; ++i) {
         if (!SFH.setSQTag("LN", std::to_string(static_cast<long long int>(bns->anns[i].len)).c_str(),
                           bns->anns[i].name))
             std::cerr << "WARNING:SetSQTag failed" << endl;
         //printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
-#endif
     }
+#endif
+
     return 0;
 }
 
