@@ -54,7 +54,8 @@ class BwtIndexer
 {
 public:
 
-
+	std::vector<std::pair<std::string,int> > contigSize;
+	int ref_genome_size;
 	std::string RefPath;
 	ubyte_t * pac_buf;
 	ubyte_t * rpac_buf;
@@ -74,6 +75,8 @@ public:
 	BwtIndexer(std::string & NewRef);
 
 	BwtIndexer(RefBuilder & ArtiRef, std::string & NewRef);
+
+	int LoadContigSize();
 
 	bool LoadIndex(std::string & NewRef);
 

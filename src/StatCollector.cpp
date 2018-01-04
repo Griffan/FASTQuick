@@ -2015,20 +2015,8 @@ int StatCollector::AddFSC(FileStatCollector a) {
     return 0;
 }
 
-int StatCollector::GetGenomeSize(std::string RefPath) {
-    ifstream fin(RefPath + ".fai");
-    if (!fin.is_open()) {
-        cerr << "Open file:" << RefPath + ".fai" << " failed!" << endl;
-        exit(1);
-    }
-    string line, dummy, length;
-    while (getline(fin, line)) {
-        stringstream ss(line);
-        ss >> dummy;
-        ss >> length;
-        ref_genome_size += atoi(length.c_str());
-    }
-    fin.close();
+int StatCollector::SetGenomeSize(int total_size) {
+    ref_genome_size = total_size;
     return 0;
 }
 
