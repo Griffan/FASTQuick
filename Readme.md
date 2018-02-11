@@ -10,6 +10,7 @@
 
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
+- [DOWNLOAD AND INSTALL](#download-and-install)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
 - [USEFUL TIPS](#useful-tips)
@@ -29,6 +30,18 @@ FASTQuick con --SVD_prefix resource/hapmap_3.3.b37.dat --pileup NA12878.Pileup.g
 ```
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+### DOWNLOAD AND INSTALL
+   git clone https://github.com/Griffan/FASTQuick.git
+   
+   mkdir build
+   
+   cd build
+   
+   cmake ..
+   
+   make
+   
+   (required libraries):http://www.htslib.org/doc/tabix.html
 ### COMMANDS AND OPTIONS
 
 **index**	
