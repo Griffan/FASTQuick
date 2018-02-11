@@ -45,9 +45,9 @@ FASTQuick con --SVD_prefix resource/hapmap_3.3.b37.dat --pileup NA12878.Pileup.g
    (required libraries):http://www.htslib.org/doc/tabix.html
 ### COMMANDS AND OPTIONS
 
-**index**	
+**index**
 
-    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_index_prefix [reduced_ref_index]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_index_prefix [reduced_ref_index]
 
 Index database sequences, using known variant sites to anchor informative region.
 
