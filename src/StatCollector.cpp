@@ -226,6 +226,8 @@ StatCollector::StatCollector() {
     NumPositionCovered10 = 0;// larger than 9
     DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
+    GCDist = vector<size_t>(101, 0);
+    PosNum = vector<size_t>(101, 0);
     GCDist = vector<size_t>(256, 0);
     EmpRepDist = vector<size_t>(256, 0);
     misEmpRepDist = vector<size_t>(256, 0);
@@ -253,7 +255,8 @@ StatCollector::StatCollector(const string &OutFile) {
     NumPositionCovered10 = 0;// larger than 9
     DepthDist = vector<size_t>(1024, 0);//up to depth 1024X
     CycleDist = vector<size_t>(512, 0);
-    GCDist = vector<size_t>(256, 0);
+    GCDist = vector<size_t>(101, 0);
+    PosNum = vector<size_t>(101, 0);
     EmpRepDist = vector<size_t>(256, 0);
     misEmpRepDist = vector<size_t>(256, 0);
     EmpCycleDist = vector<size_t>(256, 0);
@@ -263,23 +266,15 @@ StatCollector::StatCollector(const string &OutFile) {
 }
 
 void
-StatCollector::StatVecDistUpdate(const string &qual, unsigned int tmpIndex, const string &refSeq, const string &seq,
-                                 int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef) {
+StatCollector::StatVecDistUpdate(const string &qual, const string &refSeq, const string &seq, int tmpCycle,
+                                 int relativeCoordOnRead, int relativeCoordOnRef) {
 
     EmpRepDist[qual[relativeCoordOnRead]]++;
     EmpCycleDist[tmpCycle]++;
-
-    if (qual[relativeCoordOnRead] >= 20) {
-        Q20DepthVec[tmpIndex]++;
-        if (qual[relativeCoordOnRead] >= 30) {
-            Q30DepthVec[tmpIndex]++;
-        }
-    }
     if (refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead]) {
         misEmpRepDist[qual[relativeCoordOnRead]]++;
         misEmpCycleDist[tmpCycle]++;
     }
-
     /************Debug*******/
 //    DebugSeqVec[tmpIndex] += seq[relativeCoordOnRead];
 //    DebugQualVec[tmpIndex] += qual[relativeCoordOnRead];
@@ -291,9 +286,15 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const stri
                                           int relativeCoordOnRef) {
     //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
     DepthVec.push_back(0);
-    Q30DepthVec.push_back(0);
     Q20DepthVec.push_back(0);
+    Q30DepthVec.push_back(0);
     DepthVec[index]++;
+    if (qual[relativeCoordOnRead] >= 20) {
+        Q20DepthVec[index]++;
+        if (qual[relativeCoordOnRead] >= 30) {
+            Q30DepthVec[index]++;
+        }
+    }
     PositionTable[chrom][i] = index;
     /*********debug*********/
 //    DebugSeqVec.push_back("");
@@ -302,7 +303,7 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const stri
     /*********end debug*****/
     if (dbSNPTable[chrom].find(i) == dbSNPTable[chrom].end()) //not in dbsnp table
     {
-        StatVecDistUpdate(qual, index, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+        StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
     index++;
 }
@@ -339,6 +340,7 @@ int StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq, con
     return UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart, refRealStart, refRealEnd,
                                sign, strand, matchLen, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
 }
+#define FLANK_EDGE 0.65
 
 int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string &seq, const string &qual,
                                               const string &refSeq, const string &chr, int readRealStart,
@@ -349,19 +351,26 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart + opt->read_len * FLANK_EDGE)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd - opt->read_len * FLANK_EDGE)
                 break;
+
             if (PositionTable[chr].find(i)
-                != PositionTable[chr].end()) {
+                != PositionTable[chr].end()) {// site already exists
                 int tmpIndex = PositionTable[chr][i];
                 DepthVec[tmpIndex]++;
+                if (qual[relativeCoordOnRead] >= 20) {
+                    Q20DepthVec[tmpIndex]++;
+                    if (qual[relativeCoordOnRead] >= 30) {
+                        Q30DepthVec[tmpIndex]++;
+                    }
+                }
                 total_effective_len++;
                 if (dbSNPTable[chr].find(i)
                     == dbSNPTable[chr].end())    //not in dbsnp table
                 {
-                    StatVecDistUpdate(qual, tmpIndex, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                    StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
                 }
             } else //coord not exists
             {
@@ -373,9 +382,9 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart + opt->read_len)
+            if (i < refRealStart + opt->read_len * FLANK_EDGE)
                 continue;
-            if (i > refRealEnd - opt->read_len)
+            if (i > refRealEnd - opt->read_len * FLANK_EDGE)
                 break;
             total_effective_len++;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
@@ -392,7 +401,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
     int seqid(0);
     int j(0);
 
-    if (p->type == BWA_TYPE_NO_MATCH) {
+    if (p->type == BWA_TYPE_NO_MATCH or p->mapQ ==0) {
         return false;
     }
 
@@ -418,33 +427,112 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
         }
 
 
-    string PosName = string(bns->anns[seqid].name);
+    string chrName = string(bns->anns[seqid].name);
 
     int pos = static_cast<int>(p->pos - bns->anns[seqid].offset + 1);
 
-    size_t colonPos = PosName.find(':');
-    size_t atPos = PosName.find('@');
-    string chrom = PosName.substr(0, colonPos);
-    char *pEnd;
-    int refCoord = static_cast<int>(strtol(
-            PosName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd, 10)); // absolute coordinate of variant
-    //size_t slashPos = PosName.find("/");
-    //string ref = PosName.substr(atPos + 1, slashPos - atPos - 1); //ref allele
 
-//    string MD(p->md);
-//    string refSeq=RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
+
 
     int readRealStart(0);
     int refRealStart(0), refRealEnd(0);
-    if (PosName[PosName.size() - 1] == 'L') {
-        readRealStart = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
-        refRealStart = refCoord - opt->flank_long_len;//absolute coordinate of refSeq start
-        refRealEnd = refCoord + opt->flank_long_len;
-    } else {
-        readRealStart = refCoord - opt->flank_len + pos - 1;
-        refRealStart = refCoord - opt->flank_len;
-        refRealEnd = refCoord + opt->flank_len;
+    size_t atPos;
+    string chrom;
+    char *pEnd;
+    int refCoord; // absolute coordinate of variant
+    size_t colonPos = chrName.find(':');
+    if(colonPos!=std::string::npos)//FASTQuick own alignment
+    {
+        atPos = chrName.find('@');
+        chrom = chrName.substr(0, colonPos);
+        refCoord = static_cast<int>(strtol(
+                chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
+                10)); // absolute coordinate of variant
+        if (chrName[chrName.size() - 1] == 'L') {
+            readRealStart = refCoord - opt->flank_long_len + pos - 1; //absolute coordinate of current reads on reference
+            refRealStart = refCoord - opt->flank_long_len;//absolute coordinate of refSeq start
+            refRealEnd = refCoord + opt->flank_long_len;
+        } else {
+            readRealStart = refCoord - opt->flank_len + pos - 1;
+            refRealStart = refCoord - opt->flank_len;
+            refRealEnd = refCoord + opt->flank_len;
+        }
+    } else//External alignment
+    {
+        readRealStart = pos;
+        int readRealEnd = readRealStart + p->len;
+        chrom = chrName;
+        int overlap_right(0), overlap_left(0);
+        int left_flank_len(0), right_flank_len(0)/*flank length of right element*/;
+        if (VcfTable.find(chrom) != VcfTable.end()) {//need to locate which artificial ref seq this reads aligned to
+            auto right = VcfTable[chrom].lower_bound(readRealStart);
+            if (right != VcfTable[chrom].begin() and right != VcfTable[chrom].end())
+                //meaning both right and left elements are valid
+            {
+                auto left(--right);
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
+
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+
+                if (overlap_left > 0 and overlap_right > 0) {//both overlap exist
+                    if (overlap_left > overlap_right) {
+                        refRealStart = left->first - left_flank_len;
+                        refRealEnd = left->first + left_flank_len;
+                    } else {
+                        refRealStart = right->first - right_flank_len;
+                        refRealEnd = right->first + right_flank_len;
+                    }
+                } else if (overlap_left > 0) {//only left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else if (overlap_right > 0) {//only right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].begin())//left element is valid, but not right element isn't
+            {
+                auto left(--right);
+                if (std::string(VcfRecVec[left->second]->getIDStr()).back() == 'L')//long region
+                    left_flank_len = opt->flank_long_len;
+                else left_flank_len = opt->flank_len;
+                overlap_left = left->first + left_flank_len - readRealStart + 1;
+                if (overlap_left > 0) {//left overlap exists
+                    refRealStart = left->first - left_flank_len;
+                    refRealEnd = left->first + left_flank_len;
+
+                } else//not overlapped adjacent elements
+                    return false;
+            } else if (right != VcfTable[chrom].end())//only this element exists, which is rare
+            {
+                if (std::string(VcfRecVec[right->second]->getIDStr()).back() == 'L')//long region
+                    right_flank_len = opt->flank_long_len;
+                else right_flank_len = opt->flank_len;
+                overlap_right = readRealEnd - (right->first - right_flank_len) + 1;
+                if (overlap_right > 0) {//right overlap exists
+                    refRealStart = right->first - right_flank_len;
+                    refRealEnd = right->first + right_flank_len;
+                } else
+                    return false;
+            } else//meaning empty set, impossible
+            {
+                warning("read:%s cannot find adjacent variants on chrom:%s, impossible!", p->name,
+                        chrom.c_str());
+                exit(EXIT_FAILURE);
+            }
+        } else
+            return false;
     }
+
+
 
     string MD(p->md);
     string refSeq = RecoverRefseqByMDandCigar(seq, MD, p->cigar, p->n_cigar);
@@ -500,30 +588,8 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
                         warning("Unhandled cigar_op %d:%d\n", cop, cl);
                 }
             }//end for
-
-
-//        faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//        char DEBUGREGION[1024];
-//        sprintf(DEBUGREGION, "%s:%d-%d", chrom.c_str(), readRealStart - Debug_first_s_len,
-//                readRealStart - Debug_first_s_len + p->len - 1);
-//        int dummy;
-//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//        if (DEBUGTEST != refSeq) {
-//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
-//            cerr << DEBUGTEST << endl;
-//            cerr << refSeq << endl;
-//        }
     } else {
-//        faidx_t * DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-//        char DEBUGREGION[1024];
-//        sprintf(DEBUGREGION,"%s:%d-%d",chrom.c_str(),readRealStart,readRealStart+p->len-1);
-//        int dummy;
-//        string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-//        if(DEBUGTEST!=refSeq) {
-//            cerr << "DEBUG_FA_SEQ:" << DEBUGREGION << endl;
-//            cerr << DEBUGTEST << endl;
-//            cerr << refSeq << endl;
-//        }
+
         /*************************variant site****************************************/
 
         total_effective_len+=AddMatchBaseInfo(opt, seq, qual, refSeq, chrom, absoluteSite, refRealStart, refRealEnd, sign, p->strand,
@@ -536,7 +602,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const 
 bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
 {
 //TODO:unify both versions
-    if (p.getFlag() & SAM_FSU) {
+    if (p.getFlag() & SAM_FSU or p.getMapQuality()==0) {
         return false;
     }
 
@@ -719,11 +785,12 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
                                 const bwa_seq_t *q, const gap_opt_t *opt, int type,
                                 ofstream &fout) {//in this setting p is fastq1 and q is fastq2
     //todo: remember to also update IsDuplicated overloaded version
+
     int maxInsert(-1), maxInsert2(-1);
     int readLength(0), seqid_p(-1), seqid_q(-1);
     int flag1 = 0;
     int flag2 = 0;
-    int threshQual = 20;
+    int threshQual = 0;
     string status;
 
     int cl1(0), op1(0);//p left
@@ -1186,10 +1253,11 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
     return 0;
 }
 
-//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
+//return value: 0 failed, 1 add single success, 2 add pair success by using add pair interface
 int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
-                                const gap_opt_t *opt, ofstream &fout, int &total_add) {
+                                const gap_opt_t *opt, ofstream &fout, long &total_add_failed) {
     int seqid(0), seqid2(0), j(0), j2(0);
+
     /*checking if reads bridges two reference contigs*/
     if (p and p->type != BWA_TYPE_NO_MATCH) {
         j = pos_end(p) - p->pos; //length of read
@@ -1220,8 +1288,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             }
             //TO-DO: adding IsDup function here to generate single end MAX insersize info
             IsDuplicated(bns, p, q, opt, 1, fout);//only q
-            total_add++;
-            return 2;
+            return 1;
         }
         return 0;
     }
@@ -1241,8 +1308,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             }
             //TO-DO:adding IsDup function here to generate single end MAX insersize info
             IsDuplicated(bns, p, q, opt, 3, fout);//only p
-            total_add++;
-            return 2;
+            return 1;
         }
         return 0;
     }
@@ -1266,23 +1332,22 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
         }
 
-        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
+        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup)//test IsDuplicated first to get insert size info
+        {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 2;
-                    return 1;
-                } else {
-                    total_add += 1;
                     return 2;
+                } else {
+                    return 1;
                 }
             } else {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 1;
-                    return 2;
+                    return 1;
                 } else
                     return 0;
             }
         }
+        total_add_failed+=2;
         return 0;
     } else //p is perfectly aligned
     {
@@ -1307,42 +1372,38 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
             contigStatusTable[pname].addNumOverlappedReads();
             contigStatusTable[pname].addNumFullyIncludedReads();
         }
-        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1 || opt->cal_dup) {
+        if (IsDuplicated(bns, p, q, opt, 2, fout) != 1||opt->cal_dup) {
             if (AddSingleAlignment(bns, p, opt)) {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 2;
-                    return 1;
-                } else {
-                    total_add += 1;
                     return 2;
+                } else {
+                    return 1;
                 }
             } else {
                 if (AddSingleAlignment(bns, q, opt)) {
-                    total_add += 1;
-                    return 2;
+                    return 1;
                 } else
                     return 0;
             }
         } else {
+            total_add_failed+=2;
             return 0;
         }
     }
-    //cerr << "currently added reads " << total_add << endl;
-    return 1;
+    cerr << "currently added reads " << total_add_failed << endl;
+    return 0;
 }
 
 //overload of AddAlignment function for direct bam reading
-//return value: 0 failed, 1 add pair success, 2 add single success by using add pair interface
+//return value: 0 failed, 1 add single success, 2 add pair success by using add pair interface
 int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
-                                SamRecord *q, const gap_opt_t *opt, ofstream &fout, int &total_add) {
+                                SamRecord *q, const gap_opt_t *opt, ofstream &fout, long &total_add_failed) {
     SamValidator Validator;
     SamValidationErrors VErrors;
     Validator.isValid(SFH, *p, VErrors);
     if (VErrors.numErrors() > 0)
         fprintf(stderr, "%s", VErrors.getNextError()->getMessage());
-    //CycleDist[p->getReadLength()]++;
-    //CycleDist[q->getReadLength()]++;
-    //	if (p->type == BWA_TYPE_NO_MATCH)
+
     if (p == 0 || (p->getFlag() & SAM_FSU)) {
         if (q == 0 || (q->getFlag() & SAM_FSU)) //both end are not mapped
             return 0;
@@ -1357,8 +1418,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
-                total_add++;
-                return 2;
+                return 1;
             }
             return 0;
         } else // q is perfectly aligned, p is not
@@ -1373,8 +1433,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 1, fout);// 1 is q
-                total_add++;
-                return 2;
+                return 1;
             } else
                 return 0;
         }
@@ -1391,8 +1450,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
-                total_add++;
-                return 2;
+                return 1;
             }
             return 0;
         } else // p is partially aligned q is aligned too
@@ -1413,23 +1471,21 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumOverlappedReads();
             }
 
-            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
+            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 2;
-                        return 1;
-                    } else {
-                        total_add += 1;
                         return 2;
+                    } else {
+                        return 1;
                     }
                 } else {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 1;
-                        return 2;
+                        return 1;
                     } else
                         return 0;
                 }
             }
+            total_add_failed+=2;
             return 0;
         }
     } else //p is perfectly aligned
@@ -1446,8 +1502,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
             {
                 //TO-DO:adding IsDup function here to generate single end MAX insersize info
                 IsDuplicated(SFH, *p, *q, opt, 3, fout);// 3 is p
-                total_add++;
-                return 2;
+                return 1;
             } else
                 return 0;
         } else // p and q are both aligned
@@ -1474,24 +1529,23 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
                 contigStatusTable[pname].addNumFullyIncludedReads();
             }
 
-            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1 || opt->cal_dup) {
+            if (IsDuplicated(SFH, *p, *q, opt, 2, fout) != 1||opt->cal_dup) {
                 if (AddSingleAlignment(*p, opt)) {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 2;
-                        return 1;
-                    } else {
-                        total_add += 1;
                         return 2;
+                    } else {
+                        return 1;
                     }
                 } else {
                     if (AddSingleAlignment(*q, opt)) {
-                        total_add += 1;
-                        return 2;
+                        return 1;
                     } else
                         return 0;
                 }
-            } else
+            } else {
+                total_add_failed+=2;
                 return 0;
+            }
         }
     }
     //cerr << "currently added reads " << total_add << endl;
@@ -1500,6 +1554,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p,
 
 int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
                                         const char *BamFile, std::ofstream &fout, int &total_add) {
+    long total_dup(0);
     SamFileHeader SFH;
     SamFile SFIO;
     if (!SFIO.OpenForRead(BamFile, &SFH)) {
@@ -1529,7 +1584,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             readName = string(SR->getReadName());
         if (!(SR->getFlag() & SAM_FPP)) // read is not mapped in pair
         {
-            AddAlignment(SFH, SR, 0, opt, fout, total_add);
+            total_add+=AddAlignment(SFH, SR, 0, opt, fout, total_dup);
             delete SR;
             continue;
         } else if (pairBuffer.find(readName) == pairBuffer.end()) // mate not existed
@@ -1537,7 +1592,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
             pairBuffer.insert(make_pair(readName, SR));
         } else {
             SamRecord *SRtmp = pairBuffer[readName];
-            AddAlignment(SFH, SR, SRtmp, opt, fout, total_add);
+            total_add+=AddAlignment(SFH, SR, SRtmp, opt, fout, total_dup);
             delete SR;
             delete SRtmp;
             pairBuffer.erase(readName);
@@ -1546,7 +1601,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
     AddFSC(FSC);
     for (unordered_map<string, SamRecord *>::iterator iter = pairBuffer.begin();
          iter != pairBuffer.end(); ++iter) {
-        AddAlignment(SFH, iter->second, 0, opt, fout, total_add);
+        total_add+=AddAlignment(SFH, iter->second, 0, opt, fout, total_dup);
         delete iter->second;
     }
     return 0;
@@ -1648,7 +1703,25 @@ int StatCollector::ReleaseVcfSites() {
 
 int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) {
 
-    ofstream fout(outputPath + ".DepthDist");
+
+    for (auto i = PositionTable.begin();
+         i != PositionTable.end(); ++i) //each chr
+    {
+        for (auto j =
+                i->second.begin(); j != i->second.end(); ++j) //each site
+        {
+            /************DepthDist**************************************************************/
+            assert(DepthVec[j->second] != 0);
+            NumBaseMapped += DepthVec[j->second];
+            if (DepthVec[j->second] > 1023)
+                DepthDist[1023]++;
+            else
+                DepthDist[DepthVec[j->second]]++;
+            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
+            PosNum[GC[i->first][j->first]]++;
+        }
+    }
+
     int max_XorYmarker(0);
     if (opt->num_variant_short >= 100000)
         max_XorYmarker = 3000;
@@ -1666,23 +1739,24 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len - opt->read_len) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len - opt->read_len) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len - opt->read_len) * 2 + 1) * max_XorYmarker*2;//X and Y each
-    fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
+    total_region_size = ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len - opt->read_len * FLANK_EDGE) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) * max_XorYmarker*2;//X and Y each
+
+    ofstream fout(outputPath + ".DepthDist");
     DepthDist[0] = total_region_size - NumPositionCovered;
-    for (uint32_t i = 1; i != DepthDist.size(); ++i) {
+    for (uint32_t i = 0; i != DepthDist.size(); ++i) {
         fout << i << "\t" << DepthDist[i] << endl;
     }
     fout.close();
     return 0;
 }
 
-int StatCollector::GetGCDist(const string &outputPath,
-                             const vector<int> &PosNum) {
+int StatCollector::GetGCDist(const string &outputPath) {
     ofstream fout(outputPath + ".GCDist");
-    double MeanDepth = NumBaseMapped / (double) NumPositionCovered;
-    for (uint32_t i = 0; i != GCDist.size(); ++i) {
+
+    double MeanDepth = NumBaseMapped / (double) NumPositionCovered;/*i.e. coverage in qplot*/
+    for (uint32_t i = 0; i != 101; ++i) {
         fout << i << "\t" << GCDist[i] << "\t" << PosNum[i] << "\t";
         if (PosNum[i] == 0) {
             fout << 0;
@@ -1697,11 +1771,14 @@ int StatCollector::GetGCDist(const string &outputPath,
 
 int StatCollector::GetEmpRepDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpRepDist");
+    double prevQual=0;
     for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
         fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i])
              << "\t"
-             << min(45.0,PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6)))
+             << (misEmpRepDist[i] == 0?prevQual:PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6)))
              << endl;
+        if(misEmpRepDist[i]!=0)
+            prevQual = PHRED((double) (misEmpRepDist[i] + 1e-6) / (EmpRepDist[i] + 1e-6));
     }
     fout.close();
     return 0;
@@ -1709,12 +1786,16 @@ int StatCollector::GetEmpRepDist(const string &outputPath) {
 
 int StatCollector::GetEmpCycleDist(const string &outputPath) {
     ofstream fout(outputPath + ".EmpCycleDist");
+    double prevQual=0;
     for (uint32_t i = 0; i != EmpCycleDist.size(); ++i) {
         fout << i+1 << "\t" << misEmpCycleDist[i] << "\t" << EmpCycleDist[i]
              << "\t"
-             << min(45.0,PHRED(
+             << (misEmpCycleDist[i]==0?prevQual:PHRED(
                         (double) (misEmpCycleDist[i] + 1e-6)
-                        / (EmpCycleDist[i] + 1e-6))) << "\t" << CycleDist[i] << endl;
+                        / (EmpCycleDist[i] + 1e-6)))
+             << "\t" << CycleDist[i] << endl;
+        if(misEmpCycleDist[i]!=0)
+            prevQual = PHRED((double) (misEmpCycleDist[i] + 1e-6)/ (EmpCycleDist[i] + 1e-6));
     }
     fout.close();
     return 0;
@@ -1764,28 +1845,9 @@ int StatCollector::GetSexChromInfo(const string &outputPath) {
 }
 
 int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
-    vector<int> PosNum(256, 0);
-    //int total(0);
-    for (auto i = PositionTable.begin();
-         i != PositionTable.end(); ++i) //each chr
-    {
-        for (auto j =
-                i->second.begin(); j != i->second.end(); ++j) //each site
-        {
-            /************DepthDist**************************************************************/
-            {
-                NumBaseMapped += DepthVec[j->second];
-                if (DepthVec[j->second] > 1023)
-                    DepthDist[1023]++;
-                else
-                    DepthDist[DepthVec[j->second]]++;
-            }
-            GCDist[GC[i->first][j->first]] += DepthVec[j->second];
-            PosNum[GC[i->first][j->first]]++;
-        }
-    }
+
     GetDepthDist(statPrefix, opt);
-    GetGCDist(statPrefix, PosNum);
+    GetGCDist(statPrefix);
     GetEmpRepDist(statPrefix);
     GetEmpCycleDist(statPrefix);
 
@@ -1793,7 +1855,7 @@ int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
 
     GetSexChromInfo(statPrefix);
     GetPileup(statPrefix, opt);
-    SummaryOutput(statPrefix, opt);
+    SummaryOutput(statPrefix);
     GetGenoLikelihood(statPrefix);
     return 0;
 }
@@ -1801,7 +1863,7 @@ int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
 int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
     ofstream fout(outputPath + ".Pileup");
     int qualoffset = 33;
-    if (opt->mode | BWA_MODE_IL13) qualoffset = 64;
+    if (opt->mode & BWA_MODE_IL13) qualoffset = 64;
     for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) //each chr
     {
         for (std::map<int, unsigned int>::iterator j = i->second.begin();
@@ -1834,44 +1896,44 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
         }
     }
     fout.close();
-/*
-    ofstream Dfout(outputPath + ".DebugPileup");
-    int Dqualoffset = 33;
-    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
-    faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
-    char DEBUGREGION[1024];
-    int dummy;
 
-    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
-    {
-        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
-        {
-            if (DebugSeqVec[j->second].size() == 0)
-                continue;
-
-            sprintf(DEBUGREGION, "%s:%d-%d", i->first.c_str(), j->first, j->first);
-
-            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
-
-
-            Dfout << i->first << "\t" << j->first << "\t" << DEBUGTEST << "\t"
-                  << DebugSeqVec[j->second].size() << "\t";
-            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
-                Dfout << (char) toupper(DebugSeqVec[j->second][k]);
-            }
-            Dfout << "\t";
-            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
-                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
-            Dfout << "\t";
-            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
-                Dfout << DebugCycleVec[j->second][k];
-                if (k != DebugCycleVec[j->second].size() - 1)
-                    Dfout << ",";
-            }
-            Dfout << endl;
-        }
-    }
-    Dfout.close();*/
+//    ofstream Dfout(outputPath + ".DebugPileup");
+//    int Dqualoffset = 33;
+//    if (opt->mode | BWA_MODE_IL13) Dqualoffset = 64;
+//    faidx_t *DEBUGREFFAI = fai_load("/Users/fanzhang/Downloads/FASTQuick_test/hs37d5.fa");
+//    char DEBUGREGION[1024];
+//    int dummy;
+//
+//    for (auto i = PositionTable.begin(); i != PositionTable.end(); ++i) //each chr
+//    {
+//        for (auto j = i->second.begin(); j != i->second.end(); ++j) //each site
+//        {
+//            if (DebugSeqVec[j->second].size() == 0)
+//                continue;
+//
+//            sprintf(DEBUGREGION, "%s:%d-%d", i->first.c_str(), j->first, j->first);
+//
+//            std::string DEBUGTEST(fai_fetch(DEBUGREFFAI, DEBUGREGION, &dummy));
+//
+//
+//            Dfout << i->first << "\t" << j->first << "\t" << DEBUGTEST << "\t"
+//                  << DebugSeqVec[j->second].size() << "\t";
+//            for (uint32_t k = 0; k != DebugSeqVec[j->second].size(); ++k) {
+//                Dfout << (char) toupper(DebugSeqVec[j->second][k]);
+//            }
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugQualVec[j->second].size(); ++k)
+//                Dfout << char(DebugQualVec[j->second][k] + Dqualoffset);
+//            Dfout << "\t";
+//            for (uint32_t k = 0; k != DebugCycleVec[j->second].size(); ++k) {
+//                Dfout << DebugCycleVec[j->second][k];
+//                if (k != DebugCycleVec[j->second].size() - 1)
+//                    Dfout << ",";
+//            }
+//            Dfout << endl;
+//        }
+//    }
+//    Dfout.close();
     return 0;
 }
 
@@ -1956,20 +2018,8 @@ int StatCollector::AddFSC(FileStatCollector a) {
     return 0;
 }
 
-int StatCollector::GetGenomeSize(std::string RefPath) {
-    ifstream fin(RefPath + ".fai");
-    if (!fin.is_open()) {
-        cerr << "Open file:" << RefPath + ".fai" << " failed!" << endl;
-        exit(1);
-    }
-    string line, dummy, length;
-    while (getline(fin, line)) {
-        stringstream ss(line);
-        ss >> dummy;
-        ss >> length;
-        ref_genome_size += atoi(length.c_str());
-    }
-    fin.close();
+int StatCollector::SetGenomeSize(int total_size) {
+    ref_genome_size = total_size;
     return 0;
 }
 
@@ -2018,7 +2068,7 @@ double StatCollector::Q30BaseFraction() {
     return NumBaseMapped == 0 ? 0 : double(tmp) / NumBaseMapped;
 }
 
-int StatCollector::SummaryOutput(const string &outputPath, const gap_opt_t *opt) {
+int StatCollector::SummaryOutput(const string &outputPath) {
     ofstream fout(outputPath + ".Summary");
 
     long total_base(0);

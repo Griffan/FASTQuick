@@ -58,7 +58,7 @@ public:
 	bool IsFP(const std::string &seq, const std::string &qual, const char *);
 
 	bool SetSamRecord(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, int mode, int max_top2, SamFileHeader& SFH, SamRecord & SR);
-	bool SetSamFileHeader(SamFileHeader& SFH, const bntseq_t * bns);
+	bool SetSamFileHeader(SamFileHeader& SFH, const BwtIndexer &BwtIndex);
 	//bool Skip(BwtIndexer& BwtIndex, int mode, const char* seq1, const char* qual1, const char* seq2 , const char* qual2 , int len , double frac );
 
 	int bwa_set_rg(const char *s);

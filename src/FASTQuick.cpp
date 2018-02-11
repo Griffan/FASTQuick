@@ -29,6 +29,7 @@ SOFTWARE.
 #include "PopulationIdentifier.h"
 #include "../misc/params.h"
 #include "ContaminationEstimator.h"
+#include "../libbwa/bwtaln.h"
 //#include <gperftools/profiler.h>
 using namespace std;
 
@@ -255,7 +256,7 @@ int runIndex(int argc, char ** argv)
 	* Parameters
 	*
 	*/
-	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty");
+	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty"), PreDefinedVcf("Empty");
 	bool reselect(false);
 	//std::string Prefix("Empty");
 	paramList pl;
@@ -266,6 +267,7 @@ int runIndex(int argc, char ** argv)
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("out_index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
+        LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] Select flanking region based on predefined VCF file")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
 		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
@@ -303,13 +305,18 @@ int runIndex(int argc, char ** argv)
 	//build ref index
 	BwtIndexer Indexer;
 	std::string NewRef = Prefix + ".FASTQuick.fa";
-	std::string BwtPath = NewRef + ".bwt";
-	//string BwtPathR = RefPath + ".rbwt";
-	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
+    std::string BwtPath = NewRef + ".bwt";
+//	std::string WholeGenomeBwtPath = RefPath + ".bwt";
+    if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, building...\n");
-		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath, opt, reselect);
-		//Indexer.longRefTable);
+		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
+						   opt->flank_len, opt->flank_long_len, opt->num_variant_short, opt->num_variant_long);
+        if(PreDefinedVcf=="Empty")
+		    ArtiRef.SelectMarker();
+        else
+            ArtiRef.InputPredefinedMarker(PreDefinedVcf);
+		ArtiRef.PrepareRefSeq();
 		Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
 	}
 	else //load ref index
@@ -349,7 +356,6 @@ int runAlign(int argc, char ** argv)
 		"Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty")/*, DBsnpPath("Empty")*/;
 	std::string Prefix("Empty"), IndexPrefix("Empty");
 	bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
-	popt->force_isize =true;// disable insertsize estimation due to small number of available reads after hash filtering
 	int kmer_thresh(3);
 	paramList pl;
 
@@ -385,7 +391,7 @@ int runAlign(int argc, char ** argv)
 		LONG_INT_PARAM("e", &opte, "[INT] maximum number of gap extensions, -1 for disabling long gaps [-1]")
 		LONG_INT_PARAM("i", &opt->indel_end_skip, "[INT] do not put an indel within INT bp towards the ends")
 		LONG_INT_PARAM("d", &opt->max_del_occ, "[INT] maximum occurrences for extending a long deletion")
-		LONG_INT_PARAM("l", &opt->seed_len, "[INT] seed length")
+		LONG_INT_PARAM("l", &opt->seed_len, "[INT] seed length [32]")
 		LONG_INT_PARAM("k", &opt->max_seed_diff, "[INT] maximal seed difference")
 		LONG_INT_PARAM("m", &opt->max_entries, "[INT] maximal stack entries")
 		LONG_INT_PARAM("t", &opt->n_threads, "[INT] number of threads")
@@ -407,7 +413,7 @@ int runAlign(int argc, char ** argv)
 		LONG_INT_PARAM("n_multi", &popt->n_multi, "[INT] maximum hits to output for paired reads")
 		LONG_INT_PARAM("N_multi", &popt->N_multi, "[INT] maximum hits to output for discordant pairs")
 		LONG_DOUBLE_PARAM("ap_prior", &popt->ap_prior, "[Double] prior of chimeric rate (lower bound) ")
-		//LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
+		LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
 
 		LONG_PARAM_GROUP("Parameters for Statistics ", "Parameters specified for statistics and summary.[Optional]")
 		LONG_PARAM("cal_dup", &opt->cal_dup, "[Bool] enable the calculation of duplicated reads in depth calculation ")
@@ -485,9 +491,15 @@ int runAlign(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 	std::string ParaStr,TmpStr;
+    std::string RefPath;
 	std::getline(ParamIn, ParaStr);//RefPath
-	std::getline(ParamIn, ParaStr);//variant long
 	stringstream ss(ParaStr);
+	ss >> RefPath >> RefPath;
+	Indexer.RefPath=RefPath;
+	std::getline(ParamIn, ParaStr);//variant long
+	ss.str("");
+	ss.clear();
+	ss<<ParaStr;
 	ss >> TmpStr;
 	if (TmpStr == "var_long:") ss >> opt->num_variant_long;
 	else { std::cerr << NewRef + ".param" << " corrupted!" << endl; exit(EXIT_FAILURE); }
@@ -517,8 +529,8 @@ int runAlign(int argc, char ** argv)
 
 
 	std::string BwtPath = NewRef + ".bwt";
-	//string BwtPathR = RefPath + ".rbwt";
-	if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
+	std::string WholeBwtPathR = RefPath + ".bwt";
+	if (stat(BwtPath.c_str(), &sb) != 0 and stat(WholeBwtPathR.c_str(), &sb)!=0)
 	{
 		notice("Index file doesn't exist, please build index file first...\n");
 		return 0;
