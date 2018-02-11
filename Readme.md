@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
 ### NAME
    FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, population identification, contamination estimation and variety of QC analysis. 
    
@@ -10,6 +11,7 @@
 
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
+- [DOWNLOAD AND INSTALL](#download-and-install)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
 - [USEFUL TIPS](#useful-tips)
@@ -29,6 +31,18 @@ FASTQuick con --SVD_prefix resource/hapmap_3.3.b37.dat --pileup NA12878.Pileup.g
 ```
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+### DOWNLOAD AND INSTALL
+   git clone https://github.com/Griffan/FASTQuick.git
+   
+   mkdir build
+   
+   cd build
+   
+   cmake ..
+   
+   make
+   
+   (required libraries):http://www.htslib.org/doc/tabix.html
 ### COMMANDS AND OPTIONS
 
 **index**	
@@ -42,6 +56,7 @@ Index database sequences, using known variant sites to anchor informative region
     --dbsnpVCF	STR	Path of input dbsnp site vcf file
     --ref	STR	Path of reference genome fasta file
     --mask	STR	Path of repetitive region  mask fasta file
+    --predefinedVCF STR path of predefined marker set vcf file
     --flank_len	INT	Flanking region length of short-flanking-region variant
     --var_short	INT	Number of short-flanking-region variant
     --flank_long_len	INT Flanking region length of long-flanking-region variant
@@ -63,12 +78,12 @@ Align short reads 70~300 bp to selected reference region to generate comprehensi
     --sam_out Bool  If output sam file[default output bam file]
     --in_idx_prefix	STR	Input prefix of all the index files
     --out_prefix	STR	prefix of variety of output files
-    --n	float	Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT. In the latter case, the maximum edit distance is automatically chosen for different read lengths. [0.04]
+    --n	FLOAT	Maximum edit distance if the value is INT, or the fraction of missing alignments given 2% uniform base error rate if FLOAT. In the latter case, the maximum edit distance is automatically chosen for different read lengths. [0.04]
     --o	INT	Maximum number of gap opens [1]
     --e	INT	Maximum number of gap extensions, -1 for k-difference mode (disallowing long gaps) [-1]
     --i	INT	Disallow an indel within INT bp towards the ends [5]
     --d	INT	Disallow a long deletion within INT bp towards the 3’-end [16]
-    --l	INT	Take the first INT subsequence as seed. If INT is larger than the query sequence, seeding will be disabled. For long reads, this option is typically ranged from 25 to 35 for ‘-k 2’. [inf]
+    --l	INT	Take the first INT subsequence as seed. If INT is larger than the query sequence, seeding will be disabled. For long reads, this option is typically ranged from 25 to 35 for ‘-k 2’. [32]
     --k	INT	Maximum edit distance in the seed [2]
     --m	INT	Maximum entries in the queue [2000000]
     --t	INT	Number of threads [1]

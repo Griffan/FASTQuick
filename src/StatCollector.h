@@ -103,6 +103,7 @@ private:
 	std::vector<size_t> EmpCycleDist;
 	std::vector<size_t> misEmpCycleDist;
 	std::vector<size_t> GCDist;
+	std::vector<size_t> PosNum;
 	std::vector<size_t> InsertSizeDist;
 //	std::vector<size_t> MaxInsertSizeDist;
 	unsort_map GC;
@@ -120,9 +121,8 @@ private:
 
 	bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
 
-	void StatVecDistUpdate(const std::string &qual, unsigned int tmpIndex, const std::string &refSeq,
-                               const std::string &seq, int tmpCycle, int relativeCoordOnRead,
-                               int relativeCoordOnRef);
+	void StatVecDistUpdate(const std::string &qual, const std::string &refSeq, const std::string &seq,
+                               int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef);
 
 	void AddBaseInfoToNewCoord(const std::string &chrom, int i, const std::string &qual,
                                    const std::string &refSeq, const std::string &seq, int tmpCycle,
@@ -137,11 +137,11 @@ public:
 	StatCollector(const std::string & OutFile);
 
 	int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q, const gap_opt_t *opt, std::ofstream &fout,
-                     int &total_add);
+                     long &total_add_failed);
 	int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,const gap_opt_t* opt, int type, std::ofstream & fout);
 //overload functions for direct bam reading
 	int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q, const gap_opt_t *opt, std::ofstream &fout,
-                     int &total_add);
+					 long &total_add);
 	int IsDuplicated(  SamFileHeader& SFH, SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
 
 	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
@@ -149,7 +149,7 @@ public:
 	int RestoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
 	int ReleaseVcfSites();
 	int GetDepthDist(const std::string &outputPath, const gap_opt_t *opt);
-	int GetGCDist(const std::string &outputPath, const std::vector<int> &PosNum);
+	int GetGCDist(const std::string &outputPath);
 	int GetEmpRepDist(const std::string &outputPath);
 	int GetEmpCycleDist(const std::string &outputPath);
 	int GetInsertSizeDist(const std::string &outputPath);
@@ -189,8 +189,8 @@ public:
     std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar);
 
 	int AddFSC(FileStatCollector a);
-	int GetGenomeSize(std::string RefPath);
-	int SummaryOutput(const std::string & outputPath,const gap_opt_t* opt);
+	int SetGenomeSize(int total_size);
+	int SummaryOutput(const std::string & outputPath);
 
 	double Q20AvgDepth();
 	double Q30AvgDepth();
@@ -210,7 +210,7 @@ public:
                                    int refRealStart, int refRealEnd, const char *sign, bool strand,
                                    int matchLen, int tmpCycle, int relativeCoordOnRead,
                                    int relativeCoordOnRef);
-//private:
+private:
 //    std::vector<std::string> DebugSeqVec,DebugQualVec;
 //    std::vector<std::vector<int> > DebugCycleVec;
 //    std::vector<std::vector<unsigned char> > DebugMaqVec;
