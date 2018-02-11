@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
 ### NAME
    FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, population identification, contamination estimation and variety of QC analysis. 
    
