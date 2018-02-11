@@ -530,8 +530,7 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
     return 0;
 }
 
-void
-RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC, std::ofstream &FaOut) {
+void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC, std::ofstream &FaOut) {
     int flank_len;
     int dummy;
     char region[1024];
@@ -560,6 +559,7 @@ RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC
     FaOut << FetchedSeq.substr(0, flank_len) + std::string(VcfLine->getRefStr()) +
              FetchedSeq.substr(flank_len + 1, flank_len) << std::endl;
 }
+
 int RefBuilder::PrepareRefSeq()
 {
 

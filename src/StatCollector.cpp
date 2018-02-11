@@ -266,23 +266,15 @@ StatCollector::StatCollector(const string &OutFile) {
 }
 
 void
-StatCollector::StatVecDistUpdate(const string &qual, unsigned int tmpIndex, const string &refSeq, const string &seq,
-                                 int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef) {
+StatCollector::StatVecDistUpdate(const string &qual, const string &refSeq, const string &seq, int tmpCycle,
+                                 int relativeCoordOnRead, int relativeCoordOnRef) {
 
     EmpRepDist[qual[relativeCoordOnRead]]++;
     EmpCycleDist[tmpCycle]++;
-
-    if (qual[relativeCoordOnRead] >= 20) {
-        Q20DepthVec[tmpIndex]++;
-        if (qual[relativeCoordOnRead] >= 30) {
-            Q30DepthVec[tmpIndex]++;
-        }
-    }
     if (refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead]) {
         misEmpRepDist[qual[relativeCoordOnRead]]++;
         misEmpCycleDist[tmpCycle]++;
     }
-
     /************Debug*******/
 //    DebugSeqVec[tmpIndex] += seq[relativeCoordOnRead];
 //    DebugQualVec[tmpIndex] += qual[relativeCoordOnRead];
@@ -294,9 +286,15 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const stri
                                           int relativeCoordOnRef) {
     //cerr<<tmpCycle<<"\t"<<(int)sign[p->strand]<<"\t"<<(int)p->strand<<endl;
     DepthVec.push_back(0);
-    Q30DepthVec.push_back(0);
     Q20DepthVec.push_back(0);
+    Q30DepthVec.push_back(0);
     DepthVec[index]++;
+    if (qual[relativeCoordOnRead] >= 20) {
+        Q20DepthVec[index]++;
+        if (qual[relativeCoordOnRead] >= 30) {
+            Q30DepthVec[index]++;
+        }
+    }
     PositionTable[chrom][i] = index;
     /*********debug*********/
 //    DebugSeqVec.push_back("");
@@ -305,7 +303,7 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i, const stri
     /*********end debug*****/
     if (dbSNPTable[chrom].find(i) == dbSNPTable[chrom].end()) //not in dbsnp table
     {
-        StatVecDistUpdate(qual, index, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+        StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
     }
     index++;
 }
@@ -342,6 +340,7 @@ int StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq, con
     return UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart, refRealStart, refRealEnd,
                                sign, strand, matchLen, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
 }
+#define FLANK_EDGE 0.65
 
 int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string &seq, const string &qual,
                                               const string &refSeq, const string &chr, int readRealStart,
@@ -352,19 +351,26 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     if (PositionTable.find(chr) != PositionTable.end()) //chrom exists
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart/* + opt->read_len*/)
+            if (i < refRealStart + opt->read_len * FLANK_EDGE)
                 continue;
-            if (i > refRealEnd /*- opt->read_len*/)
+            if (i > refRealEnd - opt->read_len * FLANK_EDGE)
                 break;
+
             if (PositionTable[chr].find(i)
-                != PositionTable[chr].end()) {
+                != PositionTable[chr].end()) {// site already exists
                 int tmpIndex = PositionTable[chr][i];
                 DepthVec[tmpIndex]++;
+                if (qual[relativeCoordOnRead] >= 20) {
+                    Q20DepthVec[tmpIndex]++;
+                    if (qual[relativeCoordOnRead] >= 30) {
+                        Q30DepthVec[tmpIndex]++;
+                    }
+                }
                 total_effective_len++;
                 if (dbSNPTable[chr].find(i)
                     == dbSNPTable[chr].end())    //not in dbsnp table
                 {
-                    StatVecDistUpdate(qual, tmpIndex, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
+                    StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
                 }
             } else //coord not exists
             {
@@ -376,9 +382,9 @@ int StatCollector::UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const string
     {
         for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1;
              ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead, ++relativeCoordOnRef) {
-            if (i < refRealStart/* + opt->read_len*/)
+            if (i < refRealStart + opt->read_len * FLANK_EDGE)
                 continue;
-            if (i > refRealEnd /*- opt->read_len*/)
+            if (i > refRealEnd - opt->read_len * FLANK_EDGE)
                 break;
             total_effective_len++;
             AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle, relativeCoordOnRead, relativeCoordOnRef);
@@ -1705,16 +1711,14 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
                 i->second.begin(); j != i->second.end(); ++j) //each site
         {
             /************DepthDist**************************************************************/
-            {
-                NumBaseMapped += DepthVec[j->second];
-                if (DepthVec[j->second] > 1023)
-                    DepthDist[1023]++;
-                else
-                    DepthDist[DepthVec[j->second]]++;
-            }
+            assert(DepthVec[j->second] != 0);
+            NumBaseMapped += DepthVec[j->second];
+            if (DepthVec[j->second] > 1023)
+                DepthDist[1023]++;
+            else
+                DepthDist[DepthVec[j->second]]++;
             GCDist[GC[i->first][j->first]] += DepthVec[j->second];
-            if(DepthVec[j->second]>0)
-                PosNum[GC[i->first][j->first]]++;
+            PosNum[GC[i->first][j->first]]++;
         }
     }
 
@@ -1735,14 +1739,13 @@ int StatCollector::GetDepthDist(const string &outputPath, const gap_opt_t *opt) 
         if (i >= 10)
             NumPositionCovered10 += DepthDist[i];
     }
-    total_region_size = ((opt->flank_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_short
-                        + ((opt->flank_long_len/* - opt->read_len*/) * 2 + 1) * opt->num_variant_long
-                        + ((opt->flank_len /*- opt->read_len*/) * 2 + 1) * max_XorYmarker*2;//X and Y each
+    total_region_size = ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) * opt->num_variant_short
+                        + ((opt->flank_long_len - opt->read_len * FLANK_EDGE) * 2 + 1) * opt->num_variant_long
+                        + ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) * max_XorYmarker*2;//X and Y each
 
     ofstream fout(outputPath + ".DepthDist");
-    fout << 0 << "\t" << total_region_size - NumPositionCovered << endl;
     DepthDist[0] = total_region_size - NumPositionCovered;
-    for (uint32_t i = 1; i != DepthDist.size(); ++i) {
+    for (uint32_t i = 0; i != DepthDist.size(); ++i) {
         fout << i << "\t" << DepthDist[i] << endl;
     }
     fout.close();
