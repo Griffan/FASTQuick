@@ -97,7 +97,7 @@ bwa_seq_t *bwa_read_bam(bwa_seqio_t *bs, int n_needed, int *n, int is_comp, int 
 	b = bam_init1();
 	n_seqs = 0;
 	seqs = (bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t));
-	while (bam_read1(bs->fp, b) >= 0) {
+	while (bam_read2(bs->fp, b) >= 0) {
 		uint8_t *s, *q;
 		int go = 0;
 		if ((bs->which & 1) && (b->core.flag & BAM_FREAD1)) go = 1;

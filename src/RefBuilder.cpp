@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "RefBuilder.h"
 #include "Utility.h"
-#include "../misc/general/Error.h"
+#include "Error.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
 #include "../libbwa/bwtaln.h"

@@ -85,7 +85,7 @@ extern "C" {
 	bam_header_t *bam_header_init(void);
 	void bam_header_destroy(bam_header_t *header);
 	bam_header_t *bam_header_read(bamFile fp);
-	int bam_read1(bamFile fp, bam1_t *b);
+	int bam_read2(bamFile fp, bam1_t *b);
 
 #ifdef __cplusplus
 }

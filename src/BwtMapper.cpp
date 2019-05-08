@@ -8,7 +8,7 @@
 #include "../libbwa/bwase.h"
 #include "../libbwa/bwape.h"
 #include "../libbwa/khash.h"
-#include "../misc/general/Error.h"
+#include "Error.h"
 #include "../libmpu/Random.h"
 #include <algorithm>
 //#include <gperftools/profiler.h>
