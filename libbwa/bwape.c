@@ -1,6 +1,6 @@
 #include "bwape.h"
 #include "ksort.h"
-#include "../misc/general/Error.h"
+#include "Error.h"
 
 KSORT_INIT_GENERIC(uint64_t)
 

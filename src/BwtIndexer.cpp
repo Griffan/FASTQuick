@@ -11,7 +11,7 @@
 #include "../libbwa/utils.h"
 #include "../libbwa/bntseq.h"
 #include "../libbwa/kseq.h"
-#include "../misc/general/Error.h"
+#include "Error.h"
 
 using namespace std;
 

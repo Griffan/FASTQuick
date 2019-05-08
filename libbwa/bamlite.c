@@ -122,7 +122,7 @@ static void swap_endian_data(const bam1_core_t *c, int data_len, uint8_t *data)
 	}
 }
 
-int bam_read1(bamFile fp, bam1_t *b)
+int bam_read2(bamFile fp, bam1_t *b)
 {
 	bam1_core_t *c = &b->core;
 	int32_t block_len, ret, i;
