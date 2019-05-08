@@ -55,8 +55,8 @@ class BwtIndexer
 public:
 
 	std::vector<std::pair<std::string,int> > contigSize;
+    std::string RefPath;
 	int ref_genome_size;
-	std::string RefPath;
 	ubyte_t * pac_buf;
 	ubyte_t * rpac_buf;
 	unsigned char* bwt_buf;

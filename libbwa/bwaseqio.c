@@ -271,49 +271,47 @@ void bwa_clean_read_seq(int n_seqs, bwa_seq_t *seqs)
 		for (j = 0; j < p->n_multi; ++j)
 			if (p->multi[j].cigar) free(p->multi[j].cigar);
 
-			if (p->aln)
-			free(p->aln);
+		if (p->aln)
+		free(p->aln);
 
-			//fprintf(stderr, "md:%x\n%s\ndelete 3\n",p->md,p->md);
-			if (p->md)
-			free(p->md);
+		//fprintf(stderr, "md:%x\n%s\ndelete 3\n",p->md,p->md);
+		if (p->md)
+		free(p->md);
 
-			//fprintf(stderr, "delete 4\n");
-			if (p->multi)
-			free(p->multi);
+		//fprintf(stderr, "delete 4\n");
+		if (p->multi)
+		free(p->multi);
 
-			//fprintf(stderr, "delete 5\n");
-			if (p->cigar)
-			free(p->cigar);
+		//fprintf(stderr, "delete 5\n");
+		if (p->cigar)
+		free(p->cigar);
 
-
-			p->len = 0;
-			p->strand = 0;
-			p->type = 0;
-			p->filtered = 0;
-			p->extra_flag = 0;
-			p->n_mm = 0;
-			p->n_gape = 0;
-			p->n_gapo = 0;
-			p->mapQ = 0;
-			p->score = 0;
-			p->clip_len = 0;
-			p->n_aln = 0;
-			p->aln = 0;
-			p->n_multi = 0;
-			p->multi = 0;
-			p->sa = 0;
-			p->pos = 0;
-			p->c1 = 0;
-			p->c2 = 0;
-			p->seQ = 0;
-			p->n_cigar = 0;
-			p->cigar = 0;
-			p->tid = -1;
-			p->full_len = 0;
-			p->nm = 0;
-			p->md = 0;
-
+		p->len = 0;
+		p->strand = 0;
+		p->type = 0;
+		p->filtered = 0;
+		p->extra_flag = 0;
+		p->n_mm = 0;
+		p->n_gape = 0;
+		p->n_gapo = 0;
+		p->mapQ = 0;
+		p->score = 0;
+		p->clip_len = 0;
+		p->n_aln = 0;
+		p->aln = 0;
+		p->n_multi = 0;
+		p->multi = 0;
+		p->sa = 0;
+		p->pos = 0;
+		p->c1 = 0;
+		p->c2 = 0;
+		p->seQ = 0;
+		p->n_cigar = 0;
+		p->cigar = 0;
+		p->tid = -1;
+		p->full_len = 0;
+		p->nm = 0;
+		p->md = 0;
 	}
 	//free(seqs);
 }
