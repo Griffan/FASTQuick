@@ -75,7 +75,7 @@ int GenMatrixBinary::getGenotype(int indIndex, int markerIndex) {
 }
 
 void GenMatrixBinary::setGenotype(float geno, int indIndex, int markerIndex) {
-  uint8_t ngeno = isnan(geno) ? 0 : ((uint8_t)floor(geno)+1);
+  uint8_t ngeno = std::isnan(geno) ? 0 : ((uint8_t)floor(geno)+1);
   int genoIndex = (chroms.size()-1) * bytesPerMarker + (indIndex / 4);
   int shift = ((indIndex % 4) * 2);
   genotypes[genoIndex] |= (ngeno << shift);

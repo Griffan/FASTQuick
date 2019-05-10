@@ -37,14 +37,77 @@ static void CalculateGC(const int flank_len, const faidx_t *seq, const string &C
     GCstruct.write(FGC);
 }
 
-bool RefBuilder::Skip(VcfRecord* VcfLine, int & chrFlag) {
+bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
     std::string chr = VcfLine->getChromStr();
     int position = VcfLine->get1BasedPosition();
     int flank_len =0;
     if(not IsChromInWhiteList(chr))//strip chr from e.g. chr11
-        return true;
+    {
+	    warning("%s is not in chromosome white list:1-22,X,Y",chr.c_str());
+	    return true;
+    }
 
-    if(IsMaxNumMarker(chr, chrFlag))
+    if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
+    {
+	warning("%s:%d is around INDEL or MULTI_ALLELIC", chr.c_str(), position);
+        return true;
+    }
+
+    std::string::size_type sz;     // alias of size_t
+    const std::string* AFstr = VcfLine->getInfo().getString("AF");
+    if(AFstr != NULL) {
+        double AF = std::stod(*AFstr, &sz);
+        if (AF < 0.05 or AF > 0.95) 
+	{
+		warning("%s:%d is a rare variant AF:%g", chr.c_str(), position, AF);
+		return true;
+	}
+    }
+    else {
+	    warning("%s:%d does not have AF field");
+	    return true;
+    }
+
+    if(chrFlag == 1)
+        flank_len = flank_long_len;
+    else
+        flank_len = flank_short_len;
+
+    //ensure no overlapping regions
+    if(VcfTable.find(chr)!=VcfTable.end())
+    {
+        auto low_iter = VcfTable[chr].upper_bound(position);
+        if(low_iter != VcfTable[chr].begin() and low_iter != VcfTable[chr].end()) {
+            auto up_iter = low_iter--;
+            if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len or
+                abs(position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
+		{
+			warning("%s:%d is too close to other variants",chr.c_str(), position);
+                	return true;
+		}
+        }
+    }
+    //
+    int dummy_t;
+    char region[1024];
+    sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len, position + flank_len);
+    if (MaskPath != "Empty") {
+        string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+        double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
+        if (n < MaskSeq.size())
+	{
+	    warning("%s:%d is in repetitive region",chr.c_str(), position);
+            return true;
+	}
+    }
+    return false;
+}
+
+bool RefBuilder::Skip(VcfRecord* VcfLine, int chrFlag) {
+    std::string chr = VcfLine->getChromStr();
+    int position = VcfLine->get1BasedPosition();
+    int flank_len =0;
+    if(not IsChromInWhiteList(chr))//strip chr from e.g. chr11
         return true;
 
     if (VcfLine->getNumRefBases() != 1||strlen(VcfLine->getAltStr()) !=1||VcfLine->getNumAlts() != 1)// filtering indel sites
@@ -367,6 +430,8 @@ void RefBuilder::IncreaseNumMarker(int chrFlag)
 
 int RefBuilder::SelectMarker()
 {
+
+    notice("Start to select marker set...");
     string SelectedSite = NewRef + ".SelectedSite.vcf";
     InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
     string BedPath = NewRef + ".bed";
@@ -386,6 +451,9 @@ int RefBuilder::SelectMarker()
         int chrFlag(-1)/*0:short;1:long;2:Y;3:X*/;
         VcfRecord *VcfLine = new VcfRecord;
         reader.readRecord(*VcfLine);
+
+	if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag))
+	    break;
 
         if(Skip(VcfLine,chrFlag))
             continue;
@@ -449,6 +517,7 @@ int RefBuilder::SelectMarker()
 
 int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
 {
+    notice("Start to load predefined marker set...");
     string SelectedSite = NewRef + ".SelectedSite.vcf";
     InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
     string BedPath = NewRef + ".bed";
@@ -469,8 +538,13 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         VcfRecord* VcfLine= new VcfRecord;
         reader.readRecord(*VcfLine);
 
-        if(Skip(VcfLine,chrFlag))
-            continue;
+        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag)){
+		warning("Reached maximum number of required marker");
+        	break;
+    	}
+
+	if(VariantCheck(VcfLine, chrFlag))
+            warning("%s:%d is a low quality marker, consider to filter it out.",VcfLine->getChromStr(),VcfLine->get1BasedPosition());
 
         Position = VcfLine->get1BasedPosition();
         Chrom = VcfLine->getChromStr();
