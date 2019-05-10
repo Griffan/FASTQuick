@@ -46,7 +46,9 @@ public:
 
     virtual ~RefBuilder();
 
-    bool Skip(VcfRecord* VcfLine, int & chrFlag);
+    bool VariantCheck(VcfRecord* VcfLine, int chrFlag);
+
+    bool Skip(VcfRecord* VcfLine, int  chrFlag);
 
     int SelectMarker();
 

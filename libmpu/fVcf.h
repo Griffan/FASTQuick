@@ -8,8 +8,8 @@
 #include <vector>
 #include <cstdio>
 #include <ctime>
-//#include <cmath>
-#include <math.h>
+#include <cmath>
+//#include <math.h>
 #include <set>
 #include "pFile.h"
 #include "wFile.h"
@@ -329,7 +329,7 @@ public:
       int cnts[3] = {0,0,0};
       for(int j=0; j < nInds; ++j) {
 	g = genos[m*nInds + j];
-	if ( !isnan(g) ) { // do not count missing at any place
+	if ( !std::isnan(g) ) { // do not count missing at any place
 	  if ( g < 0.5 ) ++cnts[0];
 	  else if ( g >= 1.5 ) ++cnts[2];
 	  else ++cnts[1];
@@ -358,7 +358,7 @@ public:
       cnts[0] = cnts[1] = cnts[2] = 0;
       for(int j=0; j < nInds; ++j) {
 	g = genos[m*nInds + j];
-	if ( !isnan(g) ) { // do not count missing at any place
+	if ( !std::isnan(g) ) { // do not count missing at any place
 	  if ( g < 0.5 ) ++cnts[0];
 	  else if ( g >= 1.5 ) ++cnts[2];
 	  else ++cnts[1];
@@ -372,7 +372,7 @@ public:
     cnts[0] = cnts[1] = cnts[2] = cnts[3] = cnts[4] = cnts[5] = 0;
     for(int j=0; j < nInds; ++j) {
       g = genos[m*nInds + j];
-      if ( !isnan(g) ) { // do not count missing at any place
+      if ( !std::isnan(g) ) { // do not count missing at any place
 	if ( g < 0.5 ) ++cnts[0+isCases[j]*3];
 	else if ( g >= 1.5 ) ++cnts[2+isCases[j]*3];
 	else ++cnts[1+isCases[j]*3];
@@ -417,7 +417,7 @@ public:
       fprintf(fp, "%s", markers[i].c_str());
       for(int j=0; j < nInds; ++j) {
 	v = genos[i*nInds + j];
-	if ( isnan(v) ) {
+	if ( std::isnan(v) ) {
 	  fprintf(fp,"\tNA");
 	}
 	else {
@@ -881,7 +881,7 @@ public:
 	  PLs.push_back(pls[1]); 
 	  PLs.push_back(pls[2]);
 	  depths.push_back(dp);
-	  if ( !isnan(gt) ) {
+	  if ( !std::isnan(gt) ) {
 	    AN += 2;
 	    AC += gt;
 	    sqAC += (gt*gt);
