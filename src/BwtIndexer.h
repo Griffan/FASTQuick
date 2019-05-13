@@ -56,7 +56,7 @@ public:
 
 	std::vector<std::pair<std::string,int> > contigSize;
     std::string RefPath;
-	int ref_genome_size;
+	long ref_genome_size;
 	ubyte_t * pac_buf;
 	ubyte_t * rpac_buf;
 	unsigned char* bwt_buf;

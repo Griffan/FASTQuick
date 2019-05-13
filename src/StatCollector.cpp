@@ -2018,7 +2018,7 @@ int StatCollector::AddFSC(FileStatCollector a) {
     return 0;
 }
 
-int StatCollector::SetGenomeSize(int total_size) {
+int StatCollector::SetGenomeSize(long total_size) {
     ref_genome_size = total_size;
     return 0;
 }
