@@ -472,7 +472,7 @@ bool BwtIndexer::IsReadInHashByCount(ubyte_t *S, int len) const {
 
     int count = CountKmerHitInHash(swap_uint64(kmer3[0]));
     if (len >= 32)
-        CountKmerHitInHash(swap_uint64(kmer3[1]));
+        count += CountKmerHitInHash(swap_uint64(kmer3[1]));
     if (len >= 64) {
         memcpy(&kmer3, &mmx5, 16);
         count += CountKmerHitInHash(swap_uint64(kmer3[0]));
@@ -533,7 +533,7 @@ void BwtIndexer::InitializeRollHashTable(int thresh = 3) {
         roll_hash_table[i] = (unsigned char *) calloc(hash_table_size,
                                                       sizeof(char));
 
-    notice("Initializing Rolling Hash Table with size: %d bytes in %d sec\n", hash_table_size,
+    notice("Initializing Rolling Hash Table with size: %d bytes in %f sec\n", hash_table_size,
            (float) (clock() - t) / CLOCKS_PER_SEC);
 
     assert(roll_hash_table != 0);
@@ -741,6 +741,7 @@ int BwtIndexer::LoadContigSize() {
         ref_genome_size += atoi(length.c_str());
     }
     fin.close();
+    notice("Reference genome size:%lld\n",ref_genome_size);
     return 0;
 }
 bool BwtIndexer::LoadIndex(string &NewRef) {

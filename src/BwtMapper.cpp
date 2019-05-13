@@ -318,7 +318,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         std::string line;
         int i(0);
         while (getline(fin, line)) {
-            ++i;
+            if(line[0]=='#') continue;
+	    ++i;
             std::string Fastq_1(""), Fastq_2("");
             stringstream ss(line);
             ss >> Fastq_1 >> Fastq_2;
@@ -2200,7 +2201,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
                                               BamInterface &BamIO, IFILE BamFile, StatGenStatus &StatusTracker,
                                               std::ofstream &fout, int &total_add) {
 
-    int i, j, n_seqs[2], n_seqs_buff[2];
+    int i, j, n_seqs[2]={0,0}, n_seqs_buff[2]={0,0};
     long n_filtered(0), total_filtered(0), n_bwaunmap(0), total_dup(0);// , tot_seqs = 0; //,m_aln;
     bwa_seq_t *seqs[2];
     bwa_seq_t *seqs_buff[2];
@@ -2244,13 +2245,13 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
             if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs[0], opt->mode,
                                                   opt->trim_qual, opt->frac, round, seqs[0], opt->read_len)) != 0) {
                 ReadIsGood = 1;
-                FSC.NumRead += n_seqs[0];
+                //FSC.NumRead += n_seqs[0];
             } else ReadIsGood = 0;
 
             if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs[1], opt->mode,
                                                   opt->trim_qual, opt->frac, round, seqs[1], opt->read_len)) != 0) {
                 //ReadIsGood = 1;
-                FSC.NumRead += n_seqs[1];
+                //FSC.NumRead += n_seqs[1];
             } else ReadIsGood = 0;
         }
         int cnt_chg;
@@ -2266,13 +2267,13 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
                                                   opt->trim_qual, opt->frac, round, seqs_buff[0], opt->read_len)) !=
                 0) {
                 //ReadIsGood = 1;
-                FSC.NumRead += n_seqs_buff[0];
+                //FSC.NumRead += n_seqs_buff[0];
             } else ReadIsGood = 0;
             if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1], opt->mode,
                                                   opt->trim_qual, opt->frac, round, seqs_buff[1], opt->read_len)) !=
                 0) {
                 //ReadIsGood = 1;
-                FSC.NumRead += n_seqs_buff[1];
+                //FSC.NumRead += n_seqs_buff[1];
             } else ReadIsGood = 0;
         } else {
             //for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
@@ -2351,7 +2352,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
 
             if ((ret_tmp[0] | ret_tmp[1]) == 0) ReadIsGood = 0;
             else
-                FSC.NumRead += (n_seqs_buff[0] + n_seqs_buff[1]);
+                //FSC.NumRead += (n_seqs_buff[0] + n_seqs_buff[1]);
             free(IO_param[0]);
             free(IO_param[1]);
             free(data);
@@ -2369,13 +2370,13 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
         if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff[0], opt->mode, opt->trim_qual, opt->frac, round, seqs_buff[0], opt->read_len)) != 0)
         {
             //ReadIsGood = 1;
-            FSC.NumRead += n_seqs_buff[0];
+            //FSC.NumRead += n_seqs_buff[0];
         }
         else ReadIsGood = 0;
         if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1], opt->mode, opt->trim_qual, opt->frac, round, seqs_buff[1], opt->read_len)) != 0)
         {
             //ReadIsGood = 1;
-            FSC.NumRead += n_seqs_buff[1];
+            //FSC.NumRead += n_seqs_buff[1];
         }
         else ReadIsGood = 0;
 #endif
@@ -2483,7 +2484,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
 //					else
 //						fprintf(stderr, "read2:0\n");
 //					}
-                    n_bwaunmap++;
+                    ++n_bwaunmap;
                     continue;
                 }
                 if (p[0]->bc[0] || p[1]->bc[0]) {
@@ -2509,7 +2510,8 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
         fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
         //cerr<<"In total "<<total_add<<" reads were calculated!"<<endl;
         t = clock();
-
+	
+	FSC.NumRead += (n_seqs[0] + n_seqs[1]);
         for (j = 0; j < 2; ++j) {
             //bwa_free_read_seq(n_seqs, seqs[j]);
             //delete[] seqs[j];
@@ -2518,6 +2520,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const char *
             bwa_seq_t *tmp = seqs[j];
             seqs[j] = seqs_buff[j];
             seqs_buff[j] = tmp;
+	     bwa_clean_read_seq(n_seqs_buff[j], seqs_buff[j]);
         }
         fprintf(stderr, "NOTICE - %lld sequences are loaded.\n", FSC.NumRead);
         //fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n", n_filtered);

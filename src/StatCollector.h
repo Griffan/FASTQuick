@@ -189,7 +189,7 @@ public:
     std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar);
 
 	int AddFSC(FileStatCollector a);
-	int SetGenomeSize(int total_size);
+	int SetGenomeSize(long total_size);
 	int SummaryOutput(const std::string & outputPath);
 
 	double Q20AvgDepth();
