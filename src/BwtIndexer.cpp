@@ -405,8 +405,8 @@ bool BwtIndexer::IsReadInHash(ubyte_t *S, int len) const {
 
 }
 
-bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck) const {
-    int n_chunk = len / 32;
+bool BwtIndexer::IsReadInHashByCountMoreChunck(const ubyte_t *S, int len) const {
+    int n_chunk = 3;//len / 32;
     int count = 0;
     uint64_t *kmer = new uint64_t[n_chunk];
     for (int i = 0; i != n_chunk; ++i) {
@@ -415,11 +415,10 @@ bool BwtIndexer::IsReadInHashByCount(const ubyte_t *S, int len, bool more_chunck
             kmer[i] = ((kmer[i] << 2) | S[32 * i + j]);
         }
         count += CountKmerHitInHash(kmer[i]);
+	if (count >= RollParam.thresh)
+		return true;
     }
-    if (count >= RollParam.thresh)
-        return true;
-    else
-        return false;
+    return false;
 }
 
 bool BwtIndexer::IsReadInHashByCount(ubyte_t *S, int len) const {
@@ -443,9 +442,9 @@ bool BwtIndexer::IsReadInHashByCount(ubyte_t *S, int len) const {
                 + __GNUC_PATCHLEVEL__)
 #if defined(GCC_VERSION) && GCC_VERSION >= 40700//4.7#endif
     //fprintf(stderr,"GCC_VERSION is about 4.7");
-        mmx1 = mmx1 << 6;
-        mmx1 = mmx1 | (mmx2 << 4);
-        mmx1 = mmx1 | (mmx3 << 2);
+    mmx1 = mmx1 << 6;
+    mmx1 = mmx1 | (mmx2 << 4);
+    mmx1 = mmx1 | (mmx3 << 2);
 #else
     v16qi mul64 = {64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64};
     v16qi mul16 = {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16};
@@ -485,29 +484,21 @@ bool BwtIndexer::IsReadInHashByCount(ubyte_t *S, int len) const {
 }
 
 bool BwtIndexer::IsReadFiltered(ubyte_t *S, const ubyte_t *Q, int len) const {
-/*	if(len==0)
+	/*if(len==0)
 	{
 		warning("Read with empty sequence.");
 		return true;
 	}*/
-    //fprintf(stderr, "enter IsReadFiltered\n");
     //if (IsReadHighQ(Q, len)) //pass error
     {
-        //if (IsReadInHash(S, len))
-        if ((len > 200 ? IsReadInHashByCount(S, len, true) : IsReadInHashByCount(S, len))) {
-//			if (strncmp(name, "ERR015764.2262",14) == 0)
-//				fprintf(stderr, "%s not filtered because of kmer hit\n",name);
+        if ((len > 0 ? IsReadInHashByCountMoreChunck(S, len) : IsReadInHashByCount(S, len))) {
             return false;
         } else {
-//			if (strncmp(name, "ERR015764.2262",14) == 0)
-//							fprintf(stderr, "%s is indeed filtered because of kmer hit\n",name);
             return true;
         }
     }
     //else
     {
-//		if (strncmp(name,"ERR015764.2262",14)==0)
-//		fprintf(stderr,"%s not filtered because of low qual\n",name);
         //	return false;
     }
 }

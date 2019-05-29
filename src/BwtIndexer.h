@@ -119,7 +119,7 @@ public:
 	//typedef uint32_t v4si __attribute__ ((vector_size (16)));
 	bool IsReadFiltered(ubyte_t * S, const ubyte_t * Q, int len)const;
 
-	bool IsReadInHashByCount(const ubyte_t *S, int len, bool n_chunck)const;
+	bool IsReadInHashByCountMoreChunck(const ubyte_t *S, int len)const;
 
 #ifdef BLOOM_FPP
 #include "bloom_filter.hpp"
