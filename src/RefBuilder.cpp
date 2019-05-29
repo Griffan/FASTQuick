@@ -453,7 +453,7 @@ int RefBuilder::SelectMarker()
         reader.readRecord(*VcfLine);
 
 	if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag))
-	    break;
+	    continue;
 
         if(Skip(VcfLine,chrFlag))
             continue;
@@ -538,10 +538,7 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         VcfRecord* VcfLine= new VcfRecord;
         reader.readRecord(*VcfLine);
 
-        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag)){
-		warning("Reached maximum number of required marker");
-        	break;
-    	}
+        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag)) continue;
 
 	if(VariantCheck(VcfLine, chrFlag))
             warning("%s:%d is a low quality marker, consider to filter it out.",VcfLine->getChromStr(),VcfLine->get1BasedPosition());
