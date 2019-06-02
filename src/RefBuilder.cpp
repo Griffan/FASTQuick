@@ -541,7 +541,10 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag)) continue;
 
 	if(VariantCheck(VcfLine, chrFlag))
-            warning("%s:%d is a low quality marker, consider to filter it out.",VcfLine->getChromStr(),VcfLine->get1BasedPosition());
+	{
+	     //warning("%s:%d is a low quality marker. Consider to filter it.",VcfLine->getChromStr(),VcfLine->get1BasedPosition());
+	     //continue;
+	}
 
         Position = VcfLine->get1BasedPosition();
         Chrom = VcfLine->getChromStr();

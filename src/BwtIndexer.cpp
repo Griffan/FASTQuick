@@ -408,13 +408,13 @@ bool BwtIndexer::IsReadInHash(ubyte_t *S, int len) const {
 bool BwtIndexer::IsReadInHashByCountMoreChunck(const ubyte_t *S, int len) const {
     int n_chunk = 3;//len / 32;
     int count = 0;
-    uint64_t *kmer = new uint64_t[n_chunk];
+    uint64_t kmer = 0;
     for (int i = 0; i != n_chunk; ++i) {
-        kmer[i] = 0;
+        kmer = 0;
         for (int j = 0; j != 32; ++j) {
-            kmer[i] = ((kmer[i] << 2) | S[32 * i + j]);
+            kmer = ((kmer << 2) | S[32 * i + j]);
         }
-        count += CountKmerHitInHash(kmer[i]);
+        count += CountKmerHitInHash(kmer);
 	if (count >= RollParam.thresh)
 		return true;
     }
