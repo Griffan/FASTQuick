@@ -62,17 +62,17 @@ int runIndex(int argc, char ** argv)
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Input Selected Sites VCF file,e.g. hapmap vcf[Required]")
+		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Path of VCF file with candidate variant sites(if predefinedVCF not specified)")
 		LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
-		LONG_STRING_PARAM("out_index_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
+		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
         LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] Select flanking region based on predefined VCF file")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
-		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of variants with long flanking region")
-		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[INT] number of variants with short flanking region")
-		LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking region length around each marker")
-		LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
+		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[Int] number of variants with long flanking region")
+		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[Int] number of variants with short flanking region")
+		LONG_INT_PARAM("flank_len", &opt->flank_len, "[Int] flanking region length around each marker")
+		LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[Int] long flanking region length around each marker")
 		//LONG_PARAM("reselect", &reselect, "[Bool] If you want to reselect subset of snp sites for generating reference")
 	END_LONG_PARAMS();
 
@@ -81,7 +81,7 @@ int runIndex(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--out_index_prefix is required");
+		error("--out_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	if (RefPath == "Empty")
@@ -170,7 +170,7 @@ int runAlign(int argc, char ** argv)
 		LONG_STRING_PARAM("bam_in", &BamIn, "[String] Input bam file path[Leave empty if using fq_list or fastq_1]")
 		EXCLUSIVE_PARAM("sam_out", &NonBamOut, "[Bool] If output bam file[Leave empty if using bam_in]")
 		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output files[Required]")
-		LONG_STRING_PARAM("in_index_prefix", &IndexPrefix, "[String] Input prefix of all the index files(parameter of out_index_prefix in index stage)[Required]")
+		LONG_STRING_PARAM("index_prefix", &IndexPrefix, "[String] Input prefix of all the index files(parameter of out_index_prefix in index stage)[Required]")
 
 
 		//LONG_STRING_PARAM("out",&outf,"Output file prefix")
@@ -185,19 +185,19 @@ int runAlign(int argc, char ** argv)
 		//LONG_INT_PARAM("flank_long_len", &opt->flank_long_len, "[INT] long flanking region length around each marker")
 
 		LONG_PARAM_GROUP("Parameters for Alignment ", "Parameters the are universal for both single end and pair end alignment.")
-		LONG_INT_PARAM("kmer_thresh", &kmer_thresh, "[INT] Out of 6 kmer masking tests, number of masking kmer test need to pass[Optional,Default:3]")
-		LONG_DOUBLE_PARAM("n", &opt->fnr, "[INT or Float] Max #diff (int) or missing prob under 0.02 error rate")
-		LONG_INT_PARAM("o", &opt->max_gapo, "[INT] maximum number or fraction of gap opens")
-		LONG_INT_PARAM("e", &opte, "[INT] maximum number of gap extensions, -1 for disabling long gaps [-1]")
-		LONG_INT_PARAM("i", &opt->indel_end_skip, "[INT] do not put an indel within INT bp towards the ends")
-		LONG_INT_PARAM("d", &opt->max_del_occ, "[INT] maximum occurrences for extending a long deletion")
-		LONG_INT_PARAM("l", &opt->seed_len, "[INT] seed length [32]")
-		LONG_INT_PARAM("k", &opt->max_seed_diff, "[INT] maximal seed difference")
-		LONG_INT_PARAM("m", &opt->max_entries, "[INT] maximal stack entries")
-		LONG_INT_PARAM("t", &opt->n_threads, "[INT] number of threads")
+		LONG_INT_PARAM("kmer_thresh", &kmer_thresh, "[Int] Out of 6 kmer masking tests, number of masking kmer test need to pass[Optional,Default:3]")
+		LONG_DOUBLE_PARAM("n", &opt->fnr, "[Int or Float] Max #diff (int) or missing prob under 0.02 error rate")
+		LONG_INT_PARAM("o", &opt->max_gapo, "[Int] maximum number or fraction of gap opens")
+		LONG_INT_PARAM("e", &opte, "[Int] maximum number of gap extensions, -1 for disabling long gaps [-1]")
+		LONG_INT_PARAM("i", &opt->indel_end_skip, "[Int] do not put an indel within INT bp towards the ends")
+		LONG_INT_PARAM("d", &opt->max_del_occ, "[Int] maximum occurrences for extending a long deletion")
+		LONG_INT_PARAM("l", &opt->seed_len, "[Int] seed length [32]")
+		LONG_INT_PARAM("k", &opt->max_seed_diff, "[Int] maximal seed difference")
+		LONG_INT_PARAM("m", &opt->max_entries, "[Int] maximal stack entries")
+		LONG_INT_PARAM("t", &opt->n_threads, "[Int] number of threads")
 		// LONG_INT_PARAM("L",&opt->seed_len,"seed length")
-		LONG_INT_PARAM("R", &opt->max_top2, "[INT] stop searching when there are >INT equally best hits")
-		LONG_INT_PARAM("q", &opt->trim_qual, "[INT] quality threshold for read trimming down to 35dbp")
+		LONG_INT_PARAM("R", &opt->max_top2, "[Int] stop searching when there are >INT equally best hits")
+		LONG_INT_PARAM("q", &opt->trim_qual, "[Int] quality threshold for read trimming down to 35dbp")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 		//Roll Hash
 
@@ -207,11 +207,11 @@ int runAlign(int argc, char ** argv)
 		LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
 		LONG_PARAM_GROUP("Additional Parameters for PairEnd ", "Additional parameters specified for Pair end mapping.[Optional]")
-		LONG_INT_PARAM("max_isize", &popt->max_isize, "[INT] maximum insert size")
-		LONG_INT_PARAM("max_occ", &popt->max_occ, "[INT] maximum occurrences for one end ")
+		LONG_INT_PARAM("max_isize", &popt->max_isize, "[Int] maximum insert size")
+		LONG_INT_PARAM("max_occ", &popt->max_occ, "[Int] maximum occurrences for one end ")
 		LONG_PARAM("is_sw", &popt->is_sw, "[Bool] disable Smith-Waterman for the unmapped mate")
-		LONG_INT_PARAM("n_multi", &popt->n_multi, "[INT] maximum hits to output for paired reads")
-		LONG_INT_PARAM("N_multi", &popt->N_multi, "[INT] maximum hits to output for discordant pairs")
+		LONG_INT_PARAM("n_multi", &popt->n_multi, "[Int] maximum hits to output for paired reads")
+		LONG_INT_PARAM("N_multi", &popt->N_multi, "[Int] maximum hits to output for discordant pairs")
 		LONG_DOUBLE_PARAM("ap_prior", &popt->ap_prior, "[Double] prior of chimeric rate (lower bound) ")
 		LONG_PARAM("force_isize", &popt->force_isize, " [Bool] disable insert size estimate")
 
@@ -233,7 +233,7 @@ int runAlign(int argc, char ** argv)
 	}
 	if (IndexPrefix == "Empty")
 	{
-		error("--in_index_prefix is required");
+		error("--index_prefix is required");
 		exit(EXIT_FAILURE);
 	}
 	//if (VcfPath == "Empty")
@@ -363,7 +363,7 @@ int runPop(int argc, char ** argv)
 
 	double t_real;
 	t_real = realtime();
-	std::string SVD_Prefix("Empty"),UDPath("Empty"), PCPath("Empty"), muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty"),pileup("Empty");
+	std::string SVDPrefix("Empty"),UDPath("Empty"), PCPath("Empty"), muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty"),pileup("Empty");
 
 	paramList pl;
 
@@ -371,19 +371,19 @@ int runPop(int argc, char ** argv)
 //		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD matrix file in resource directory[Required]")
 //		LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource directory[Required]")
 //		LONG_STRING_PARAM("mu", &muPath, "[String] Input mu matrix file in resource directory[Required]")
-		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]")
-		LONG_STRING_PARAM("gl", &glPath, "[String] Input genotype likelihood file generated from align step[Required if no pileup file]")
-		LONG_STRING_PARAM("pileup", &pileup, "[String] Input pileup file generated from align[Required if no gl file]")
-		LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed file in resource directory[Required]")
+		LONG_STRING_PARAM("SVDPrefix", &SVDPrefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]")
+		LONG_STRING_PARAM("GL", &glPath, "[String] Input genotype likelihood file generated from align step[Required if no pileup file]")
+		LONG_STRING_PARAM("Pileup", &pileup, "[String] Input pileup file generated from align[Required if no gl file]")
+		//LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED format file that contains marker information. If you are using FASTQuick default marker set, you may find choose.bed file in resource directory[Required]")
 		//LONG_STRING_PARAM("out", &output, "[String] Specify output file[Required]")
 	END_LONG_PARAMS();
 
 	pl.Add(new longParams("Available Options", longParameters));
 	pl.Read(argc, argv);
 	pl.Status();
-	if (SVD_Prefix == "Empty")
+	if (SVDPrefix == "Empty")
 	{
-		error("--SVD_prefix is required, if you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
+		error("--SVDPrefix is required, if you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
 		exit(EXIT_FAILURE);
 	}
 	/*if (PCPath == "Empty")
@@ -398,15 +398,11 @@ int runPop(int argc, char ** argv)
 	}*/
 	if (pileup == "Empty"&&glPath == "Empty")
 	{
-		error("either --pileup or --gl is required");
+		error("either --Pileup or --GL is required");
 		exit(EXIT_FAILURE);
 	}
-	if (bedPath == "Empty")
-	{
-		error("--BED is required");
-		exit(EXIT_FAILURE);
-	}
-	PopulationIdentifier pop(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu", pileup,glPath,bedPath);
+
+	PopulationIdentifier pop(SVDPrefix+".UD", SVDPrefix+".V", SVDPrefix+".mu", pileup,glPath,SVDPrefix+".bed");
 	pop.OptimizeLLK();
 
 	notice("Version: %s\n", PACKAGE_VERSION);
@@ -423,17 +419,17 @@ int runCon(int argc, char ** argv)
 	*
 	*/
 	ContaminationEstimator2 CE;
-	std::string  ReadGroup("default"),Prefix("Empty"),SVD_Prefix("Empty");
-	std::string VcfSiteAFFile("Empty"), MPUpath("Empty"), BEDpath("Empty");
+	std::string  ReadGroup("default"),Prefix("Empty"),SVDPrefix("Empty");
+	std::string VcfSiteAFFile("Empty"), PileupPath("Empty"), BEDpath("Empty");
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 
-		LONG_STRING_PARAM("SVD_prefix", &SVD_Prefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file doesn't provide site allele frequency]")
+		LONG_STRING_PARAM("SVDPrefix", &SVDPrefix, "[String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file doesn't provide site allele frequency]")
 		LONG_STRING_PARAM("VCF", &VcfSiteAFFile, "[String] Specify VCF file that contains site allele frequency.[Required if SVD matrices don't exist]")
-		LONG_STRING_PARAM("pileup", &MPUpath, "[String] Specify pileup file for current individual, could be the one generated from align step.[Required]")
-		LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]")
-		LONG_STRING_PARAM("out", &Prefix, "[String] Specify the output prefix.[Required]")
+		LONG_STRING_PARAM("Pileup", &PileupPath, "[String] Specify pileup file for current individual, could be the one generated from align step.[Required]")
+		//LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED format file that contains marker information, which should match markers in SVD matrices.[Required]")
+		LONG_STRING_PARAM("Out", &Prefix, "[String] Specify the output prefix.[Required]")
 		LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
 
 
@@ -446,30 +442,27 @@ int runCon(int argc, char ** argv)
 	pl.Status();
 	if (Prefix == "Empty")
 	{
-		error("--out is required");
+		error("--Out is required");
 		exit(EXIT_FAILURE);
 	}
-	if (MPUpath == "Empty")
+
+	if (PileupPath == "Empty")
 	{
-		error("--pileup is required");
+		error("--Pileup is required");
 		exit(EXIT_FAILURE);
 	}
-	if (BEDpath == "Empty")
+
+	if (SVDPrefix == "Empty" && VcfSiteAFFile =="Empty")
 	{
-		error("--BEDpath is required, if you are using FASTQuick default marker set, you should find choose.bed in resource directory.");
-		exit(EXIT_FAILURE);
-	}
-	if (SVD_Prefix == "Empty" && VcfSiteAFFile =="Empty")
-	{
-		error("Either --SVD_prefix or --VCF should be specified, If you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
+		error("Either --SVDPrefix or --VCF should be specified, If you are using FASTQuick default marker set, you may find SVD matrices in resource directory.");
 	}
 	if(VcfSiteAFFile!="Empty")
 	{
-		CE.RunFromVCF(VcfSiteAFFile,MPUpath,ReadGroup,Prefix);
+		CE.RunFromVCF(VcfSiteAFFile,PileupPath,ReadGroup,Prefix);
 	}
 	else
 	{
-		CE.RunFromSVDMatrix(SVD_Prefix+".UD", SVD_Prefix+".V", SVD_Prefix+".mu",MPUpath,BEDpath,Prefix,ReadGroup);
+		CE.RunFromSVDMatrix(SVDPrefix+".UD", SVDPrefix+".V", SVDPrefix+".mu",PileupPath,SVDPrefix+".bed",Prefix,ReadGroup);
 	}
 
 
@@ -488,7 +481,7 @@ static int usage()
 	fprintf(stderr, "Usage:   FASTQuick <command> [options]\n\n");
 	fprintf(stderr, "Command: index       extract flanking region sequences around chosen SNP's and build index\n");
 	fprintf(stderr, "         align       summarize alignment based basic statisic\n");
-    fprintf(stderr, "         pop+con     jointly estimate sample genetic ancestry and contamination rate(verifyBamID2)\n");
+    fprintf(stderr, "         pop+con     jointly estimate sample genetic ancestry and contamination rate(VerifyBamID2)\n");
 	fprintf(stderr, "         pop         estimate sample genetic ancestry\n");
 	fprintf(stderr, "         con         estimate sample contamination rate\n");
 	fprintf(stderr, "\n");
@@ -502,7 +495,7 @@ int main(int argc, char *argv[])
 	if (argc < 2) return usage();
 	if (strcmp(argv[1], "index") == 0) return runIndex(argc - 1, argv + 1);
 	else if (strcmp(argv[1], "align") == 0) return runAlign(argc - 1, argv + 1);
-    else if (strcmp(argv[1], "pop+con") == 0) return execute(argc - 1, argv + 1);
+    else if (strcmp(argv[1], "pop+con") == 0) return runVB2(argc - 1, argv + 1);
 	else if (strcmp(argv[1], "pop") == 0) return runPop(argc - 1, argv + 1);
 	else if (strcmp(argv[1], "con") == 0) return runCon(argc - 1, argv + 1);
 	else {

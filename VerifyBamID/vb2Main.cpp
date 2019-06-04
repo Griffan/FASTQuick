@@ -29,7 +29,7 @@ SOFTWARE.
 #include "PhoneHome.h"
 #include <stdexcept>
 
-int execute(int argc, char **argv) {
+int runVB2(int argc, char **argv) {
 
     std::string UDPath("Empty"), PCPath("Empty"), MeanPath("Empty"), BedPath("Empty"), BamFileList("Empty"), BamFile("Empty"), RefPath(
             "Empty"), outputPrefix("result"), PileupFile("Empty"), SVDPrefix("Empty");
