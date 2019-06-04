@@ -30,3 +30,4 @@ config.log
 Makefile
 build
 test
+cmake-build-debug

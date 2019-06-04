@@ -1937,7 +1937,7 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
     return 0;
 }
 
-static vector<double> calLikelihood(const string &seq, const string &qual, const char &maj, const char &min)//maj:ref, min:alt
+static vector<double> CalLikelihood(const string &seq, const string &qual, const char &maj, const char &min)//maj:ref, min:alt
 {
     double GL0(0), GL1(0), GL2(0);
     {
@@ -2001,7 +2001,7 @@ int StatCollector::GetGenoLikelihood(const string &outputPath) {
             numAllele[maxIndex] = 0;
             maxIndex = FindMaxAllele(numAllele, 4);
 //            minAllele = "ACGT"[maxIndex];
-            vector<double> tmpGL = calLikelihood(SeqVec[markerIndex],
+            vector<double> tmpGL = CalLikelihood(SeqVec[markerIndex],
                                                  QualVec[markerIndex],                //majAllele, minAllele);
                                                  RefStr[0], AltStr[0]);
             fout << i->first << "\t" << j->first << "\t"
