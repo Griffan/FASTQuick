@@ -8,6 +8,12 @@ if [ $? -ne 0 ]
 then exit $?;
 else echo "Test on align finished successfully.";
 fi
+samtools index test_out.bam
+../bin/FASTQuick pop+con --DisableSanityCheck --BamFile test_out.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference test.fa &>test.e.log
+if [ $? -ne 0 ]
+then exit $?;
+else echo "Test on pop+con finished successfully.";
+fi
 ../bin/FASTQuick pop --SVDPrefix ../resource/hapmap_3.3.b37.dat --Pileup fake.Pileup.gz &>test.e.log
 if [ $? -ne 0 ]
 then exit $?;
