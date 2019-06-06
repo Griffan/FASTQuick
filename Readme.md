@@ -45,7 +45,12 @@ FASTQuick con --SVDPrefix resource/hapmap_3.3.b37.dat --Pileup NA12878.Pileup.gz
    
    make
    
-   (required libraries):<http://www.htslib.org/doc/tabix.html>
+   cd ../example
+
+   bash run.test.sh
+
+   Installation complete successfully if it says "All tests finished successfully."
+
 ### COMMANDS AND OPTIONS
 
 **index**
@@ -154,7 +159,12 @@ OPTIONS
 ### Generate Final Report
 
 ```
-Rscript ../bin/RPlotScript.R [FASTQuick align out_prefix]
+Rscript bin/RPlotScript.R [FASTQuick align out_prefix]
+```
+
+If you want to visualize genetic ancestry estimation:
+```
+perl bin/PCA.plot.pl [FASTQuick align out_prefix] [PC1] [PC2]
 ```
 
 ### EXAMPLES
