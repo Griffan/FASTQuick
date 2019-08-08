@@ -35,15 +35,26 @@ FASTQuick con --SVDPrefix resource/hapmap_3.3.b37.dat --Pileup NA12878.Pileup.gz
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
 ### DOWNLOAD AND INSTALL
-   git clone https://github.com/Griffan/FASTQuick.git
+  -git clone https://github.com/Griffan/FASTQuick.git
+  - mkdir build
+  - cd build
+  - cmake ..
 
-   mkdir build
+```
+In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
 
-   cd build
+For libhts:
+  - cmake -DHTS_INCLUDE_DIRS=/hts_absolute_path/include/  -DHTS_LIBRARIES=/hts_absolute_path/lib/libhts.a ..
 
-   cmake ..
+For bzip2:
+  - cmake -DBZIP2_INCLUDE_DIRS=/bzip2_absolute_path/include/ -DBZIP2_LIBRARIES=/bzip2_absolute_path/lib/libbz2.a ..
 
-   make
+For lzma:
+  - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
+```
+
+  - make
+  - make test
 
    cd ../example
 
