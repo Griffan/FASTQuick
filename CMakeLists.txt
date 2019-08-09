@@ -3,7 +3,7 @@ project(FASTQuick)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_CXX_STANDARD 11)
 
-find_path(HTS_INCLUDE_DIRS htslib/bgzf.h HINTS /usr/lib/x86_64-linux-gnu/ /usr/lib/ /usr/lib64/)
+find_path(HTS_INCLUDE_DIRS htslib/bgzf.h HINTS /usr/include/ /usr/local/include/)
 if(NOT HTS_INCLUDE_DIRS )
     message(FATAL_ERROR "libhts HTS_INCLUDE_DIRS not found")
 endif()
