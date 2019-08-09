@@ -527,7 +527,7 @@ void BwtIndexer::InitializeRollHashTable(int thresh = 3) {
     notice("Initializing Rolling Hash Table with size: %d bytes in %f sec\n", hash_table_size,
            (float) (clock() - t) / CLOCKS_PER_SEC);
 
-    assert(roll_hash_table != 0);
+    //assert(roll_hash_table != 0);
 }
 
 void BwtIndexer::ReadRollHashTable(const std::string &prefix) {

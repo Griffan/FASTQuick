@@ -140,6 +140,8 @@ size_t elementCount2BytesFunc(indexT),
 class arrayHeaderClass>
 class MemoryMapArray : public MemoryMap
 {
+private:
+    using MemoryMap::create;
 protected:
     arrayHeaderClass    *header;
     char                *data;
