@@ -179,7 +179,9 @@ You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
 #### Resource file preparation.
    FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. 
+   
    If you want to use your own abitrary variant sites, you can also refer to https://github.com/Griffan/VerifyBamID for resource files preparation.
+   
    or you can find generate_new_matrix.sh in $(FASTQUICK_HOME)/bin/ to update your own variant list and then you can update everything you need with the auxiliary tools in bin directory. 
    
    
