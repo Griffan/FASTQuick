@@ -62,8 +62,8 @@ int runIndex(int argc, char ** argv)
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Genetic variant list in VCF format, e.g. 1000g or dbSNP [Required if --predefinedVCF not specified]")
-		LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] Pre-defined(pre-selected) genetic variant list [Required if --siteVCF not specified]")
+		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] VCF file with candidate variant sites(e.g. 1000g or dbSNP) [Required if --predefinedVCF not specified]")
+		LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] VCF file with predefined variant sites [Required if --siteVCF not specified]")
                 LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")

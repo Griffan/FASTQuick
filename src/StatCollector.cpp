@@ -2265,7 +2265,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
 
   long total_base(0);
   long total_reads(0);
-  fout << "FILE 1|FILE 2|# Reads|Average Length" << endl;
+  fout << "FILE 1|FILE 2|# of Reads|Average Length" << endl;
   fout << "---|---|---|---" << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
     fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
