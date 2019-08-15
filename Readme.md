@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
+[![GitHub Downloads](https://img.shields.io/github/downloads/Griffan/FASTQuick/total.svg?style=flat)](https://github.com/Griffan/FASTQuick/releases)
 ### NAME
-   FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, population identification, contamination estimation and variety of QC analysis. 
+   FASTQuick, a Fastq file based **ultra-rapid** QC tool which incorporates the alignment, **population identification**, **contamination estimation** and variety of QC analysis. 
    
    
 ### Tutorial
@@ -26,11 +27,6 @@ FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref 
 FASTQuick align  --index_prefix reduced_ref_index --fq_list NA12878.fq.list --out_prefix NA12878 
 
 FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
-
-/*Below are deprecated but still available*/
-FASTQuick pop --SVDPrefix resource/hapmap_3.3.b37.dat --Pileup NA12878.Pileup.gz
-
-FASTQuick con --SVDPrefix resource/hapmap_3.3.b37.dat --Pileup NA12878.Pileup.gz —-Out test
 ```
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
@@ -73,16 +69,21 @@ Index database sequences, using known variant sites to anchor informative region
 ```
 OPTIONS
 --siteVCF        [String] Path of VCF file with candidate variant sites(if predefinedVCF not specified)
+--predefinedVCF  [String] Path of VCF file with predefined variant sites(if siteVCF not specified)
 --dbsnpVCF       [String] Path of VCF file with dbsnp site 
 --ref            [String] Path of fasta file with reference genome
 --mask           [String] Path of fasta file with repetitive region mask 
---predefinedVCF  [String] Path of VCF file with predefined marker set(if siteVCF not specified)
 --flank_len      [Int] Flanking region length of short-flanking-region variant
 --var_short      [Int] Number of short-flanking-region variant
 --flank_long_len [Int] Flanking region length of long-flanking-region variant
 --var_long       [Int] Number of long-flanking-region variant
 --out_prefix     [String] Prefix of all the output index files
 ```
+
+In principal, you can choose any common genetic variants database for --siteVC; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
+To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory.
+
+
 **align**
 
     FASTQuick align --index_prefix [reduced_ref_index] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --out_prefix [NA12878] --frac_samp [1.0] 
@@ -119,6 +120,7 @@ OPTIONS
 --cal_dup        [Bool] Calculate PCR duplicated reads in all the statistics.[False]
 --frac_samp      [Float] Overall reads downsampling rate.[1]
 ```
+This step utilize a optimized version of BWA to rapidly screen unmap reads without losing sensitivity to potential mismatches on reads.
 
 **pop+con**
 
@@ -142,42 +144,28 @@ OPTIONS
 --Verbose        [Bool] If print the progress of the method on the screen
 /*To construct SVDPrefix auxillary files*/
 --RefVCF         [String] Reference panel VCF with genotype information, for generation of .UD .mu .bed files[Optional]
-/*Below are deprecated but still available*/
---UDPath         [String] .UD matrix file from SVD result of genotype matrix[Required]
---MeanPath       [String] .mu matrix file of genotype matrix[Required]
---BedPath        [String] .Bed file for markers used in this analysis,format(chr\tpos-1\tpos\trefAllele\taltAllele)[Required]
-```    
-**pop**
+``` 
 
-    FASTQuick pop --SVDPrefix [resource/hapmap_3.3.b37.dat] --Pileup [NA12878.Pileup.gz]
-Identify individual’s population identity, ancestry information. The geometric distance in plot represents how close the relatedness is.
-```
-OPTIONS
---SVDPrefix      [String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required]
---GL             [String] Input genotype likelihood file generated from align step.[Required if no pileup file]
---Pileup         [String] Input pileup file generated from align[Required if no gl file]
-```
-**con**
+This step is a wrapper of our previous tool VerifyBAMID2.
 
-    FASTQuick con --SVDPrefix [resource/hapmap_3.3.b37.dat] --Pileup [NA12878.Pileup.gz]
-Estimate the probability that this sample is contaminated with other genomic material.
-```
-OPTIONS
---SVDPrefix      [String] Specify the prefix used by SVD matrices. If you are using FASTQuick default marker set, you may find them in resource directory.[Required if VCF file doesn't provide site allele frequency]
---VCF            [String] Specify VCF file that contains site allele frequency.[Required if SVD matrices don't exist]
---Pileup         [String] Specify pileup file for current individual, could be the one generated from align step.[Required]
---Out            [String] Specify the output prefix.[Required]
-```
 ### Generate Final Report
 
 ```
-Rscript bin/RPlotScript.R [FASTQuick align out_prefix]
+Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R [FASTQuick align out_prefix]
 ```
 
-If you want to visualize genetic ancestry estimation:
+## Generating PC plot
+
+After each run, you will get the contamination Alpha estimation, as well as ancestry PC coordinates for both intended sample and contaminating sample.
+
+You may want to visualize these information, in that case, the PC coordinates files(ending with .V) in ``$(FASTQUICK_HOME)/resource/`` might help you by
+providing background PC points of 1000 Genomes Project samples(e.g. 1000g.100k.b38.vcf.gz.dat.V) or of Human Genome Diversity Project samples(e.g. hgdp.100k.b38.vcf.gz.dat.V)
+
+We also provide script to generate PC plot with customized dataset as background points, for example:
 ```
-perl bin/PCA.plot.pl [FASTQuick align out_prefix] [PC1] [PC2]
+sh $(FASTQUICK_HOME)/bin/run.plot.sh -i ./resource/hapmap_3.3.b37.dat.V -o ./resource/hapmap.test -r 1000g -g grey
 ```
+You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
 
 ### EXAMPLES
    Some examples of common usage.
@@ -186,9 +174,15 @@ perl bin/PCA.plot.pl [FASTQuick align out_prefix] [PC1] [PC2]
    
    
 ### USEFUL TIPS
-   The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity or you infer the contamination level.
+
+#### Workflow
+   The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
+#### Resource file preparation.
+   FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. 
+   If you want to use your own abitrary variant sites, you can also refer to https://github.com/Griffan/VerifyBamID for resource files preparation.
+   or you can find generate_new_matrix.sh in $(FASTQUICK_HOME)/bin/ to update your own variant list and then you can update everything you need with the auxiliary tools in bin directory. 
    
-   FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. If you want to use your own abitrary variant sites, you may look into the bin directory to use generate_new_matrix.sh to update your own variants set and then you can update everything you need with the auxiliary tools in bin directory.
+   
 ### BUGS
    List known bugs.
 ### AUTHOR
