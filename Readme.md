@@ -22,7 +22,7 @@
 
 ### SYNOPSIS
 
-Below is a simple example to demonstrate its usage, the reference version and dbSNP version is not limited to hg19.
+Below is a simple example to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
 
 ```
 FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref hg19.fa --out_prefix reduced_ref_index
