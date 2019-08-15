@@ -62,12 +62,12 @@ int runIndex(int argc, char ** argv)
 	paramList pl;
 
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
-		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Genetic variant database VCF, e.g. 1000g or dbSNP(mutually exclusive with --predefinedVCF)")
-		LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] VCF file with pre-defined(pre-selected) variants (mutually exclusive with --siteVCF)")
+		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] Genetic variant list in VCF format, e.g. 1000g or dbSNP [Required if --predefinedVCF not specified]")
+		LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] Pre-defined(pre-selected) genetic variant list [Required if --siteVCF not specified]")
                 LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
-		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Leave empty if using Selected Sites VCF]")
+		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Required if --predefinedVCF not specified]")
 		LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters being used to extract reference sequences.[All Required]")
 		LONG_INT_PARAM("var_long", &opt->num_variant_long, "[Int] number of variants with long flanking region")
 		LONG_INT_PARAM("var_short", &opt->num_variant_short, "[Int] number of variants with short flanking region")
@@ -89,16 +89,16 @@ int runIndex(int argc, char ** argv)
 		error("--ref is required");
 		exit(EXIT_FAILURE);
 	}
-	if (VcfPath == "Empty")
-	{
-		error("--siteVCF is required");
-		exit(EXIT_FAILURE);
-	}
 	if (DBsnpPath == "Empty")
 	{
 		error("--dbsnpVCF is required");
 		exit(EXIT_FAILURE);
 	}
+        if (VcfPath == "Empty" and PreDefinedVcf == "Empty")
+        {
+                error("Either --siteVCF or --predefinedVCF is required");
+                exit(EXIT_FAILURE);
+        }
 
 	struct stat sb;
 	//
