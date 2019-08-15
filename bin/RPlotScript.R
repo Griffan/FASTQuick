@@ -121,7 +121,7 @@ pdf(file=paste(input,".pdf",sep=""))
 par(mfrow=c(2,2))
 
 mydata= read.table(paste(input,".DepthDist",sep=""),header=FALSE)
-mydata=mydata[1:100,]
+mydata=mydata[2:100,]
 colnames(mydata)=c("Depth","SiteCount")
 lmt=findBump(mydata,1,2,3)
 q1=ggplot(mydata,aes(x=Depth,y=SiteCount))+geom_line(color="#00BFC4")+

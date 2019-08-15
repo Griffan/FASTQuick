@@ -19,202 +19,215 @@ SOFTWARE.
  */
 /* Contact: Fan Zhang <fanzhang@umich.edu> */
 
-
-#include "Utility.h"
-#include "cmath"
-#include "fstream"
+#include "../libbwa/bntseq.h"
+#include "../libbwa/bwtaln.h"
+#include "../misc/bam/BamInterface.h"
+#include "../misc/bam/SamFile.h"
+#include "../misc/bam/SamRecord.h"
+#include "../misc/bam/SamValidation.h"
 #include "../misc/vcf/VcfFileReader.h"
 #include "../misc/vcf/VcfHeader.h"
 #include "../misc/vcf/VcfRecord.h"
-#include "../misc/bam/SamRecord.h"
-#include "../misc/bam/BamInterface.h"
-#include "../misc/bam/SamFile.h"
-#include "../misc/bam/SamValidation.h"
-#include "../libbwa/bwtaln.h"
-#include "../libbwa/bntseq.h"
+#include "Utility.h"
+#include "cmath"
+#include "fstream"
 
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 
+// typedef std::string Seq;
+// typedef std::string Qual;
 
-//typedef std::string Seq;
-//typedef std::string Qual;
-
-typedef std::unordered_map<std::string, std::unordered_map< int, unsigned int  > > unsort_map;
-typedef std::map<std::string, std::map< int, unsigned int  > > sort_map;
-typedef std::unordered_map<std::string, std::unordered_map< int, bool> > bool_table;
-//typedef vector<VcfRecord> VcfRecVec;
-class FileStatCollector
-{
+typedef std::unordered_map<std::string, std::unordered_map<int, unsigned int>>
+    unsort_map;
+typedef std::map<std::string, std::map<int, unsigned int>> sort_map;
+typedef std::unordered_map<std::string, std::unordered_map<int, bool>>
+    bool_table;
+// typedef vector<VcfRecord> VcfRecVec;
+class FileStatCollector {
 public:
-	long long  NumRead;
-	long long  NumBase;
-	std::string FileName1,FileName2;
-	FileStatCollector():NumRead(0),NumBase(0),FileName1(0),FileName2(0)
-	{}
-	FileStatCollector(const char* filename):NumRead(0),NumBase(0),FileName1(filename),FileName2("")
-	{
-	}
-	FileStatCollector(const char* filename1, const char* filename2):NumRead(0),NumBase(0),FileName1(filename1),FileName2(filename2)
-	{
-	}
+  long long NumRead;
+  long long NumBase;
+  std::string FileName1, FileName2;
+  FileStatCollector() : NumRead(0), NumBase(0), FileName1(0), FileName2(0) {}
+  FileStatCollector(const char *filename)
+      : NumRead(0), NumBase(0), FileName1(filename), FileName2("") {}
+  FileStatCollector(const char *filename1, const char *filename2)
+      : NumRead(0), NumBase(0), FileName1(filename1), FileName2(filename2) {}
 };
-class StatCollector
-{
+class StatCollector {
 private:
+  /*Expected Info*/
+  uint64_t total_base;
+  uint64_t total_region_size;
+  uint64_t ref_genome_size;
 
-	/*Expected Info*/
-	uint64_t total_base;
-	uint64_t total_region_size;
-	uint64_t ref_genome_size;
+  /*Actual Statistics*/
+  uint64_t NumXorYMarker;
+  uint64_t NumShortMarker;
+  uint64_t NumLongMarker;
+  uint64_t NumPCRDup;
+  uint64_t NumBaseMapped;
+  uint64_t NumPositionCovered; // position with depth larger than 0
+  // uint64_t NumPositionCovered1;
+  uint64_t NumPositionCovered2;  // larger than 1
+  uint64_t NumPositionCovered5;  // larger than 4
+  uint64_t NumPositionCovered10; // larger than 9
+  unsort_map PositionTable;      // chrom pos absolute index of the site
+  unsigned int index;
+  // nsigned int vcf_index;
+  std::vector<uint32_t> DepthVec; // depth at each site
+  std::vector<uint32_t> Q20DepthVec;
+  std::vector<uint32_t> Q30DepthVec;
+  /****for SNP site******/
+  std::vector<std::string> SeqVec, QualVec;
+  std::vector<std::vector<int>> CycleVec;
+  std::vector<std::vector<unsigned char>> MaqVec;
+  std::vector<std::vector<bool>> StrandVec;
+  /************************/
+  std::vector<VcfRecord *> VcfRecVec;
+  sort_map VcfTable; // (chr,pos) -> index
 
-	/*Actual Statistics*/
-	uint64_t NumPCRDup;
-	uint64_t NumBaseMapped;
-	uint64_t NumPositionCovered;//position with depth larger than 0
-	//uint64_t NumPositionCovered1;
-	uint64_t NumPositionCovered2;//larger than 1
-	uint64_t NumPositionCovered5;//larger than 4
-	uint64_t NumPositionCovered10;// larger than 9
-	unsort_map PositionTable;//chrom pos absolute index of the site
-	unsigned int index;
-	//nsigned int vcf_index;
-	std::vector<uint32_t> DepthVec;//depth at each site
-	std::vector<uint32_t> Q20DepthVec;
-	std::vector<uint32_t> Q30DepthVec;
-	/****for SNP site******/
-	std::vector<std::string> SeqVec,QualVec;
-	std::vector<std::vector<int> > CycleVec;
-	std::vector<std::vector<unsigned char> > MaqVec;
-	std::vector<std::vector<bool> >StrandVec;
-	/************************/
-	std::vector<VcfRecord*> VcfRecVec;
-	sort_map VcfTable;// (chr,pos) -> index
+  unsort_map dbSNPTable;
+  // string_map VcfObTable;//actually covered by reads
+  std::vector<size_t> QualDist;  // 40*40
+  std::vector<size_t> CycleDist; // 100*40
 
-	unsort_map dbSNPTable;
-	//string_map VcfObTable;//actually covered by reads
-	std::vector<size_t> QualDist;//40*40
-	std::vector<size_t> CycleDist;//100*40
+  std::vector<size_t> DepthDist;
+  std::vector<size_t> EmpRepDist;
+  std::vector<size_t> misEmpRepDist;
+  std::vector<size_t> EmpCycleDist;
+  std::vector<size_t> misEmpCycleDist;
+  std::vector<size_t> GCDist;
+  std::vector<size_t> PosNum;
+  std::vector<size_t> InsertSizeDist;
+  //	std::vector<size_t> MaxInsertSizeDist;
+  unsort_map GC;
 
+  bool_table VariantProxyTable;
 
-	std::vector<size_t> DepthDist;
-	std::vector<size_t> EmpRepDist;
-	std::vector<size_t> misEmpRepDist;
-	std::vector<size_t> EmpCycleDist;
-	std::vector<size_t> misEmpCycleDist;
-	std::vector<size_t> GCDist;
-	std::vector<size_t> PosNum;
-	std::vector<size_t> InsertSizeDist;
-//	std::vector<size_t> MaxInsertSizeDist;
-	unsort_map GC;
+  std::unordered_map<std::string, bool> duplicateTable;
 
-	bool_table VariantProxyTable;
+  std::unordered_map<std::string, ContigStatus> contigStatusTable;
 
-	std::unordered_map<std::string,bool> duplicateTable;
-
-	std::unordered_map<std::string,ContigStatus> contigStatusTable;
-
-	std::vector<FileStatCollector> FSCVec;
+  std::vector<FileStatCollector> FSCVec;
 
 private:
-	bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p, const gap_opt_t *opt);
+  bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
+                          const gap_opt_t *opt);
 
-	bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
+  bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
 
-	void StatVecDistUpdate(const std::string &qual, const std::string &refSeq, const std::string &seq,
-                               int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef);
+  void StatVecDistUpdate(const std::string &qual, const std::string &refSeq,
+                         const std::string &seq, int tmpCycle,
+                         int relativeCoordOnRead, int relativeCoordOnRef);
 
-	void AddBaseInfoToNewCoord(const std::string &chrom, int i, const std::string &qual,
-                                   const std::string &refSeq, const std::string &seq, int tmpCycle,
-                                   int relativeCoordOnRead, int relativeCoordOnRef);
+  void AddBaseInfoToNewCoord(const std::string &chrom, int i,
+                             const std::string &qual, const std::string &refSeq,
+                             const std::string &seq, int tmpCycle,
+                             int relativeCoordOnRead, int relativeCoordOnRef);
 
-	void UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl, const char *sign, bool strand,
-                               const std::string &chrom, const std::string &seq, const std::string &qual,
-                               u_char mapQ, int relativeCoordOnRead);
+  void UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl,
+                             const char *sign, bool strand,
+                             const std::string &chrom, const std::string &seq,
+                             const std::string &qual, u_char mapQ,
+                             int relativeCoordOnRead);
 
 public:
-	StatCollector();
-	StatCollector(const std::string & OutFile);
+  StatCollector();
+  StatCollector(const std::string &OutFile);
 
-	int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q, const gap_opt_t *opt, std::ofstream &fout,
-                     long &total_add_failed);
-	int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,const gap_opt_t* opt, int type, std::ofstream & fout);
-//overload functions for direct bam reading
-	int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q, const gap_opt_t *opt, std::ofstream &fout,
-					 long &total_add);
-	int IsDuplicated(  SamFileHeader& SFH, SamRecord& p, SamRecord& q, const gap_opt_t* opt, int type, std::ofstream & fout);
+  int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
+                   const gap_opt_t *opt, std::ofstream &fout,
+                   long &total_add_failed);
+  int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
+                   const gap_opt_t *opt, int type, std::ofstream &fout);
+  // overload functions for direct bam reading
+  int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
+                   const gap_opt_t *opt, std::ofstream &fout, long &total_add);
+  int IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
+                   const gap_opt_t *opt, int type, std::ofstream &fout);
 
-	int ReadAlignmentFromBam( const gap_opt_t* opt, /*SamFileHeader& SFH, SamFile& BamIO, */const char * BamFile, std::ofstream & fout,int & total_add);
+  int ReadAlignmentFromBam(
+      const gap_opt_t *opt,
+      /*SamFileHeader& SFH, SamFile& BamIO, */ const char *BamFile,
+      std::ofstream &fout, int &total_add);
 
-	int RestoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
-	int ReleaseVcfSites();
-	int GetDepthDist(const std::string &outputPath, const gap_opt_t *opt);
-	int GetGCDist(const std::string &outputPath);
-	int GetEmpRepDist(const std::string &outputPath);
-	int GetEmpCycleDist(const std::string &outputPath);
-	int GetInsertSizeDist(const std::string &outputPath);
-	int GetSexChromInfo(const std::string &outputPath);
-	int GetPileup(const std::string &statPrefix, const gap_opt_t *opt);
+  int RestoreVcfSites(const std::string &RefPath, const gap_opt_t *opt);
+  int ReleaseVcfSites();
+  int GetDepthDist(const std::string &outputPath, const gap_opt_t *opt);
+  int GetGCDist(const std::string &outputPath);
+  int GetEmpRepDist(const std::string &outputPath);
+  int GetEmpCycleDist(const std::string &outputPath);
+  int GetInsertSizeDist(const std::string &outputPath);
+  int GetSexChromInfo(const std::string &outputPath);
+  int GetPileup(const std::string &statPrefix, const gap_opt_t *opt);
 
-	int ProcessCore(const std::string &statPrefix, const gap_opt_t *opt);
-	int GetGenoLikelihood(const std::string &statPrefix);
-	inline int IsPartialAlign(const bwa_seq_t *q)
-	{
-		for (int k = 0; k < q->n_cigar; ++k)
-			{
+  int ProcessCore(const std::string &statPrefix, const gap_opt_t *opt);
+  int GetGenoLikelihood(const std::string &statPrefix);
+  inline int IsPartialAlign(const bwa_seq_t *q) {
+    for (int k = 0; k < q->n_cigar; ++k) {
 
-				//int cl = __cigar_len(q->cigar[k]);
-				int cop = "MIDS"[__cigar_op(q->cigar[k])];
-				switch (cop)
-				{
-				case 'S':
-					return 1;
-				case 'H':
-					return 1;
-				default:
-					break;
-				}
-			}
-		return 0;
-	}
-	inline int IsPartialAlign(SamRecord &q)
-	{
-		if(std::string(q.getCigar()).find('S')!= std::string::npos)
-			return 1;
-		else
-			return 0;
-	}
+      // int cl = __cigar_len(q->cigar[k]);
+      int cop = "MIDS"[__cigar_op(q->cigar[k])];
+      switch (cop) {
+      case 'S':
+        return 1;
+      case 'H':
+        return 1;
+      default:
+        break;
+      }
+    }
+    return 0;
+  }
+  inline int IsPartialAlign(SamRecord &q) {
+    if (std::string(q.getCigar()).find('S') != std::string::npos)
+      return 1;
+    else
+      return 0;
+  }
 
-	std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const std::string &cigarString);
-    std::string RecoverRefseqByMDandCigar(const std::string &readSeq, std::string MD, const bwa_cigar_t * cigar, int n_cigar);
+  std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
+                                        std::string MD,
+                                        const std::string &cigarString);
+  std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
+                                        std::string MD,
+                                        const bwa_cigar_t *cigar, int n_cigar);
 
-	int AddFSC(FileStatCollector a);
-	int SetGenomeSize(long total_size);
-	int SummaryOutput(const std::string & outputPath);
+  int AddFSC(FileStatCollector a);
+  int SetGenomeSize(long total_size);
+  int SummaryOutput(const std::string &outputPath);
 
-	double Q20AvgDepth();
-	double Q30AvgDepth();
-	size_t MIS500();
-	size_t MIS300();
-	double Q20BaseFraction();
-	double Q30BaseFraction();
-	virtual ~StatCollector();
+  double Q20AvgDepth();
+  double Q30AvgDepth();
+  size_t MIS500();
+  size_t MIS300();
+  double Q20BaseFraction();
+  double Q30BaseFraction();
+  virtual ~StatCollector();
 
-	int AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
-                         const std::string &refSeq, const std::string &chr, int readRealStart,
-                         int refRealStart, int refRealEnd, const char *sign, bool strand, u_char mapQ,
-                         int matchLen, int tmpCycle, int relativeCoordOnRead, int relativeCoordOnRef);
+  int AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq,
+                       const std::string &qual, const std::string &refSeq,
+                       const std::string &chr, int readRealStart,
+                       int refRealStart, int refRealEnd, const char *sign,
+                       bool strand, u_char mapQ, int matchLen, int tmpCycle,
+                       int relativeCoordOnRead, int relativeCoordOnRef);
 
-	int UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const std::string &seq, const std::string &qual,
-                                   const std::string &refSeq, const std::string &chr, int readRealStart,
-                                   int refRealStart, int refRealEnd, const char *sign, bool strand,
-                                   int matchLen, int tmpCycle, int relativeCoordOnRead,
-                                   int relativeCoordOnRef);
+  int UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const std::string &seq,
+                                 const std::string &qual,
+                                 const std::string &refSeq,
+                                 const std::string &chr, int readRealStart,
+                                 int refRealStart, int refRealEnd,
+                                 const char *sign, bool strand, int matchLen,
+                                 int tmpCycle, int relativeCoordOnRead,
+                                 int relativeCoordOnRef);
+
 private:
-//    std::vector<std::string> DebugSeqVec,DebugQualVec;
-//    std::vector<std::vector<int> > DebugCycleVec;
-//    std::vector<std::vector<unsigned char> > DebugMaqVec;
-//    std::vector<std::vector<bool> >DebugStrandVec;
+  //    std::vector<std::string> DebugSeqVec,DebugQualVec;
+  //    std::vector<std::vector<int> > DebugCycleVec;
+  //    std::vector<std::vector<unsigned char> > DebugMaqVec;
+  //    std::vector<std::vector<bool> >DebugStrandVec;
 };
 
 #endif /* STATCOLLECTOR_H_ */
