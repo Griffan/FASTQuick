@@ -533,10 +533,10 @@ void bwa_print_sam1(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate, in
 			// print tags
 			printf("\tXT:A:%c\t%s:i:%d", XT, (mode & BWA_MODE_COMPREAD) ? "NM" : "CM", p->nm);
 			if (nn) printf("\tXN:i:%d", nn);
-			if (mate) printf("\tSM:i:%llu\tAM:i:%d", p->seQ, am);
+			if (mate) printf("\tSM:i:%lu\tAM:i:%d", p->seQ, am);
 			if (p->type != BWA_TYPE_MATESW) { // X0 and X1 are not available for this type of alignment
-				printf("\tX0:i:%llu", p->c1);
-				if (p->c1 <= max_top2) printf("\tX1:i:%llu", p->c2);
+				printf("\tX0:i:%lu", p->c1);
+				if (p->c1 <= max_top2) printf("\tX1:i:%lu", p->c2);
 			}
 			printf("\tXM:i:%d\tXO:i:%d\tXG:i:%d", p->n_mm, p->n_gapo, p->n_gapo + p->n_gape);
 			if (p->md) printf("\tMD:Z:%s", p->md);
