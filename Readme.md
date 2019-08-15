@@ -21,6 +21,9 @@
 - [COPYRIGHT](#copyright)
 
 ### SYNOPSIS
+
+Below is a simple example to demonstrate its usage, the reference version and dbSNP version is not limited to hg19.
+
 ```
 FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref hg19.fa --out_prefix reduced_ref_index
 
@@ -29,7 +32,7 @@ FASTQuick align  --index_prefix reduced_ref_index --fq_list NA12878.fq.list --ou
 FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
 ```
 ### DESCRIPTION
-   FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics.
+   FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your dataset. 
 ### DOWNLOAD AND INSTALL
    git clone https://github.com/Griffan/FASTQuick.git
    
@@ -80,7 +83,8 @@ OPTIONS
 --out_prefix     [String] Prefix of all the output index files
 ```
 
-In principal, you can choose any common genetic variants database for --siteVC; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
+In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
+
 To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory.
 
 
