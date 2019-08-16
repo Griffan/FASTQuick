@@ -85,7 +85,7 @@ OPTIONS
 
 In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
 
-To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory.
+To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory(site-only vcf files).
 
 
 **align**
