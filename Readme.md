@@ -150,7 +150,7 @@ OPTIONS
 --RefVCF         [String] Reference panel VCF with genotype information, for generation of .UD .mu .bed files[Optional]
 ``` 
 
-This step is a wrapper of our previous tool VerifyBAMID2.
+This step is a wrapper of our previous tool VerifyBAMID2[https://github.com/Griffan/VerifyBamID].
 
 ### Generate Final Report
 
