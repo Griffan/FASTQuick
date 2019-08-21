@@ -87,12 +87,15 @@ In principal, you can choose any common genetic variants database for --siteVCF;
 
 To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory(site-only vcf files).
 
+A example for repeat_mask.fasta: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/StrictMask/20140520.allAutosome.strict_mask.fasta.gz
+
 
 **align**
 
     FASTQuick align --index_prefix [reduced_ref_index] --fq_list [sample’s fastq list file] [--bam_out] [--cal_dup] [--I] --t [2]  --out_prefix [NA12878] --frac_samp [1.0] 
 
 Align short reads 70~300 bp to selected reference region to generate comprehensive quality control related statistics in very short time.
+
 ```    
 OPTIONS 
 --fq_list        [String] Path of fastq file list, format: [path of pair-end 1]\t[path of pair-end 2(optional)]
@@ -126,6 +129,9 @@ OPTIONS
 ```
 This step utilize a optimized version of BWA to rapidly screen unmap reads without losing sensitivity to potential mismatches on reads.
 
+Each line of fq_list contains full path of each fastq file. Pair-end fastq files are in the same line and delimated by tab; single-end fastq file occpies whole line.
+
+
 **pop+con**
 
     FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
@@ -154,27 +160,39 @@ This step is a wrapper of our previous tool VerifyBAMID2[https://github.com/Grif
 
 ### Generate Final Report
 
+Usage:
 ```
-Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R [FASTQuick align out_prefix]
+Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R <FASTQuick align out_prefix>  <SVDPrefix> <FASTQuickInstallDir>
 ```
 
-## Generating PC plot
+Example:
+```
+Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R regular_size_predefine_b37_10k_NWD315195 1000g.phase3.10k.b37.vcf.gz.dat ~/Downloads/FASTQuick/resource/
+```
 
-After each run, you will get the contamination Alpha estimation, as well as ancestry PC coordinates for both intended sample and contaminating sample.
+## More Details on Generating PC plot
 
-You may want to visualize these information, in that case, the PC coordinates files(ending with .V) in ``$(FASTQUICK_HOME)/resource/`` might help you by
-providing background PC points of 1000 Genomes Project samples(e.g. 1000g.100k.b38.vcf.gz.dat.V) or of Human Genome Diversity Project samples(e.g. hgdp.100k.b38.vcf.gz.dat.V)
+The final report generated above will include the PC plot to indicate sample ancestry.
 
-We also provide script to generate PC plot with customized dataset as background points, for example:
+If you want to visualize customized background population information, the PC coordinates files(ending with .V) in ``$(FASTQUICK_HOME)/resource/`` might help you which
+provides background PC points of 1000 Genomes Project samples(e.g. 1000g.100k.b38.vcf.gz.dat.V) or of Human Genome Diversity Project samples(e.g. hgdp.100k.b38.vcf.gz.dat.V)
+
+You can use this script to generate PC plot with customized dataset as background points, for example:
 ```
 sh $(FASTQUICK_HOME)/bin/run.plot.sh -i ./resource/hapmap_3.3.b37.dat.V -o ./resource/hapmap.test -r 1000g -g grey
 ```
 You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
 
 ### EXAMPLES
-   Some examples of common usage.
-   See wiki page tutorial.
-   [https://github.com/Griffan/FASTQuick/wiki]
+
+You can find various example scripts in example directory as templates for your own usage.
+
+For example:
+ * the script **example.sh** is the template for one-stop analysis.
+ * the script **example.index.sh** is the template for selection new marker set and indexing reference data structures.
+ * the script **example.align.sh** is the template for primary analysis.
+ * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
+ * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
    
    
 ### USEFUL TIPS

@@ -2346,9 +2346,9 @@ int StatCollector::SummaryOutput(const string &outputPath) {
       return 0;
   };*/
   fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
-  fout << "Number of Long Region Variant : " << NumLongMarker << endl;
-  fout << "Number of Short Region Variant : " << NumShortMarker << endl;
-  fout << "Number of XorY Variant : " << NumXorYMarker << endl;
+//  fout << "Number of Long Region Variant : " << NumLongMarker << endl;
+//  fout << "Number of Short Region Variant : " << NumShortMarker << endl;
+//  fout << "Number of XorY Variant : " << NumXorYMarker << endl;
 
   return 0;
 }
