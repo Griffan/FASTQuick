@@ -1,4 +1,6 @@
-library(ggplot2) 
+##################################################
+#####
+library(ggplot2)
 #multiplot function
 # Multiple plot function
 #
@@ -12,12 +14,12 @@ library(ggplot2)
 #
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
-  
+
   # Make a list from the ... arguments and plotlist
   plots <- c(list(...), plotlist)
-  
+
   numPlots = length(plots)
-  
+
   # If layout is NULL, then use 'cols' to determine layout
   if (is.null(layout)) {
     # Make the panel
@@ -26,20 +28,20 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
                      ncol = cols, nrow = ceiling(numPlots/cols))
   }
-  
+
   if (numPlots==1) {
     print(plots[[1]])
-    
+
   } else {
     # Set up the page
     grid.newpage()
     pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-    
+
     # Make each plot, in the correct location
     for (i in 1:numPlots) {
       # Get the i,j matrix positions of the regions that contain this subplot
       matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-      
+
       print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
                                       layout.pos.col = matchidx$col))
     }
@@ -57,36 +59,36 @@ findBump<-function(m,x,y,z)
     {
      break
     }
-  
+
     if(m[i,2]>prev)
     {
       cnt=cnt+1
     }
-    
+
     prev=m[i,2]
     min=i
   }
- 
-  
+
+
   cnt=0
   prev=DCMax
   print(dim(m))
   for(i in pivot:length(m[,1]))
   {
     if(cnt==z)
-    { 
+    {
       break
     }
-    
+
     if(m[i,2]>prev)
      {
       cnt=cnt+1
     }
-      
+
       prev=m[i,2]
       max=i
   }
-  
+
   return(list(MAX=max,MIN=min))
 }
 create.DenDist=function(InsertTable,positionCol,countCol){
@@ -109,11 +111,16 @@ create.DenDist=function(InsertTable,positionCol,countCol){
   return(NewT)
 }
 
+##################################################
+#usage:
+#Rscript RPlotScript.R <output_prefix> <SVDPrefix> <FASTQuickInstallDir>
 
-
+print("Usage:Rscript RPlotScript.R <output_prefix> <SVDPrefix> <FASTQuickInstallDir>")
 
 args=commandArgs(trailingOnly = TRUE)
 input=args[1]
+SVDPrefix=args[2]
+FASTQuickInstallDir=args[3]
 #input="output"
 print(args)
 
@@ -183,18 +190,19 @@ q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_lin
 
 
 mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
-ExpectedDepth=as.numeric(strsplit(mydata[length(mydata)-13]," ")[[1]][5])
-EstimatedDepth=as.numeric(strsplit(mydata[length(mydata)-12]," ")[[1]][4])
-AccessibleFraction=as.numeric(strsplit(strsplit(mydata[length(mydata)-11]," ")[[1]][8],"%")[[1]][1])
-EstimatedQ20Depth=as.numeric(strsplit(mydata[length(mydata)-3],"\\s+|:")[[1]][8])
-EstimatedQ30Depth=as.numeric(strsplit(mydata[length(mydata)-2],"\\s+|:")[[1]][8])
+fileLen=length(mydata)-1#minus contamination line
+ExpectedDepth=as.numeric(strsplit(mydata[fileLen-13]," ")[[1]][5])
+EstimatedDepth=as.numeric(strsplit(mydata[fileLen-12]," ")[[1]][4])
+AccessibleFraction=as.numeric(strsplit(strsplit(mydata[fileLen-11]," ")[[1]][8],"%")[[1]][1])
+EstimatedQ20Depth=as.numeric(strsplit(mydata[fileLen-3],"\\s+|:")[[1]][8])
+EstimatedQ30Depth=as.numeric(strsplit(mydata[fileLen-2],"\\s+|:")[[1]][8])
 
-Q20BaseFraction=as.numeric(strsplit(mydata[length(mydata)-6],":")[[1]][2])
-Q30BaseFraction=as.numeric(strsplit(mydata[length(mydata)-5],":")[[1]][2])
-Depth1=as.numeric(strsplit(mydata[length(mydata)-9],":")[[1]][2])
-Depth2=as.numeric(strsplit(mydata[length(mydata)-8],":")[[1]][2])
-Depth5=as.numeric(strsplit(mydata[length(mydata)-7],":")[[1]][2])
-Depth10=as.numeric(strsplit(mydata[length(mydata)-6],":")[[1]][2])
+Q20BaseFraction=as.numeric(strsplit(mydata[fileLen-6],":")[[1]][2])
+Q30BaseFraction=as.numeric(strsplit(mydata[fileLen-5],":")[[1]][2])
+Depth1=as.numeric(strsplit(mydata[fileLen-9],":")[[1]][2])
+Depth2=as.numeric(strsplit(mydata[fileLen-8],":")[[1]][2])
+Depth5=as.numeric(strsplit(mydata[fileLen-7],":")[[1]][2])
+Depth10=as.numeric(strsplit(mydata[fileLen-6],":")[[1]][2])
 
 plotdata=c(EstimatedQ30Depth,EstimatedQ20Depth,EstimatedDepth,ExpectedDepth)
 print(plotdata)
@@ -214,7 +222,53 @@ q8=ggplot(mydata2,aes(x=mydata2[,1],y=mydata2[,2]))+ggtitle("Summary")+
   geom_bar(stat="identity",fill="#00BFC4",alpha=0.5)+ylab('Fraction')+ 
   theme(axis.text.x = element_text(angle = 310, hjust = 0.3),axis.title.x=element_blank(),plot.title = element_text(hjust = 0.5))
 
+#ancestry
+
+
+library(ggplot2)
+library(scales)
+alphaScale=scale_alpha_discrete(range = c(0.9,0.3),guide=FALSE)
+sizeScale=scale_size(range=c(1.5,1),guide=FALSE)
+cat("Background data points:1000g phase3\n")
+
+
+#set 1000g color scale
+colScale = scale_color_manual(values=c('ESN'='#FFCD00','GWD'='#FFB900','LWK'='#CC9933','MSL'='#E1B919','YRI'='#FFB933','ACB'='#FF9900','ASW'='#FF6600',
+                                       'CLM'='#CC3333','MXL'='#E10033','PEL'='#FF0000','PUR'='#CC3300','CDX'='#339900','CHB'='#ADCD00','CHS'='#00FF00',
+                                       'JPT'='#008B00','KHV'='#00CC33','CEU'='#0000FF','FIN'='#00C5CD','GBR'='#00EBFF','IBS'='#6495ED','TSI'='#00008B',
+                                       'BEB'='#8B008B','GIH'='#9400D3','ITU'='#B03060','PJL'='#E11289','STU'='#FF00FF','AFR'='#FFCD33','AFR/AMR'='#FF9900',
+                                       'AMR'='#FF3D3D','EAS'='#ADFF33','EUR'='#64EBFF','SAS'='#FF30FF','UserSample'='#000000'),
+                              breaks=c('ESN','GWD','LWK','MSL','YRI','ACB','ASW','CLM','MXL','PEL','PUR','CDX','CHB','CHS','JPT','KHV','CEU','FIN','GBR',
+                                       'IBS','TSI','BEB','GIH','ITU','PJL','STU','AFR','AFR/AMR','AMR','EAS','EUR','SAS','UserSample'))
+#set 1000g coordinates
+POP=read.table(paste0(FASTQuickInstallDir,"/1000g.pop"),header = F)
+RefCoord.1kg=read.table(paste0(FASTQuickInstallDir,"/",SVDPrefix,".V"),header = F)
+RefCoord.1kg=RefCoord.1kg[,1:3]
+RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
+colnames(RefCoord.1kg)=c("ID","PC1","PC2","POP")
+RefCoord=RefCoord.1kg
+
+
+#assuming the input target sample has format ID PC1 PC2
+TargetSample=read.table(file=paste0(input,".Ancestry"),header=T)
+TargetSample=data.frame(ID=c("IntendedSample"),PC1=c(TargetSample[1,3]), PC2=c(TargetSample[2,3]), POP=c("UserSample"))
+colnames(TargetSample)=c("ID","PC1","PC2","POP")
+#plot RefCoord as grey
+CombinedData=TargetSample
+q9=ggplot(data=RefCoord,aes(PC1,PC2))+geom_point(color="grey")+geom_point(data=CombinedData,aes(PC1,PC2,color=POP))+
+  colScale+alphaScale+sizeScale
+#prepare dataset for plot
+CombinedData=rbind(RefCoord,TargetSample)
+#plot RefCoord as colorful
+q10=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
+colScale+alphaScale+sizeScale
+
+#output file
 multiplot(q1,q2,q3,q4, cols=2)
 multiplot(q5,q7,q6,q8,cols=2)
+multiplot(q9,cols=1)
+multiplot(q10,cols=1)
 dev.off()
+
+
 

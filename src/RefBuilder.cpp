@@ -64,7 +64,7 @@ bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
 	}
     }
     else {
-	    warning("%s:%d does not have AF field");
+	    warning("%s:%d does not have AF field", chr.c_str(), position);
 	    return true;
     }
 
@@ -119,7 +119,11 @@ bool RefBuilder::Skip(VcfRecord* VcfLine, int chrFlag) {
         double AF = std::stod(*AFstr, &sz);
         if (AF < 0.05 or AF > 0.95) return true;
     }
-    else return true;
+    else
+    {
+      warning("%s:%d has no AF tag in INFO field",chr.c_str(), position);
+      return true;
+    }
 
     if(chrFlag == 1)
         flank_len = flank_long_len;
@@ -386,7 +390,9 @@ RefBuilder::RefBuilder() {
 //    }
 //}
 
-bool RefBuilder::IsMaxNumMarker(const std::string& Chrom, int& chrFlag)//use this function after checking whiteList
+bool RefBuilder::IsMaxNumMarker(
+    const std::string &Chrom, int &chrFlag,
+    bool isLong) // use this function after checking whiteList
 {
     if (Chrom == "X") {/*0:short;1:long;2:Y;3:X*/;
         if (nXMarker >= maxXorYmarker)
@@ -397,14 +403,16 @@ bool RefBuilder::IsMaxNumMarker(const std::string& Chrom, int& chrFlag)//use thi
             return true;
         chrFlag = 2;
     }else { //must be from chr1-chr22
-        if(nLongMarker < num_variant_long)
+        if(isLong) chrFlag = 1;
+        else if (nShortMarker < num_variant_short)//must be from chr1-chr22
+        {
+          chrFlag = 0;
+        }
+        else if(nLongMarker < num_variant_long)
         {
             chrFlag = 1;
         }
-        else if (nShortMarker < num_variant_short)//must be from chr1-chr22
-        {
-            chrFlag = 0;
-        } else
+        else
             return true;
     }
     return false;
@@ -452,7 +460,7 @@ int RefBuilder::SelectMarker()
         VcfRecord *VcfLine = new VcfRecord;
         reader.readRecord(*VcfLine);
 
-	if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag))
+	if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag, false))
 	    continue;
 
         if(Skip(VcfLine,chrFlag))
@@ -471,7 +479,7 @@ int RefBuilder::SelectMarker()
         IncreaseNumMarker(chrFlag);
     }
 
-    if(nShortMarker+nLongMarker+nXMarker < maxXorYmarker + num_variant_long + num_variant_short)//not enough essential markers
+    if(nShortMarker+nLongMarker<num_variant_long + num_variant_short)//not enough essential markers
     {
         warning("there are insufficient candidate markers in %s",VcfPath.c_str());
     }
@@ -537,8 +545,8 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         int chrFlag(-1)/*0:short;1:long;2:Y;3:X*/;
         VcfRecord* VcfLine= new VcfRecord;
         reader.readRecord(*VcfLine);
-
-        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag)) continue;
+        bool isLong = (std::string(VcfLine->getIDStr()).back()=='L');
+        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag, isLong)) continue;
 
 	if(VariantCheck(VcfLine, chrFlag))
 	{
@@ -549,7 +557,7 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         Position = VcfLine->get1BasedPosition();
         Chrom = VcfLine->getChromStr();
 
-        if(chrFlag==1)
+        if(chrFlag==1 and not isLong)
             VcfLine->setID((std::string(VcfLine->getIDStr())+"|L").c_str());
 
 
@@ -559,11 +567,11 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         IncreaseNumMarker(chrFlag);
     }
 
-    if(nShortMarker+nLongMarker+nXMarker< maxXorYmarker + num_variant_long + num_variant_short)
+    if(nShortMarker+nLongMarker< num_variant_long + num_variant_short)
     {
-        warning("there are insufficient candidate markers in %s",predefinedVcf.c_str());
+        warning("Insufficient candidate markers %d/%d in %s.",nShortMarker+nLongMarker, num_variant_long + num_variant_short,predefinedVcf.c_str());
 
-    }
+    } else notice("%s contains sufficient markers, consider filtered any markers that triggered warning above.",predefinedVcf.c_str());
     //output vcf and bed files
     int flank_len=0;
     for(auto kv:VcfTable)

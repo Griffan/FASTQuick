@@ -60,7 +60,8 @@ public:
 
     bool IsChromInWhiteList(std::string &Chrom);
 
-    bool IsMaxNumMarker(const std::string& Chrom, int& chrFlag);//check if reach max number of marker, and also set marker type
+    bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
+                        bool isLong = false);//check if reach max number of marker, and also set marker type
 
     void IncreaseNumMarker(int chrFlag);
 
