@@ -62,6 +62,18 @@ For lzma:
 
    Installation complete successfully if it says "All tests finished successfully."
 
+### EXAMPLES
+
+You can find various example scripts in example directory as templates for your own usage.
+
+For example:
+ * the script **example.sh** is the template for one-stop analysis.
+ * the script **example.index.sh** is the template for selection new marker set and indexing reference data structures.
+ * the script **example.align.sh** is the template for primary analysis.
+ * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
+ * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
+   
+
 ### COMMANDS AND OPTIONS
 
 **index**
@@ -170,7 +182,7 @@ Example:
 Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R regular_size_predefine_b37_10k_NWD315195 1000g.phase3.10k.b37.vcf.gz.dat ~/Downloads/FASTQuick/resource/
 ```
 
-## More Details on Generating PC plot
+### More Details on Generating PC plot
 
 The final report generated above will include the PC plot to indicate sample ancestry.
 
@@ -183,16 +195,6 @@ sh $(FASTQUICK_HOME)/bin/run.plot.sh -i ./resource/hapmap_3.3.b37.dat.V -o ./res
 ```
 You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
 
-### EXAMPLES
-
-You can find various example scripts in example directory as templates for your own usage.
-
-For example:
- * the script **example.sh** is the template for one-stop analysis.
- * the script **example.index.sh** is the template for selection new marker set and indexing reference data structures.
- * the script **example.align.sh** is the template for primary analysis.
- * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
- * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
    
    
 ### USEFUL TIPS

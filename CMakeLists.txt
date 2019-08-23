@@ -29,3 +29,21 @@ add_subdirectory(libmpu)
 add_subdirectory(misc)
 add_subdirectory(src)
 #add_subdirectory(test)
+enable_testing()
+add_test( NAME Test1
+	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
+	  COMMAND FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_prefix test_ref)
+add_test( NAME Test2
+	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
+	  COMMAND FASTQuick align --fq_list test.fq.list --index_prefix test_ref --out_prefix test_out)
+add_test( NAME Test3
+	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
+	  COMMAND samtools index test_out.bam & FASTQuick pop+con --DisableSanityCheck --BamFile test_out.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference test.fa)
+add_test( NAME Test4
+	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
+	  COMMAND FASTQuick pop --SVDPrefix ../resource/hapmap_3.3.b37.dat --Pileup fake.Pileup.gz)
+add_test( NAME Test5
+	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
+	  COMMAND FASTQuick con --SVDPrefix ../resource/hapmap_3.3.b37.dat --Pileup fake.Pileup.gz --Out test_out)
+
+

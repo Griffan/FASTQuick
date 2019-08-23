@@ -36,7 +36,7 @@ using namespace std;
 
 //#define USE_BWT 1
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "0.0.1"
+#define PACKAGE_VERSION "1.0.1"
 #endif
 
 extern void notice(const char*,...);
