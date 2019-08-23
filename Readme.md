@@ -56,11 +56,11 @@ For lzma:
    
    make
    
-   cd ../example
+   make test
 
-   bash run.test.sh
+   Installation complete successfully if pass all  tests finished successfully.
 
-   Installation complete successfully if it says "All tests finished successfully."
+####Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
 
 ### EXAMPLES
 

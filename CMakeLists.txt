@@ -32,13 +32,13 @@ add_subdirectory(src)
 enable_testing()
 add_test( NAME Test1
 	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
-	  COMMAND FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_prefix test_ref)
+	  COMMAND FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref ref.test.fa --out_prefix test_out_ref)
 add_test( NAME Test2
 	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
-	  COMMAND FASTQuick align --fq_list test.fq.list --index_prefix test_ref --out_prefix test_out)
+	  COMMAND FASTQuick align --fq_list fq.test.list --index_prefix test_out_ref --out_prefix test_out)
 add_test( NAME Test3
 	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
-	  COMMAND samtools index test_out.bam & FASTQuick pop+con --DisableSanityCheck --BamFile test_out.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference test.fa)
+	  COMMAND samtools index test_out.bam && ${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick pop+con --DisableSanityCheck --BamFile test_out.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference ref.test.fa --Output test_out)
 add_test( NAME Test4
 	  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example
 	  COMMAND FASTQuick pop --SVDPrefix ../resource/hapmap_3.3.b37.dat --Pileup fake.Pileup.gz)
