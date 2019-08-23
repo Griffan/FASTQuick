@@ -58,11 +58,11 @@ add_library(VerifyBamID ${SOURCE_FILES})
 
 target_link_libraries(VerifyBamID statgen Vcf ${HTS_LIBRARIES} samtools ${ZLIB} ${BZIP2} ${LZMA} ${CURLLIB} ${SSLLIB} ${CRYPTOLIB})
 
-enable_testing()
+#enable_testing()
 
-add_test( NAME myTest1
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-          COMMAND VerifyBamID --DisableSanityCheck --UDPath resource/test/hapmap_3.3.b37.dat.UD --BamFile resource/test/test.bam --BedPath resource/test/hapmap_3.3.b37.dat.bed --MeanPath resource/test/hapmap_3.3.b37.dat.mu --Reference resource/test/chr20.fa.gz )
+#add_test( NAME Test6
+#          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/VerifyBamID/
+#          COMMAND VerifyBamID --DisableSanityCheck --UDPath resource/test/hapmap_3.3.b37.dat.UD --BamFile resource/test/test.bam --BedPath resource/test/hapmap_3.3.b37.dat.bed --MeanPath resource/test/hapmap_3.3.b37.dat.mu --Reference resource/test/chr20.fa.gz )
 #add_test( NAME myTest2
 #          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 #          COMMAND sh ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/run.plot.sh -i ${CMAKE_CURRENT_SOURCE_DIR}/resource/test/hapmap_3.3.b37.dat.V -o ${CMAKE_CURRENT_SOURCE_DIR}/resource/test/hapmap -r 1000g -g grey)
