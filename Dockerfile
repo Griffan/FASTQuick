@@ -17,7 +17,8 @@
          libcurl4-openssl-dev \
          libssl-dev \
          zlib1g-dev \
-         liblzma-dev
+         liblzma-dev \
+         tabix
 
   # apt clean and remove cached source lists
  RUN apt-get clean && \
@@ -50,4 +51,4 @@
  RUN cp /FASTQuick/bin/FASTQuick /usr/local/bin
 
   # Define default command
- CMD ["FASTQuick"]
+ CMD ["cd //FASTQuick/example/ && FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref test.fa --out_prefix test_ref && FASTQuick align --fq_list test.fq.list --index_prefix test_ref --out_prefix test_out"]
