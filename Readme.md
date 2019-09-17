@@ -85,7 +85,7 @@ Index database sequences, using known variant sites to anchor informative region
 OPTIONS
 --siteVCF        [String] VCF file with candidate variant sites(if predefinedVCF not specified)
 --predefinedVCF  [String] VCF file with predefined variant sites(if siteVCF not specified)
---regionList     [String] Bed file with target region list [Optional]")
+--regionList     [String] Bed file with target region list
 --dbsnpVCF       [String] VCF file with dbsnp site 
 --ref            [String] Fasta file with reference genome
 --mask           [String] Fasta file with repetitive region mask 
