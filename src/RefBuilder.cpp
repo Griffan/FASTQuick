@@ -6,27 +6,20 @@
 #include "VcfHeader.h"
 #include "../libbwa/bwtaln.h"
 #include <fstream>
-#include <string>
+#include <sstream>
 #include <cctype>
 
-using namespace std;
+//using namespace std;
 #define DEBUG 0
 
-//extern string Prefix;
-extern void notice(const char *, ...);
-
-extern void warning(const char *, ...);
-
-extern void error(const char *, ...);
-
-static void CalculateGC(const int flank_len, const faidx_t *seq, const string &Chrom, const int Position,
-                        ofstream &FGC)  {//Calculate GC content
+static void CalculateGC(const int flank_len, const faidx_t *seq, const std::string &Chrom, const int Position,
+                        std::ofstream &FGC)  {//Calculate GC content
     _GCstruct GCstruct(flank_len * 2 + 1);
     char region[1024];
     int dummy;
     for (int i = Position - flank_len, t = 0; i != Position + flank_len + 1; ++i, ++t) {
         sprintf(region, "%s:%d-%d", Chrom.c_str(), i - 50, i + 49);
-        string Window(fai_fetch(seq, region, &dummy));
+        std::string Window(fai_fetch(seq, region, &dummy));
         int total = 0;
         for (unsigned int j = 0; j != Window.size(); ++j) {
             if (Window[j] == 'G' || Window[j] == 'C' || Window[j] == 'g' || Window[j] == 'c')
@@ -37,9 +30,7 @@ static void CalculateGC(const int flank_len, const faidx_t *seq, const string &C
     GCstruct.write(FGC);
 }
 
-bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
-    std::string chr = VcfLine->getChromStr();
-    int position = VcfLine->get1BasedPosition();
+bool RefBuilder::VariantCheck(std::string & chr, int position, VcfRecord* VcfLine, int chrFlag) {
     int flank_len =0;
     if(not IsChromInWhiteList(chr))//strip chr from e.g. chr11
     {
@@ -55,9 +46,9 @@ bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
 
     std::string::size_type sz;     // alias of size_t
     const std::string* AFstr = VcfLine->getInfo().getString("AF");
-    if(AFstr != NULL) {
+    if(AFstr != nullptr) {
         double AF = std::stod(*AFstr, &sz);
-        if (AF < 0.05 or AF > 0.95) 
+        if (AF < 0.005 or AF > 0.995) 
 	{
 		warning("%s:%d is a rare variant AF:%g", chr.c_str(), position, AF);
 		return true;
@@ -74,17 +65,21 @@ bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
         flank_len = flank_short_len;
 
     //ensure no overlapping regions
-    if(VcfTable.find(chr)!=VcfTable.end())
+    if(VcfTable.find(chr) != VcfTable.end())
     {
         auto low_iter = VcfTable[chr].upper_bound(position);
-        if(low_iter != VcfTable[chr].begin() and low_iter != VcfTable[chr].end()) {
+        if(low_iter != VcfTable[chr].begin()) {
             auto up_iter = low_iter--;
-            if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len or
-                abs(position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
-		{
-			warning("%s:%d is too close to other variants",chr.c_str(), position);
-                	return true;
-		}
+            if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len) 
+	    {
+		warning("%s:%d is too close to other variants",chr.c_str(), position);
+		return true;//overlap with left region	
+	    }
+	    else if (up_iter != VcfTable[chr].end() and abs(position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
+	    {
+		warning("%s:%d is too close to other variants",chr.c_str(), position);
+		return true;//overlap with right region
+	    }
         }
     }
     //
@@ -92,9 +87,9 @@ bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
     char region[1024];
     sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len, position + flank_len);
     if (MaskPath != "Empty") {
-        string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+        std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
         double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-        if (n < MaskSeq.size())
+        if (n < 0.95f * MaskSeq.size())
 	{
 	    warning("%s:%d is in repetitive region",chr.c_str(), position);
             return true;
@@ -103,9 +98,7 @@ bool RefBuilder::VariantCheck(VcfRecord* VcfLine, int chrFlag) {
     return false;
 }
 
-bool RefBuilder::Skip(VcfRecord* VcfLine, int chrFlag) {
-    std::string chr = VcfLine->getChromStr();
-    int position = VcfLine->get1BasedPosition();
+bool RefBuilder::Skip(std::string & chr, int position, VcfRecord* VcfLine, int chrFlag) {
     int flank_len =0;
     if(not IsChromInWhiteList(chr))//strip chr from e.g. chr11
         return true;
@@ -115,9 +108,9 @@ bool RefBuilder::Skip(VcfRecord* VcfLine, int chrFlag) {
 
     std::string::size_type sz;     // alias of size_t
     const std::string* AFstr = VcfLine->getInfo().getString("AF");
-    if(AFstr != NULL) {
+    if(AFstr != nullptr) {
         double AF = std::stod(*AFstr, &sz);
-        if (AF < 0.05 or AF > 0.95) return true;
+        if (AF < 0.005 or AF > 0.995) return true;
     }
     else
     {
@@ -131,36 +124,61 @@ bool RefBuilder::Skip(VcfRecord* VcfLine, int chrFlag) {
         flank_len = flank_short_len;
 
     //ensure no overlapping regions
-    if(VcfTable.find(chr)!=VcfTable.end())
+    if(VcfTable.find(chr) != VcfTable.end())
     {
         auto low_iter = VcfTable[chr].upper_bound(position);
-        if(low_iter != VcfTable[chr].begin() and low_iter != VcfTable[chr].end()) {
+        if(low_iter != VcfTable[chr].begin()) {
             auto up_iter = low_iter--;
-            if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len or
-                abs(position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
-                return true;
+            if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) < 2 * flank_len) 
+	    {
+		return true;//overlap with left region	
+	    }
+	    else if (up_iter != VcfTable[chr].end() and abs(position - VcfVec[up_iter->second]->get1BasedPosition()) < 2 * flank_len)
+	    {
+		return true;//overlap with right region
+	    }
         }
     }
-    //
+    //ensure no low complexity regions
     int dummy_t;
     char region[1024];
     sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len, position + flank_len);
     if (MaskPath != "Empty") {
-        string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+        std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
         double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-        if (n < MaskSeq.size())
+        if (n < 0.95f * MaskSeq.size())
+	{
+//		if(1) std::cerr<<"pos:"<<chr<<"\t"<<position<<" is in repetitive region."<<std::endl;
             return true;
+	}
     }
     return false;
 }
 
 bool RefBuilder::IsChromInWhiteList(std::string &Chrom) {
     std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-    size_t tmpPos = Chrom.find("chr");
+    size_t tmpPos = Chrom.find("CHR");
     if (tmpPos != std::string::npos) {
         Chrom = Chrom.substr(tmpPos + 3, Chrom.size() - 3);//strip chr
     }
     return (chromWhiteList.find(Chrom) != chromWhiteList.end());
+}
+
+bool RefBuilder::IsInWhiteList(std::string Chrom, int start) {
+  std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
+  size_t tmpPos = Chrom.find("CHR");
+  if (tmpPos != std::string::npos) {
+        Chrom = Chrom.substr(tmpPos + 3, Chrom.size() - 3);//strip chr
+  }
+  if(regionWhiteList.find(Chrom) == regionWhiteList.end()) return false;
+  else{
+    auto lower_iter = regionWhiteList[Chrom].lower_bound(start);
+    if(lower_iter != regionWhiteList[Chrom].begin()) lower_iter--;
+    //std::cerr<<"lower_bound:(size:"<<regionWhiteList[Chrom].size()<<")"<<Chrom<<" "<<lower_iter->first<<" "<<lower_iter->second<<" input:"<<start<<std::endl;
+    if(lower_iter->first<= (start - flank_short_len) and lower_iter->second > (start + flank_short_len)) return true;
+    else if((++lower_iter)->first<= (start -flank_short_len) and lower_iter->second > (start +flank_short_len)) return true;
+    else return false;
+  }
 }
 
 
@@ -190,11 +208,8 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref, const std
 
 }
 
-RefBuilder::RefBuilder() {
-}
-
-//RefBuilder::RefBuilder(const string &VcfPath, const string &RefPath, const string &NewRef, const string &DBsnpPath,
-//                       const string &MaskPath, const gap_opt_t *opt,
+//RefBuilder::RefBuilder(const std::string &VcfPath, const std::string &RefPath, const std::string &NewRef, const std::string &DBsnpPath,
+//                       const std::string &MaskPath, const gap_opt_t *opt,
 //                       bool reselect = false) {
 //
 //    faidx_t *FastaMask = 0;
@@ -203,10 +218,10 @@ RefBuilder::RefBuilder() {
 //        notice("Loading Mask fai file done!\n");
 //    }
 //
-//    string SelectedSite = NewRef + ".SelectedSite.vcf";
+//    std::string SelectedSite = NewRef + ".SelectedSite.vcf";
 //    InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
-//    string BedPath = NewRef + ".bed";
-//    ofstream BedFile(BedPath);
+//    std::string BedPath = NewRef + ".bed";
+//    std::ofstream BedFile(BedPath);
 //
 //    //read in vcf, hapmap3 sites
 //    VcfHeader header;
@@ -220,7 +235,7 @@ RefBuilder::RefBuilder() {
 //
 //    srand(time(NULL));
 //
-//    string Chrom;
+//    std::string Chrom;
 //    int Position;
 //
 //    std::set<std::string> autoRegionWL =
@@ -335,7 +350,7 @@ RefBuilder::RefBuilder() {
 //            }
 //        }
 //        if (MaskPath != "Empty") {
-//            string MaskSeq(fai_fetch(FastaMask, region, &dummy));
+//            std::string MaskSeq(fai_fetch(FastaMask, region, &dummy));
 //            size_t n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
 //            if (n < MaskSeq.size())
 //                continue;
@@ -365,7 +380,7 @@ RefBuilder::RefBuilder() {
 //                flank_len=opt->flank_long_len;
 //            else
 //                flank_len=opt->flank_len;
-//            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<endl;
+//            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<std::endl;
 //            delete VcfVec[pq.second];
 //        }
 //    }
@@ -433,17 +448,50 @@ void RefBuilder::IncreaseNumMarker(int chrFlag)
         case 3:
             nXMarker++;
             break;
+        default:
+            error("Unexpected chromosome flag!");
     }
 }
 
-int RefBuilder::SelectMarker()
+int RefBuilder::ReadRegionList(const std::string & regionListPath)
 {
+   notice("Read target region list...\n");
+   std::ifstream fin(regionListPath);
+   if(!fin.is_open()) error("Region list bed file:%s open failed!",regionListPath.c_str());
+   std::string line;
+   while(std::getline(fin,line))
+   {
+      std::string chr;
+      int start(0),end(0);
+      std::stringstream ss(line);
+      ss>>chr>>start>>end;
+      if(chr.find("chr") != std::string::npos) chr=chr.substr(3);
+      if(regionWhiteList.find(chr) != regionWhiteList.end()){
+        if(regionWhiteList[chr].find(start) != regionWhiteList[chr].end())
+        {
+          if(regionWhiteList[chr][start] < end) regionWhiteList[chr][start]=end;
+        }
+        else
+        {
+	  regionWhiteList[chr][start]=end;
+        }
+      } else{
+          regionWhiteList[chr]=std::map<int,int>();
+          regionWhiteList[chr][start]=end;
+      }
+   }
+   fin.close();
+   return 0;
+}
 
-    notice("Start to select marker set...");
-    string SelectedSite = NewRef + ".SelectedSite.vcf";
+int RefBuilder::SelectMarker(std::string RegionList) {
+
+    if(RegionList != "Empty") ReadRegionList(RegionList);
+    notice("Start to select marker set...\n");
+    std::string SelectedSite = NewRef + ".SelectedSite.vcf";
     InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
-    string BedPath = NewRef + ".bed";
-    ofstream BedFile(BedPath);
+    std::string BedPath = NewRef + ".bed";
+    std::ofstream BedFile(BedPath);
 
     //read in vcf, hapmap3 sites
     VcfHeader header;
@@ -451,26 +499,31 @@ int RefBuilder::SelectMarker()
     reader.open(VcfPath.c_str(), header);
     header.write(&FoutHapMapSelectedSite);
 
-    string Chrom;
+    std::string Chrom;
     int Position;
 
     //begin select
     while (!reader.isEOF()) {
         int chrFlag(-1)/*0:short;1:long;2:Y;3:X*/;
-        VcfRecord *VcfLine = new VcfRecord;
+        VcfRecord* VcfLine = new VcfRecord;
         reader.readRecord(*VcfLine);
-
-	if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag, false))
-	    continue;
-
-        if(Skip(VcfLine,chrFlag))
-            continue;
-
         Position = VcfLine->get1BasedPosition();
         Chrom = VcfLine->getChromStr();
 
+	if(IsMaxNumMarker(Chrom, chrFlag, false) || (RegionList != "Empty" and not IsInWhiteList(Chrom, Position - 1)))
+	{
+	  delete VcfLine;
+          continue;
+	}
+
+        if(Skip(Chrom, Position, VcfLine,chrFlag))
+	{
+	  delete VcfLine;
+          continue;
+	}
+
         if(chrFlag==1)
-        VcfLine->setID((std::string(VcfLine->getIDStr())+"|L").c_str());
+          VcfLine->setID((std::string(VcfLine->getIDStr())+"|L").c_str());
 
 
         VcfTable[Chrom][Position]=nShortMarker+nLongMarker+nXMarker+nYMarker;
@@ -481,11 +534,11 @@ int RefBuilder::SelectMarker()
 
     if(nShortMarker+nLongMarker<num_variant_long + num_variant_short)//not enough essential markers
     {
-        warning("there are insufficient candidate markers in %s",VcfPath.c_str());
+        warning("there are insufficient candidate markers(%d/%d) in %s",nShortMarker+nLongMarker, num_variant_long + num_variant_short, VcfPath.c_str());
     }
     //output vcf and bed files
     int flank_len=0;
-    for(auto kv:VcfTable)
+    for(const auto& kv:VcfTable)
     {
         for (auto pq:kv.second) {
             if (!VcfVec[pq.second]->write(&FoutHapMapSelectedSite, 1)) {
@@ -496,7 +549,7 @@ int RefBuilder::SelectMarker()
                 flank_len=flank_long_len;
             else
                 flank_len=flank_short_len;
-            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<endl;
+            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<std::endl;
 //            delete VcfVec[pq.second];
         }
     }
@@ -526,10 +579,10 @@ int RefBuilder::SelectMarker()
 int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
 {
     notice("Start to load predefined marker set...");
-    string SelectedSite = NewRef + ".SelectedSite.vcf";
+    std::string SelectedSite = NewRef + ".SelectedSite.vcf";
     InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
-    string BedPath = NewRef + ".bed";
-    ofstream BedFile(BedPath);
+    std::string BedPath = NewRef + ".bed";
+    std::ofstream BedFile(BedPath);
 
     //read in predefined vcf
     VcfHeader header;
@@ -537,7 +590,7 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
     reader.open(predefinedVcf.c_str(), header);
     header.write(&FoutHapMapSelectedSite);
 
-    string Chrom;
+    std::string Chrom;
     int Position;
 
     //begin select
@@ -546,16 +599,19 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
         VcfRecord* VcfLine= new VcfRecord;
         reader.readRecord(*VcfLine);
         bool isLong = (std::string(VcfLine->getIDStr()).back()=='L');
-        if(IsMaxNumMarker(VcfLine->getChromStr(), chrFlag, isLong)) continue;
+	Position = VcfLine->get1BasedPosition();
+	Chrom = VcfLine->getChromStr();
 
-	if(VariantCheck(VcfLine, chrFlag))
+        if(IsMaxNumMarker(Chrom, chrFlag, isLong)) {
+		delete VcfLine;
+		continue;
+	}
+
+	if(VariantCheck(Chrom, Position, VcfLine, chrFlag))
 	{
 	     //warning("%s:%d is a low quality marker. Consider to filter it.",VcfLine->getChromStr(),VcfLine->get1BasedPosition());
 	     //continue;
 	}
-
-        Position = VcfLine->get1BasedPosition();
-        Chrom = VcfLine->getChromStr();
 
         if(chrFlag==1 and not isLong)
             VcfLine->setID((std::string(VcfLine->getIDStr())+"|L").c_str());
@@ -585,7 +641,7 @@ int RefBuilder::InputPredefinedMarker(const std::string & predefinedVcf)
                 flank_len=flank_long_len;
             else
                 flank_len=flank_short_len;
-            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<endl;
+            BedFile<<kv.first<<"\t"<<pq.first - flank_len<<"\t"<<pq.first + flank_len<<std::endl;
 //            delete VcfVec[pq.second];
         }
     }
@@ -646,10 +702,11 @@ int RefBuilder::PrepareRefSeq()
 {
 
     faidx_t *seq = fai_load(RefPath.c_str());
+    if(seq == 0) error("Please check if %s file exists!",RefPath.c_str());
     notice("Loading Ref fai file done!\n");
-    string GCpath = NewRef + ".gc";
-    ofstream FGC(GCpath, ios_base::binary);
-    ofstream FaOut(NewRef);
+    std::string GCpath = NewRef + ".gc";
+    std::ofstream FGC(GCpath, std::ios_base::binary);
+    std::ofstream FaOut(NewRef);
     for(auto& kv: VcfTable)
     {
         for(auto& kv2: kv.second)//each marker in VcfTable
