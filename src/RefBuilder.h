@@ -22,73 +22,76 @@ SOFTWARE.
 #ifndef REFBUILDER_H_
 #define REFBUILDER_H_
 
-#include <faidx.h>
-#include "Utility.h"
 #include "../libbwa/bwtaln.h"
+#include "Utility.h"
 #include "VcfRecord.h"
+#include <faidx.h>
 #include <string>
 class RefBuilder {
 public:
-//    std::vector<std::string> SeqVec;
-//    std::unordered_map<std::string, uint32_t> RefTableIndex;//seq name -> index
-    std::map<std::string, std::map<int, int> > VcfTable;
-    std::vector<VcfRecord* > VcfVec;
+  //    std::vector<std::string> SeqVec;
+  //    std::unordered_map<std::string, uint32_t> RefTableIndex;//seq name ->
+  //    index
+  std::map<std::string, std::map<int, int>> VcfTable;
+  std::vector<VcfRecord *> VcfVec;
 
-    RefBuilder() = default;
+  RefBuilder() = default;
 
-//    RefBuilder(const std::string &VcfPath, const std::string &RefPath, const std::string &NewRefPath,
-//               const std::string &DBsnpPath, const std::string &MaskPath, const gap_opt_t *opt, bool reselect);
+  //    RefBuilder(const std::string &VcfPath, const std::string &RefPath, const
+  //    std::string &NewRefPath,
+  //               const std::string &DBsnpPath, const std::string &MaskPath,
+  //               const gap_opt_t *opt, bool reselect);
 
-    RefBuilder(const std::string &Vcf, const std::string &Ref, const std::string &New,
-                         const std::string &DBsnp, const std::string &Mask,
-                         int short_len, int long_len,
-                         int short_num, int long_num);
+  RefBuilder(const std::string &Vcf, const std::string &Ref,
+             const std::string &New, const std::string &DBsnp,
+             const std::string &Mask, int short_len, int long_len,
+             int short_num, int long_num);
 
-    virtual ~RefBuilder();
+  virtual ~RefBuilder();
 
-    bool VariantCheck(std::string &chr, int pos, VcfRecord* VcfLine, int chrFlag);
+  bool VariantCheck(std::string &chr, int pos, VcfRecord *VcfLine, int chrFlag);
 
-    bool Skip(std::string &chr, int pos, VcfRecord* VcfLine, int  chrFlag);
+  bool Skip(std::string &chr, int pos, VcfRecord *VcfLine, int chrFlag);
 
-    int SelectMarker(std::string RegionList);
+  int SelectMarker(std::string RegionList);
 
-    int InputPredefinedMarker(const std::string & predefinedVcf);
+  int InputPredefinedMarker(const std::string &predefinedVcf);
 
-    void SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC, std::ofstream &FaOut);
+  void SubstrRef(const faidx_t *seq, VcfRecord *VcfLine, std::ofstream &FGC,
+                 std::ofstream &FaOut);
 
-    int PrepareRefSeq();
+  int PrepareRefSeq();
 
-    bool IsChromInWhiteList(std::string &Chrom);
+  bool IsChromInWhiteList(std::string &Chrom);
 
-    bool IsInWhiteList(std::string Chrom, int start);
+  bool IsInWhiteList(std::string Chrom, int start);
 
-    bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
-                        bool isLong = false);//check if reach max number of marker, and also set marker type
+  bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
+                      bool isLong = false); // check if reach max number of
+                                            // marker, and also set marker type
 
-    void IncreaseNumMarker(int chrFlag);
+  void IncreaseNumMarker(int chrFlag);
 
-    int ReadRegionList(const std::string & regionListPath);
+  int ReadRegionList(const std::string &regionListPath);
 
 private:
-    int nYMarker = 0, nXMarker = 0, nShortMarker = 0, nLongMarker =0;
-    int maxXorYmarker =0;
+  int nYMarker = 0, nXMarker = 0, nShortMarker = 0, nLongMarker = 0;
+  int maxXorYmarker = 0;
 
+  const std::string VcfPath;
+  const std::string RefPath;
+  const std::string NewRef;
+  const std::string dbSNP;
+  const std::string MaskPath;
+  const faidx_t *FastaMask;
 
-    const std::string VcfPath;
-    const std::string RefPath;
-    const std::string NewRef;
-    const std::string dbSNP;
-    const std::string MaskPath;
-    const faidx_t *FastaMask;
+  int flank_short_len = 0;
+  int flank_long_len = 0;
+  int num_variant_short = 0;
+  int num_variant_long = 0;
 
-    int flank_short_len=0;
-    int flank_long_len=0;
-    int num_variant_short=0;
-    int num_variant_long=0;
-
-    std::set<std::string> chromWhiteList;
-    std::map<std::string,std::map<int,int> > regionWhiteList;
-
+  std::set<std::string> chromWhiteList;
+  std::map<std::string, std::map<int, int>> regionWhiteList;
 };
 
 #endif /* REFBUILDER_H_ */
