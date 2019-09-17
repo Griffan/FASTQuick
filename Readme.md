@@ -83,11 +83,12 @@ For example:
 Index database sequences, using known variant sites to anchor informative region.
 ```
 OPTIONS
---siteVCF        [String] Path of VCF file with candidate variant sites(if predefinedVCF not specified)
---predefinedVCF  [String] Path of VCF file with predefined variant sites(if siteVCF not specified)
---dbsnpVCF       [String] Path of VCF file with dbsnp site 
---ref            [String] Path of fasta file with reference genome
---mask           [String] Path of fasta file with repetitive region mask 
+--siteVCF        [String] VCF file with candidate variant sites(if predefinedVCF not specified)
+--predefinedVCF  [String] VCF file with predefined variant sites(if siteVCF not specified)
+--regionList     [String] Bed file with target region list [Optional]")
+--dbsnpVCF       [String] VCF file with dbsnp site 
+--ref            [String] Fasta file with reference genome
+--mask           [String] Fasta file with repetitive region mask 
 --flank_len      [Int] Flanking region length of short-flanking-region variant
 --var_short      [Int] Number of short-flanking-region variant
 --flank_long_len [Int] Flanking region length of long-flanking-region variant
