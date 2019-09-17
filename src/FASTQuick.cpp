@@ -56,7 +56,7 @@ int runIndex(int argc, char ** argv)
 	* Parameters
 	*
 	*/
-	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty"), PreDefinedVcf("Empty");
+	std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"), DBsnpPath("Empty"),Prefix("Empty"), PreDefinedVcf("Empty"), RegionList("Empty");
 	bool reselect(false);
 	//std::string Prefix("Empty");
 	paramList pl;
@@ -64,7 +64,8 @@ int runIndex(int argc, char ** argv)
 	BEGIN_LONG_PARAMS(longParameters) LONG_PARAM_GROUP("Input/Output Files", "Input/Output files for the program[Complete Path Recommended]")
 		LONG_STRING_PARAM("siteVCF", &VcfPath, "[String] VCF file with candidate variant sites(e.g. 1000g or dbSNP) [Required if --predefinedVCF not specified]")
 		LONG_STRING_PARAM("predefinedVCF",&PreDefinedVcf, "[String] VCF file with predefined variant sites [Required if --siteVCF not specified]")
-                LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
+		LONG_STRING_PARAM("regionList",&RegionList, "[String] Bed file with target region list [Optional]")
+		LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
 		LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
 		LONG_STRING_PARAM("out_prefix", &Prefix, "[String] Prefix of all the output index files[Required]")
 		LONG_STRING_PARAM("mask", &MaskPath, "[String] Repeat Mask FASTA file[Required if --predefinedVCF not specified]")
@@ -113,7 +114,7 @@ int runIndex(int argc, char ** argv)
 		RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
 						   opt->flank_len, opt->flank_long_len, opt->num_variant_short, opt->num_variant_long);
         if(PreDefinedVcf=="Empty")
-		    ArtiRef.SelectMarker();
+          ArtiRef.SelectMarker(RegionList);
         else
             ArtiRef.InputPredefinedMarker(PreDefinedVcf);
 		ArtiRef.PrepareRefSeq();

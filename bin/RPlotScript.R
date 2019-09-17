@@ -241,8 +241,8 @@ colScale = scale_color_manual(values=c('ESN'='#FFCD00','GWD'='#FFB900','LWK'='#C
                               breaks=c('ESN','GWD','LWK','MSL','YRI','ACB','ASW','CLM','MXL','PEL','PUR','CDX','CHB','CHS','JPT','KHV','CEU','FIN','GBR',
                                        'IBS','TSI','BEB','GIH','ITU','PJL','STU','AFR','AFR/AMR','AMR','EAS','EUR','SAS','UserSample'))
 #set 1000g coordinates
-POP=read.table(paste0(FASTQuickInstallDir,"/1000g.pop"),header = F)
-RefCoord.1kg=read.table(paste0(FASTQuickInstallDir,"/",SVDPrefix,".V"),header = F)
+POP=read.table(paste0(FASTQuickInstallDir,"/resource/1000g.pop"),header = F)
+RefCoord.1kg=read.table(paste0(SVDPrefix,".V"),header = F)
 RefCoord.1kg=RefCoord.1kg[,1:3]
 RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
 colnames(RefCoord.1kg)=c("ID","PC1","PC2","POP")

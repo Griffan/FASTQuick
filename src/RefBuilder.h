@@ -26,7 +26,7 @@ SOFTWARE.
 #include "Utility.h"
 #include "../libbwa/bwtaln.h"
 #include "VcfRecord.h"
-
+#include <string>
 class RefBuilder {
 public:
 //    std::vector<std::string> SeqVec;
@@ -34,7 +34,7 @@ public:
     std::map<std::string, std::map<int, int> > VcfTable;
     std::vector<VcfRecord* > VcfVec;
 
-    RefBuilder();
+    RefBuilder() = default;
 
 //    RefBuilder(const std::string &VcfPath, const std::string &RefPath, const std::string &NewRefPath,
 //               const std::string &DBsnpPath, const std::string &MaskPath, const gap_opt_t *opt, bool reselect);
@@ -46,11 +46,11 @@ public:
 
     virtual ~RefBuilder();
 
-    bool VariantCheck(VcfRecord* VcfLine, int chrFlag);
+    bool VariantCheck(std::string &chr, int pos, VcfRecord* VcfLine, int chrFlag);
 
-    bool Skip(VcfRecord* VcfLine, int  chrFlag);
+    bool Skip(std::string &chr, int pos, VcfRecord* VcfLine, int  chrFlag);
 
-    int SelectMarker();
+    int SelectMarker(std::string RegionList);
 
     int InputPredefinedMarker(const std::string & predefinedVcf);
 
@@ -60,10 +60,14 @@ public:
 
     bool IsChromInWhiteList(std::string &Chrom);
 
+    bool IsInWhiteList(std::string Chrom, int start);
+
     bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
                         bool isLong = false);//check if reach max number of marker, and also set marker type
 
     void IncreaseNumMarker(int chrFlag);
+
+    int ReadRegionList(const std::string & regionListPath);
 
 private:
     int nYMarker = 0, nXMarker = 0, nShortMarker = 0, nLongMarker =0;
@@ -83,6 +87,7 @@ private:
     int num_variant_long=0;
 
     std::set<std::string> chromWhiteList;
+    std::map<std::string,std::map<int,int> > regionWhiteList;
 
 };
 
