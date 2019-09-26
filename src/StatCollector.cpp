@@ -2290,7 +2290,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)NumPositionCovered)
-       << endl;
+       << " [" << NumBaseMapped<< "/" << NumPositionCovered << "]"<<endl;
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%" << endl;
   // output for fraction figure
