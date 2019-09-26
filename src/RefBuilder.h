@@ -53,7 +53,7 @@ public:
 
   bool Skip(std::string &chr, int pos, VcfRecord *VcfLine, int chrFlag);
 
-  int SelectMarker(std::string RegionList);
+  int SelectMarker(const std::string &RegionList);
 
   int InputPredefinedMarker(const std::string &predefinedVcf);
 
@@ -65,6 +65,8 @@ public:
   bool IsChromInWhiteList(std::string &Chrom);
 
   bool IsInWhiteList(std::string Chrom, int start);
+
+  bool IsInRepeatRegion(std::string Chrom, int start, int end);
 
   bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
                       bool isLong = false); // check if reach max number of
@@ -92,6 +94,7 @@ private:
 
   std::set<std::string> chromWhiteList;
   std::map<std::string, std::map<int, int>> regionWhiteList;
+  std::map<std::string, std::map<int, int>> repeatRegionList;
 };
 
 #endif /* REFBUILDER_H_ */

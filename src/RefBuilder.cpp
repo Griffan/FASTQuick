@@ -10,7 +10,8 @@
 #include <sstream>
 
 #define DEBUG 0
-
+#define MIN_AF 0.01
+#define REPEAT_RATE 0.95f
 static void CalculateGC(const int flank_len, const faidx_t *seq,
                         const std::string &Chrom, const int Position,
                         std::ofstream &FGC) { // Calculate GC content
@@ -52,7 +53,7 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
   const std::string *AFstr = VcfLine->getInfo().getString("AF");
   if (AFstr != nullptr) {
     double AF = std::stod(*AFstr, &sz);
-    if (AF < 0.005 or AF > 0.995) {
+    if (AF < MIN_AF or AF > 1 - MIN_AF) {
       warning("%s:%d is a rare variant AF:%g", chr.c_str(), position, AF);
       return true;
     }
@@ -84,16 +85,21 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
     }
   }
   //
-  int dummy_t;
-  char region[1024];
-  sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
-          position + flank_len);
   if (MaskPath != "Empty") {
-    std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
-    double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-    if (n < 0.95f * MaskSeq.size()) {
-      warning("%s:%d is in repetitive region", chr.c_str(), position);
-      return true;
+    std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
+    if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
+      if (IsInRepeatRegion(chr, position - flank_len, position + flank_len)) return true;
+    }
+    else {
+      int dummy_t;
+      char region[1024];
+      sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
+              position + flank_len);
+      std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+      double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
+      if (n < REPEAT_RATE * MaskSeq.size()) {
+        return true;
+      }
     }
   }
   return false;
@@ -113,7 +119,7 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
   const std::string *AFstr = VcfLine->getInfo().getString("AF");
   if (AFstr != nullptr) {
     double AF = std::stod(*AFstr, &sz);
-    if (AF < 0.005 or AF > 0.995)
+    if (AF < MIN_AF or AF > 1 - MIN_AF)
       return true;
   } else {
     warning("%s:%d has no AF tag in INFO field", chr.c_str(), position);
@@ -141,36 +147,40 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
     }
   }
   // ensure no low complexity regions
-  int dummy_t;
-  char region[1024];
-  sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
-          position + flank_len);
+
   if (MaskPath != "Empty") {
-    std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
-    double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-    if (n < 0.95f * MaskSeq.size()) {
-      //		if(1) std::cerr<<"pos:"<<chr<<"\t"<<position<<" is in
-      //repetitive region."<<std::endl;
-      return true;
+    std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
+    if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
+      if (IsInRepeatRegion(chr, position - flank_len, position + flank_len)) return true;
+    }
+    else {
+      int dummy_t;
+      char region[1024];
+      sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
+              position + flank_len);
+      std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+      double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
+      if (n < REPEAT_RATE * MaskSeq.size()) {
+        return true;
+      }
     }
   }
   return false;
 }
 
 bool RefBuilder::IsChromInWhiteList(std::string &Chrom) {
-  std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-  size_t tmpPos = Chrom.find("CHR");
-  if (tmpPos != std::string::npos) {
-    Chrom = Chrom.substr(tmpPos + 3, Chrom.size() - 3); // strip chr
+  if (Chrom.find("chr") != std::string::npos or
+      Chrom.find("CHR") != std::string::npos) {
+    Chrom = Chrom.substr(3); // strip chr
   }
   return (chromWhiteList.find(Chrom) != chromWhiteList.end());
 }
 
 bool RefBuilder::IsInWhiteList(std::string Chrom, int start) {
   std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-  size_t tmpPos = Chrom.find("CHR");
-  if (tmpPos != std::string::npos) {
-    Chrom = Chrom.substr(tmpPos + 3, Chrom.size() - 3); // strip chr
+  if (Chrom.find("chr") != std::string::npos or
+      Chrom.find("CHR") != std::string::npos) {
+    Chrom = Chrom.substr(3); // strip chr
   }
   if (regionWhiteList.find(Chrom) == regionWhiteList.end())
     return false;
@@ -184,11 +194,39 @@ bool RefBuilder::IsInWhiteList(std::string Chrom, int start) {
     if (lower_iter->first <= (start - flank_short_len) and
         lower_iter->second > (start + flank_short_len))
       return true;
-    else if ((++lower_iter)->first <= (start - flank_short_len) and
-             lower_iter->second > (start + flank_short_len))
-      return true;
     else
-      return false;
+      return (++lower_iter)->first <= (start - flank_short_len) and
+             lower_iter->second > (start + flank_short_len);
+  }
+}
+
+bool RefBuilder::IsInRepeatRegion(std::string Chrom, int start, int end) {
+  if (Chrom.find("chr") != std::string::npos or
+      Chrom.find("CHR") != std::string::npos) {
+    Chrom = Chrom.substr(3); // strip chr
+  }
+  if (repeatRegionList.find(Chrom) == repeatRegionList.end())
+    return false;
+  else {
+    int length = end - start + 1;
+    auto lower_iter = repeatRegionList[Chrom].lower_bound(start);
+    if (lower_iter != repeatRegionList[Chrom].begin()) {
+      int overlap =
+          end < lower_iter->first
+              ? 0
+              : (end < lower_iter->second ? (end - lower_iter->first + 1)
+                                          : (end - start + 1));
+      if (length * REPEAT_RATE <= overlap)
+        return true;
+      lower_iter--;
+      overlap = start > lower_iter->second
+                    ? 0
+                    : (start < lower_iter->first
+                           ? (lower_iter->second - lower_iter->first + 1)
+                           : (lower_iter->second - start + 1));
+      if (length * REPEAT_RATE <= overlap)
+        return true;
+    }
   }
 }
 
@@ -208,8 +246,44 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
     maxXorYmarker = 100;
 
   if (MaskPath != "Empty") {
-    FastaMask = fai_load(MaskPath.c_str());
-    notice("Loading Mask fai file done!\n");
+    std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
+    if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
+      std::ifstream fin(MaskPath);
+      if (!fin.is_open()) {
+        std::cerr << "Open file: " << MaskPath << " failed!" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      std::string line;
+      std::string chr;
+      int start(0), end(0);
+      while (std::getline(fin, line)) {
+        std::stringstream ss(line);
+        ss >> chr >> start >> end;
+        if (chr.find("chr") != std::string::npos or
+            chr.find("CHR") != std::string::npos)
+          chr = chr.substr(3);
+        if (repeatRegionList.find(chr) != repeatRegionList.end()) {
+          if (repeatRegionList[chr].find(start) !=
+              repeatRegionList[chr].end()) {
+            if (repeatRegionList[chr][start] < end)
+              repeatRegionList[chr][start] = end;
+          } else {
+            repeatRegionList[chr][start] = end;
+          }
+        } else {
+          repeatRegionList[chr] = std::map<int, int>();
+          repeatRegionList[chr][start] = end;
+        }
+      }
+      fin.close();
+      notice("Loading Mask Bed file done!\n");
+    } else if (suffix == ".fa" or suffix == ".gz") {
+      FastaMask = fai_load(MaskPath.c_str());
+      notice("Loading Mask fai file done!\n");
+    } else {
+      warning("Unknow file type for %s, fasta or bed file is required",
+              MaskPath.c_str());
+    }
   }
 
   chromWhiteList = {"1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",
@@ -222,7 +296,6 @@ bool RefBuilder::IsMaxNumMarker(
     bool isLong) // use this function after checking whiteList
 {
   if (Chrom == "X") { /*0:short;1:long;2:Y;3:X*/
-    ;
     if (nXMarker >= maxXorYmarker)
       return true;
     chrFlag = 3;
@@ -233,11 +306,11 @@ bool RefBuilder::IsMaxNumMarker(
   } else { // must be from chr1-chr22
     if (isLong)
       chrFlag = 1;
-    else if (nShortMarker < num_variant_short) // must be from chr1-chr22
+    else if (nLongMarker < num_variant_long) {
+      chrFlag = 1;
+    } else if (nShortMarker < num_variant_short) // must be from chr1-chr22
     {
       chrFlag = 0;
-    } else if (nLongMarker < num_variant_long) {
-      chrFlag = 1;
     } else
       return true;
   }
@@ -293,7 +366,7 @@ int RefBuilder::ReadRegionList(const std::string &regionListPath) {
   return 0;
 }
 
-int RefBuilder::SelectMarker(std::string RegionList) {
+int RefBuilder::SelectMarker(const std::string &RegionList) {
 
   if (RegionList != "Empty")
     ReadRegionList(RegionList);
