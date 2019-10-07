@@ -11,7 +11,7 @@
 
 #define DEBUG 0
 #define MIN_AF 0.01
-#define REPEAT_RATE 0.95f
+#define CALLABLE_RATE 0.95f
 static void CalculateGC(const int flank_len, const faidx_t *seq,
                         const std::string &Chrom, const int Position,
                         std::ofstream &FGC) { // Calculate GC content
@@ -88,7 +88,7 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
   if (MaskPath != "Empty") {
     std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
     if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
-      if (IsInRepeatRegion(chr, position - flank_len, position + flank_len)) return true;
+      if (IsInCallableRegion(chr, position - flank_len, position + flank_len)) return true;
     }
     else {
       int dummy_t;
@@ -97,7 +97,7 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
               position + flank_len);
       std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
       double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-      if (n < REPEAT_RATE * MaskSeq.size()) {
+      if (n < CALLABLE_RATE * MaskSeq.size()) {
         return true;
       }
     }
@@ -151,7 +151,11 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
   if (MaskPath != "Empty") {
     std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
     if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
-      if (IsInRepeatRegion(chr, position - flank_len, position + flank_len)) return true;
+      if (not IsInCallableRegion(chr, position - flank_len, position + flank_len))
+      {
+        std::cerr<<"[DEBUG]Position:"<<chr<<"\t"<<position<<" is in repetitive region."<<std::endl;
+        return true;
+      }
     }
     else {
       int dummy_t;
@@ -160,7 +164,8 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
               position + flank_len);
       std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
       double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-      if (n < REPEAT_RATE * MaskSeq.size()) {
+      if (n < CALLABLE_RATE * MaskSeq.size()) {
+        std::cerr<<"[DEBUG]Position:"<<chr<<"\t"<<position<<" is in repetitive region."<<std::endl;
         return true;
       }
     }
@@ -200,7 +205,18 @@ bool RefBuilder::IsInWhiteList(std::string Chrom, int start) {
   }
 }
 
-bool RefBuilder::IsInRepeatRegion(std::string Chrom, int start, int end) {
+inline static int OverlapLen(int a, int c, int b, int d)
+{
+  if (a <= d && c >= b) {
+    // overlap
+    return abs(std::min(c,d) - std::max(a,b));
+  }
+  else {
+    return 0;// no overlap
+  }
+}
+
+bool RefBuilder::IsInCallableRegion(std::string Chrom, int start, int end) {
   if (Chrom.find("chr") != std::string::npos or
       Chrom.find("CHR") != std::string::npos) {
     Chrom = Chrom.substr(3); // strip chr
@@ -209,24 +225,25 @@ bool RefBuilder::IsInRepeatRegion(std::string Chrom, int start, int end) {
     return false;
   else {
     int length = end - start + 1;
+    int overlap = 0;
     auto lower_iter = repeatRegionList[Chrom].lower_bound(start);
     if (lower_iter != repeatRegionList[Chrom].begin()) {
-      int overlap =
-          end < lower_iter->first
-              ? 0
-              : (end < lower_iter->second ? (end - lower_iter->first + 1)
-                                          : (end - start + 1));
-      if (length * REPEAT_RATE <= overlap)
-        return true;
       lower_iter--;
-      overlap = start > lower_iter->second
-                    ? 0
-                    : (start < lower_iter->first
-                           ? (lower_iter->second - lower_iter->first + 1)
-                           : (lower_iter->second - start + 1));
-      if (length * REPEAT_RATE <= overlap)
-        return true;
+      while(lower_iter->first <= end)
+      {
+        overlap += OverlapLen(start, end, lower_iter->first, lower_iter->second);
+        ++lower_iter;
+      }
     }
+    else//the first region
+    {
+      while(lower_iter->first <= end)
+      {
+        overlap += OverlapLen(start, end, lower_iter->first, lower_iter->second);
+        ++lower_iter;
+      }
+    }
+    return (length * CALLABLE_RATE <= overlap);
   }
 }
 
@@ -277,7 +294,7 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
       }
       fin.close();
       notice("Loading Mask Bed file done!\n");
-    } else if (suffix == ".fa" or suffix == ".gz") {
+    } else if (suffix == ".fa" or suffix == "sta" or suffix == ".gz") {
       FastaMask = fai_load(MaskPath.c_str());
       notice("Loading Mask fai file done!\n");
     } else {
