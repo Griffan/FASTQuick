@@ -66,7 +66,7 @@ public:
 
   bool IsInWhiteList(std::string Chrom, int start);
 
-  bool IsInRepeatRegion(std::string Chrom, int start, int end);
+  bool IsInCallableRegion(std::string Chrom, int start, int end);
 
   bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
                       bool isLong = false); // check if reach max number of

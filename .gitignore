@@ -25,7 +25,8 @@ FastPopCon*
 # *.hex
 *.Po
 tabix
-FASTQuick*
+FASTQuick
+FASTQuick.dSYM
 config.log
 Makefile
 build
