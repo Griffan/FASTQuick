@@ -16,19 +16,19 @@ fi
 USAGE_MESSAGE="
 Usage: FASTQuick.sh --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --dbSNP <dbSNP.vcf.gz> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>] [--steps All|AllButIndex|Index|Align|ContaminationAndAncestry] [--fastqList <one_pair_of_fq_or_single_fq_per_line>]
 
-	-c/--candidateVCF:  VCF format candidate variant list to choose from.
+	-l/--candidateVCF:  VCF format candidate variant list to choose from.
 	-r/--reference: reference genome fasta file to use.
 	-t/--targetRegion: target region to focus on.
 	-o/--output: output VCF.
 	-d/--dbSNP: location of the dbSNP vcf file.
 	-w/--workingdir: directory to place FASTQuick intermediate and temporary files. .FASTQuick.working subdirectories will be created. Defaults to the current directory.
-	-b/--callableRegion: BED file containing regions to consider
+	-c/--callableRegion: BED file containing regions to consider
 	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators
 	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line,
 	"
 
 
-OPTIONS=c:r:o:d:t:w:b:s:f:
+OPTIONS=l:r:o:d:t:w:c:s:f:
 LONGOPTS=candidateVCF:,reference:,output:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -52,7 +52,7 @@ steps="AllButIndex"
 
 while true; do
   case "$1" in
-    -c|--candidateVCF)
+    -l|--candidateVCF)
             candidateVCF="$2"
             shift 2
             ;;
@@ -76,7 +76,7 @@ while true; do
             dbSNP="$2"
             shift 2
             ;;
-    -b|--callableRegion)
+    -c|--callableRegion)
             callableRegion="$2"
             shift 2
             ;;
@@ -102,24 +102,20 @@ done
 do_index=false
 do_align=false
 do_cont_anc=false
-if [[ "$steps" == "All" ]] ; then
+echo "--steps:$steps"
+if [[ "$steps" == *"allbutindex"* ]] ; then
+	do_align=true
+	do_cont_anc=true
+elif [[ "$steps" == *"all"* ]] ; then
   echo "Running All steps at once is not suggested because Index step only requires to be run once!"
 	do_index=true
 	do_align=true
 	do_cont_anc=true
-fi
-if [[ "$steps" == *"AllButIndex"* ]] ; then
-	do_index=false
-	do_align=true
-	do_cont_anc=true
-fi
-if [[ "$steps" == *"Index"* ]] ; then
+elif [[ "$steps" == *"index"* ]] ; then
 	do_index=true
-fi
-if [[ "$steps" == *"Align"* ]] ; then
+elif [[ "$steps" == *"align"* ]] ; then
 	do_align=true
-fi
-if [[ "$steps" == "ContaminationAndAncestry" ]] ; then
+elif [[ "$steps" == "contaminationandancestry" ]] ; then
 	do_cont_anc=true
 fi
 
@@ -249,12 +245,7 @@ if [[ $do_index == true ]] ; then
       echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a $timinglogfile
       #TODO:consider hg19 and hg38
       for chr in {1..22};do
-        bcftools view -O z -R  ${output_prefix}.FASTQuick.fa.bed http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz > ${output_prefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
-        pids[${chr}]=$!
-      done
-
-      for chr in X,Y;do
-        bcftools view -O z -R  ${output_prefix}.FASTQuick.fa.bed http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz > ${output_prefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
+        bcftools view -v snps -O z -R  ${output_prefix}.FASTQuick.fa.bed http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz > ${output_prefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
         pids[${chr}]=$!
       done
 
@@ -266,16 +257,16 @@ if [[ $do_index == true ]] ; then
         fi
       done
 
-      echo "ls $output_prefix.FASTQuick.fa.bed.chr*.vcf.gz >vcf.list"|bash
-      echo "bcftools concat -O z -f vcf.list -o $output_prefix.FASTQuick.fa.bed.phase3.vcf.gz"|bash
+      echo "ls ${output_prefix}.FASTQuick.fa.bed.chr*.vcf.gz |bcftools concat -O z -f - -o ${output_prefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
 
       if [[ -f "$output_prefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
         echo "$(date) Extract subset of genotype matrix finished"| tee -a $timinglogfile
+        echo "
         { /usr/bin/time -a -o $timinglogfile \
           $FASTQuick_PROGRAM pop+con \
           --RefVCF ${output_prefix}.FASTQuick.fa.bed.phase3.vcf.gz \
           --Reference $reference \
-        ; } 1>&2 2>> $logfile
+        ; } 1>&2 2>> $logfile"
       else
         echo "$(date) Extract subset of genotype matrix failed"| tee -a $timinglogfile
       fi
@@ -304,15 +295,8 @@ else
 	echo "$(date)	Skipping analyzing	$fastqList" | tee -a $timinglogfile
 fi
 if [[ $do_cont_anc == true ]] ; then
-	echo "$(date)	Start calling	$output_prefix" | tee -a $timinglogfile
-	if [[ ! -f $output_prefix ]] ; then
-		dir=$workingdir/$(basename $output_prefix).FASTQuick.working
-		prefix=$dir/$(basename $output_prefix)
-		if ! mkdir -p $dir ; then
-			echo Unable to create directory $dir 1>&2
-			exit 2
-		fi
-		echo "$(date)	IdentifyVariants	$output_prefix" | tee -a $timinglogfile
+	echo "$(date)	Start estimating contamination and genetic ancestry..." | tee -a $timinglogfile
+	if [[ -f "${output_prefix}_post_alignment.UD" ]] ; then
 		{ /usr/bin/time -a -o $timinglogfile \
 			$FASTQuick_PROGRAM pop+con \
 			--PileupFile ${output_prefix}_post_alignment.Pileup \
@@ -321,8 +305,8 @@ if [[ $do_cont_anc == true ]] ; then
 			--Output ${output_prefix}_post_alignment \
 		; } 1>&2 2>> $logfile
 	else
-		echo "$(date)	Skipping population & contamination estimation"
+		echo "$(date)	Failed to load eigen space files:${output_prefix}_post_alignment.UD"
 	fi
-	echo "$(date)	Complete population & contamination estimation" | tee -a $timinglogfile
+	echo "$(date)	Complete estimating contamination and genetic ancestry" | tee -a $timinglogfile
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
