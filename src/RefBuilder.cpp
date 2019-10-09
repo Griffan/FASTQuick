@@ -72,13 +72,22 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
     auto low_iter = VcfTable[chr].upper_bound(position);
     if (low_iter != VcfTable[chr].begin()) {
       auto up_iter = low_iter--;
-      if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) <
-          2 * flank_len) {
+
+      int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
+      int adjacentFlankLen = GetFlankLen(low_iter->second);
+
+      if (abs(position - adjacentPos) <
+          adjacentFlankLen + flank_len) {
         warning("%s:%d is too close to other variants", chr.c_str(), position);
         return true; // overlap with left region
-      } else if (up_iter != VcfTable[chr].end() and
-                 abs(position - VcfVec[up_iter->second]->get1BasedPosition()) <
-                     2 * flank_len) {
+      }
+
+      adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
+      adjacentFlankLen = GetFlankLen(up_iter->second);
+
+      if (up_iter != VcfTable[chr].end() and
+          abs(position - adjacentPos) <
+          adjacentFlankLen + flank_len) {
         warning("%s:%d is too close to other variants", chr.c_str(), position);
         return true; // overlap with right region
       }
@@ -103,6 +112,16 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
     }
   }
   return false;
+}
+
+int RefBuilder::GetFlankLen(int index)
+{
+  int adjacentFlankLen = 0;
+  if (std::string(VcfVec[index]->getIDStr()).back() == 'L')
+    adjacentFlankLen = flank_long_len;
+  else
+    adjacentFlankLen = flank_short_len;
+  return adjacentFlankLen;
 }
 
 bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
@@ -136,12 +155,21 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
     auto low_iter = VcfTable[chr].upper_bound(position);
     if (low_iter != VcfTable[chr].begin()) {
       auto up_iter = low_iter--;
-      if (abs(position - VcfVec[low_iter->second]->get1BasedPosition()) <
-          2 * flank_len) {
+
+      int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
+      int adjacentFlankLen = GetFlankLen(low_iter->second);
+
+      if (abs(position - adjacentPos) <
+          adjacentFlankLen + flank_len) {
         return true; // overlap with left region
-      } else if (up_iter != VcfTable[chr].end() and
-                 abs(position - VcfVec[up_iter->second]->get1BasedPosition()) <
-                     2 * flank_len) {
+      }
+
+      adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
+      adjacentFlankLen = GetFlankLen(up_iter->second);
+
+      if (up_iter != VcfTable[chr].end() and
+                 abs(position - adjacentPos) <
+                     adjacentFlankLen + flank_len) {
         return true; // overlap with right region
       }
     }
@@ -446,10 +474,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
         warning("Writing retained sites failed!\n");
         exit(EXIT_FAILURE);
       }
-      if (std::string(VcfVec[pq.second]->getIDStr()).back() == 'L')
-        flank_len = flank_long_len;
-      else
-        flank_len = flank_short_len;
+      flank_len = GetFlankLen(pq.second);
       BedFile << kv.first << "\t" << pq.first - flank_len << "\t"
               << pq.first + flank_len << std::endl;
       //            delete VcfVec[pq.second];

@@ -53,6 +53,8 @@ public:
 
   bool Skip(std::string &chr, int pos, VcfRecord *VcfLine, int chrFlag);
 
+  int GetFlankLen(int index);
+
   int SelectMarker(const std::string &RegionList);
 
   int InputPredefinedMarker(const std::string &predefinedVcf);
