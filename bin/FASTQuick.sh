@@ -315,7 +315,7 @@ if [[ $do_align == true ]] ; then
 			$FASTQuick_PROGRAM align \
 			--index_prefix $indexPrefix \
 			--fq_list $fastqList \
-			--out_prefix ${outputPrefix}_post_alignment \
+			--out_prefix ${outputPrefix} \
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
@@ -329,10 +329,10 @@ if [[ $do_cont_anc == true ]] ; then
 	if [[ -f "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]] ; then
 		{ /usr/bin/time -a -o $timinglogfile \
 			$FASTQuick_PROGRAM pop+con \
-			--PileupFile ${outputPrefix}_post_alignment.Pileup \
+			--PileupFile ${outputPrefix}.Pileup \
 			--Reference $reference \
 			--SVDPrefix ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
-			--Output ${outputPrefix}_post_alignment \
+			--Output ${outputPrefix} \
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a $timinglogfile
@@ -340,11 +340,11 @@ if [[ $do_cont_anc == true ]] ; then
 	echo "$(date)	Complete estimating contamination and genetic ancestry" | tee -a $timinglogfile
 fi
 
-if [[ $do_align == true ]] ; then
+if [[ -f "${outputPrefix}.Summary" ]] ; then
 echo "$(date)	Summarize basic	QC statistics..." | tee -a $timinglogfile
 { /usr/bin/time -a -o $timinglogfile \
 	Rscript ${FASTQuick_BIN_DIR}/RPlotScript.R \
-	${outputPrefix}_post_alignment \
+	${outputPrefix} \
 	${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 	${FASTQuick_SRC_DIR} \
 ; } 1>&2 2>> $logfile
