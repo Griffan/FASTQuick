@@ -10,6 +10,7 @@
    
 ### CONTENTS
 
+- [QUICK START](#quick-start)
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
 - [DOWNLOAD AND INSTALL](#download-and-install)
@@ -19,6 +20,13 @@
 - [BUGS](#bugs)
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
+
+### QUICK START
+To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline
+```
+bin/FASTQuick.sh [--steps All|AllButIndex|Index|Align|ContaminationAndAncestry] --candidateVCF <variant list> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
+```
+
 
 ### SYNOPSIS
 
