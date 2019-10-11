@@ -199,135 +199,114 @@ int runAlign(int argc, char **argv) {
   LONG_STRING_PARAM("fastq_2", &Fastq_2,
                     "[String] Pair end 2 fastq file.[Leave "
                     "empty if using single end]")
-      LONG_STRING_PARAM(
-          "fq_list", &FaList,
-          "[String] Path of input fastq files, tab-delimited, one pair-end "
-          "files per line(one file per line for single end)[Leave empty if "
-          "using bam_in or fastq_1]")
-          LONG_STRING_PARAM("bam_in", &BamIn,
-                            "[String] Input bam file path[Leave empty if "
-                            "using fq_list or fastq_1]")
-              EXCLUSIVE_PARAM(
-                  "sam_out", &NonBamOut,
+  LONG_STRING_PARAM(
+      "fq_list", &FaList,
+      "[String] Path of input fastq files, tab-delimited, one pair-end "
+      "files per line(one file per line for single end)[Leave empty if "
+      "using bam_in or fastq_1]")
+  LONG_STRING_PARAM("bam_in", &BamIn,
+                    "[String] Input bam file path[Leave empty if "
+                    "using fq_list or fastq_1]")
+  EXCLUSIVE_PARAM("sam_out", &NonBamOut,
                   "[Bool] If output bam file[Leave empty if using bam_in]")
-                  LONG_STRING_PARAM(
-                      "out_prefix", &Prefix,
-                      "[String] Prefix of all the output files[Required]")
-                      LONG_STRING_PARAM(
-                          "index_prefix", &IndexPrefix,
-                          "[String] Input prefix of all the index "
-                          "files(parameter of out_index_prefix in index "
-                          "stage)[Required]")
+  LONG_STRING_PARAM("out_prefix", &Prefix,
+                    "[String] Prefix of all the output files[Required]")
+  LONG_STRING_PARAM("index_prefix", &IndexPrefix,
+                    "[String] Input prefix of all the index "
+                    "files(parameter of out_index_prefix in index "
+                    "stage)[Required]")
 
-      // LONG_STRING_PARAM("out",&outf,"Output file prefix")
-      // LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters
-      // being used to extract reference sequences.[All Required]")
-      //// LONG_INT_PARAM("K",&Indexer.RollParam.kmer_size,"kmer size for
-      /// Rolling Hash filtering") /
-      /// LONG_INT_PARAM("T",&Indexer.RollParam.thresh,"threshold for filtering
-      /// specific read") /
-      /// LONG_INT_PARAM("S",&Indexer.RollParam.read_step_size,"step size for
-      /// extracting kmer")
+  // LONG_STRING_PARAM("out",&outf,"Output file prefix")
+  // LONG_PARAM_GROUP("Parameters for Reference Sequence ", "Parameters
+  // being used to extract reference sequences.[All Required]")
+  //// LONG_INT_PARAM("K",&Indexer.RollParam.kmer_size,"kmer size for
+  /// Rolling Hash filtering") /
+  /// LONG_INT_PARAM("T",&Indexer.RollParam.thresh,"threshold for filtering
+  /// specific read") /
+  /// LONG_INT_PARAM("S",&Indexer.RollParam.read_step_size,"step size for
+  /// extracting kmer")
 
-      // LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of
-      // variants with long flanking region") LONG_INT_PARAM("var_short",
-      // &opt->num_variant_short, "[INT] number of variants with short flanking
-      // region") LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking
-      // region length around each marker") LONG_INT_PARAM("flank_long_len",
-      // &opt->flank_long_len, "[INT] long flanking region length around each
-      // marker")
+  // LONG_INT_PARAM("var_long", &opt->num_variant_long, "[INT] number of
+  // variants with long flanking region") LONG_INT_PARAM("var_short",
+  // &opt->num_variant_short, "[INT] number of variants with short flanking
+  // region") LONG_INT_PARAM("flank_len", &opt->flank_len, "[INT] flanking
+  // region length around each marker") LONG_INT_PARAM("flank_long_len",
+  // &opt->flank_long_len, "[INT] long flanking region length around each
+  // marker")
 
-      LONG_PARAM_GROUP("Parameters for Alignment ",
-                       "Parameters the are universal for both single end and "
-                       "pair end alignment.")
-          LONG_INT_PARAM("kmer_thresh", &kmer_thresh,
-                         "[Int] Out of 6 kmer masking tests, number of masking "
-                         "kmer test need to pass[Optional,Default:3]")
-              LONG_DOUBLE_PARAM("n", &opt->fnr,
-                                "[Int or Float] Max #diff (int) or missing "
-                                "prob under 0.02 error rate")
-                  LONG_INT_PARAM(
-                      "o", &opt->max_gapo,
-                      "[Int] maximum number or fraction of gap opens")
-                      LONG_INT_PARAM("e", &opte,
-                                     "[Int] maximum number of gap extensions, "
-                                     "-1 for disabling long gaps [-1]")
-                          LONG_INT_PARAM("i", &opt->indel_end_skip,
-                                         "[Int] do not put an indel within INT "
-                                         "bp towards the ends")
-                              LONG_INT_PARAM("d", &opt->max_del_occ,
-                                             "[Int] maximum occurrences for "
-                                             "extending a long deletion")
-                                  LONG_INT_PARAM("l", &opt->seed_len,
-                                                 "[Int] seed length [32]")
-                                      LONG_INT_PARAM(
-                                          "k", &opt->max_seed_diff,
-                                          "[Int] maximal seed difference")
-                                          LONG_INT_PARAM(
-                                              "m", &opt->max_entries,
-                                              "[Int] maximal stack entries")
-                                              LONG_INT_PARAM(
-                                                  "t", &opt->n_threads,
-                                                  "[Int] number of threads")
-      // LONG_INT_PARAM("L",&opt->seed_len,"seed length")
-      LONG_INT_PARAM(
-          "R", &opt->max_top2,
-          "[Int] stop searching when there are >INT equally best hits")
-          LONG_INT_PARAM(
-              "q", &opt->trim_qual,
-              "[Int] quality threshold for read trimming down to 35dbp")
-              LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
-      // Roll Hash
+  LONG_PARAM_GROUP("Parameters for Alignment ",
+                   "Parameters the are universal for both single end and "
+                   "pair end alignment.")
+  LONG_INT_PARAM("kmer_thresh", &kmer_thresh,
+                 "[Int] Out of 6 kmer masking tests, number of masking "
+                 "kmer test need to pass[Optional,Default:3]")
+  LONG_DOUBLE_PARAM("n", &opt->fnr,
+                    "[Int or Float] Max #diff (int) or missing "
+                    "prob under 0.02 error rate")
+  LONG_INT_PARAM("o", &opt->max_gapo,
+                 "[Int] maximum number or fraction of gap opens")
+  LONG_INT_PARAM("e", &opte,
+                 "[Int] maximum number of gap extensions, "
+                 "-1 for disabling long gaps [-1]")
+  LONG_INT_PARAM("i", &opt->indel_end_skip,
+                 "[Int] do not put an indel within INT "
+                 "bp towards the ends")
+  LONG_INT_PARAM("d", &opt->max_del_occ,
+                 "[Int] maximum occurrences for "
+                 "extending a long deletion")
+  LONG_INT_PARAM("l", &opt->seed_len, "[Int] seed length [32]")
+  LONG_INT_PARAM("k", &opt->max_seed_diff, "[Int] maximal seed difference")
+  LONG_INT_PARAM("m", &opt->max_entries, "[Int] maximal stack entries")
+  LONG_INT_PARAM("t", &opt->n_threads, "[Int] number of threads")
+  // LONG_INT_PARAM("L",&opt->seed_len,"seed length")
+  LONG_INT_PARAM("R", &opt->max_top2,
+                 "[Int] stop searching when there are >INT equally best hits")
+  LONG_INT_PARAM("q", &opt->trim_qual,
+                 "[Int] quality threshold for read trimming down to 35dbp")
+  LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
+  // Roll Hash
 
-      // LONG_PARAM("c",&compread,"seed length")
-      LONG_PARAM("N", &nonstop,
-                 "[Bool] non-iterative mode: search for all n-difference hits "
-                 "(slooow)") LONG_PARAM("I", &IL13,
-                                        "[Bool] the input is in the Illumina "
-                                        "1.3+ FASTQ-like format")
-          LONG_PARAM("L", &loggap,
-                     "[Bool] log-scaled gap penalty for long deletions")
+  // LONG_PARAM("c",&compread,"seed length")
+  LONG_PARAM("N", &nonstop,
+             "[Bool] non-iterative mode: search for all n-difference hits "
+             "(slooow)")
+  LONG_PARAM("I", &IL13,
+             "[Bool] the input is in the Illumina "
+             "1.3+ FASTQ-like format")
+  LONG_PARAM("L", &loggap, "[Bool] log-scaled gap penalty for long deletions")
 
-              LONG_PARAM_GROUP(
-                  "Additional Parameters for PairEnd ",
-                  "Additional parameters specified for Pair end "
-                  "mapping.[Optional]") LONG_INT_PARAM("max_isize",
-                                                       &popt->max_isize,
-                                                       "[Int] maximum insert "
-                                                       "size")
-                  LONG_INT_PARAM("max_occ", &popt->max_occ,
-                                 "[Int] maximum occurrences for one end ")
-                      LONG_PARAM(
-                          "is_sw", &popt->is_sw,
-                          "[Bool] disable Smith-Waterman for the unmapped mate")
-                          LONG_INT_PARAM(
-                              "n_multi", &popt->n_multi,
-                              "[Int] maximum hits to output for paired reads")
-                              LONG_INT_PARAM(
-                                  "N_multi", &popt->N_multi,
-                                  "[Int] maximum hits to output for discordant "
-                                  "pairs") LONG_DOUBLE_PARAM("ap_prior",
-                                                             &popt->ap_prior,
-                                                             "[Double] prior "
-                                                             "of chimeric rate "
-                                                             "(lower bound) ")
-                                  LONG_PARAM(
-                                      "force_isize", &popt->force_isize,
-                                      " [Bool] disable insert size estimate")
+  LONG_PARAM_GROUP("Additional Parameters for PairEnd ",
+                   "Additional parameters specified for Pair end "
+                   "mapping.[Optional]")
+  LONG_INT_PARAM("max_isize", &popt->max_isize,
+                 "[Int] maximum insert "
+                 "size")
+  LONG_INT_PARAM("max_occ", &popt->max_occ,
+                 "[Int] maximum occurrences for one end ")
+  LONG_PARAM("is_sw", &popt->is_sw,
+             "[Bool] disable Smith-Waterman for the unmapped mate")
+  LONG_INT_PARAM("n_multi", &popt->n_multi,
+                 "[Int] maximum hits to output for paired reads")
+  LONG_INT_PARAM("N_multi", &popt->N_multi,
+                 "[Int] maximum hits to output for discordant "
+                 "pairs")
+  LONG_DOUBLE_PARAM("ap_prior", &popt->ap_prior,
+                    "[Double] prior "
+                    "of chimeric rate "
+                    "(lower bound) ")
+      LONG_PARAM("force_isize", &popt->force_isize,
+                 " [Bool] disable insert size estimate")
 
-                                      LONG_PARAM_GROUP(
-                                          "Parameters for Statistics ",
-                                          "Parameters specified for statistics "
-                                          "and summary.[Optional]")
-                                          LONG_PARAM(
-                                              "cal_dup", &opt->cal_dup,
-                                              "[Bool] enable the calculation "
-                                              "of duplicated reads in depth "
-                                              "calculation ")
-                                              LONG_DOUBLE_PARAM(
-                                                  "frac_samp", &opt->frac,
-                                                  "[Double] specify the "
-                                                  "downsampling fraction ")
+          LONG_PARAM_GROUP("Parameters for Statistics ",
+                           "Parameters specified for statistics "
+                           "and summary.[Optional]")
+              LONG_PARAM("cal_dup", &opt->cal_dup,
+                         "[Bool] enable the calculation "
+                         "of duplicated reads in depth "
+                         "calculation ")
+                  LONG_DOUBLE_PARAM("frac_samp", &opt->frac,
+                                    "[Double] specify the "
+                                    "downsampling fraction ")
       // LONG_STRING_PARAM("depth_dist",&DepthDist,"Output file for depth
       // distribution ") LONG_STRING_PARAM("site_pileup",&SitePileup,"Output
       // file for Pileup information on specified sites ")
@@ -491,8 +470,8 @@ int runPop(int argc, char **argv) {
   //		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD
   // matrix file in resource directory[Required]")
   // LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource
-  // directory[Required]") 		LONG_STRING_PARAM("mu", &muPath, "[String]
-  // Input mu matrix file in resource directory[Required]")
+  // directory[Required]") 		LONG_STRING_PARAM("mu", &muPath,
+  // "[String] Input mu matrix file in resource directory[Required]")
   LONG_STRING_PARAM("SVDPrefix", &SVDPrefix,
                     "[String] Specify the prefix used by SVD matrices. If "
                     "you are using FASTQuick default marker set, you may "

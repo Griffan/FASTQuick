@@ -19,6 +19,8 @@ if (length(args)==0) {
   args[4] = "grey"
   cat("Insufficient arguments provided, use default setting:",args,"\n")
 }
+inputfile = paste0(oldwd,"/",basename(args[1]))
+outputfile = paste0(oldwd,"/",basename(args[2]))
 #set background
 library(ggplot2)
 library(scales)
@@ -72,10 +74,17 @@ RefCoord=RefCoord.1kg
 }
 
 #assuming the input target sample has format ID PC1 PC2
-cat("Open file:",args[1],"\n")
-TargetSample=read.table(file=args[1])
-TargetSample=cbind(TargetSample,rep("UserSample",length(TargetSample$V1)))
-colnames(TargetSample)=c("ID","PC1","PC2","POP")
+library(data.table)
+cat("Open file:",inputfile,"\n")
+TargetSample=read.table(file=inputfile, header=T)
+TargetSample=data.frame(ID=c("UserSample"),
+PC1=c(TargetSample$IntendedSample[1]),
+PC2=c(TargetSample$IntendedSample[1]),
+POP=c("UserSample"))
+#TargetSample=cbind(TargetSample,rep("UserSample",length(TargetSample$V1)))
+#colnames(TargetSample)=c("ID","PC1","PC2","POP")
+print(TargetSample)
+
 
 if(args[4]=="grey")
 {
@@ -96,7 +105,7 @@ p=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP))+#geom_text(data=
 }
 setwd(oldwd)
 #ggsave(paste0(args[2],".pdf"))
-pdf( paste0(args[2],".pdf"))
+pdf( paste0(outputfile,".pdf"))
 # Output all plots to currently active device
 print( p )
 # Close device
