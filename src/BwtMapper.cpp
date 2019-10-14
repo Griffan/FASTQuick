@@ -40,7 +40,7 @@ kh_64_t *g_hash;
 
 #include <pthread.h>
 
-static pthread_mutex_t g_seq_lock = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t g_seq_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 extern ubyte_t *bwa_refine_gapped(const bntseq_t *bns, int n_seqs, bwa_seq_t *seqs,

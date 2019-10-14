@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.4)
 
 include_directories(${STATGEN_INCLUDE_DIR})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3  -Wall -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-format-security -Wno-unused-function -Wno-write-strings -Wno-sign-compare -Wno-unused-but-set-variable")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3  -Wall -Wno-unused-variable -Wno-unused-result -Wno-format-security -Wno-unused-function -Wno-write-strings -Wno-sign-compare")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -x c++ -pthread -DHAVE_PTHREAD  -mmmx -msse -msse2 -msse3")
 

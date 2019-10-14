@@ -1939,7 +1939,6 @@ int StatCollector::GetGCDist(const string &outputPath) {
 
 int StatCollector::GetEmpRepDist(const string &outputPath) {
   ofstream fout(outputPath + ".EmpRepDist");
-  double prevQual = 0;
   for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
     fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i]) << "\t"
          << (EmpRepDist[i] == 0 ? 0
