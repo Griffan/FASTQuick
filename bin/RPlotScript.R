@@ -47,20 +47,20 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
-findBump<-function(m,x,y,z)
+findBump<-function(m,x,cntCol,numLimits)
 {
   cnt=0
-  DCMax=max(m[,y])
-  pivot=which.max(m[,y])
-  prev=DCMax
+  DepthCntMax=max(m[,cntCol])
+  pivot=which.max(m[,cntCol])
+  prev=DepthCntMax
   for(i in pivot:1)
   {
-    if(cnt==z)
+    if(cnt==numLimits)
     {
      break
     }
 
-    if(m[i,2]>prev)
+    if(m[i,2]>prev*1.2)#turning points
     {
       cnt=cnt+1
     }
@@ -69,18 +69,17 @@ findBump<-function(m,x,y,z)
     min=i
   }
 
-
   cnt=0
-  prev=DCMax
-  print(dim(m))
+  prev=DepthCntMax
+  #print(dim(m))
   for(i in pivot:length(m[,1]))
   {
-    if(cnt==z)
+    if(cnt==numLimits)
     {
       break
     }
 
-    if(m[i,2]>prev)
+    if(m[i,2]>prev*1.2)
      {
       cnt=cnt+1
     }
@@ -122,13 +121,13 @@ input=args[1]
 SVDPrefix=args[2]
 FASTQuickInstallDir=args[3]
 #input="output"
-print(args)
+#print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
 par(mfrow=c(2,2))
 
 mydata= read.table(paste(input,".DepthDist",sep=""),header=FALSE)
-mydata=mydata[2:100,]
+mydata=mydata[2:150,]
 colnames(mydata)=c("Depth","SiteCount")
 lmt=findBump(mydata,1,2,3)
 q1=ggplot(mydata,aes(x=Depth,y=SiteCount))+geom_line(color="#00BFC4")+
@@ -136,10 +135,16 @@ q1=ggplot(mydata,aes(x=Depth,y=SiteCount))+geom_line(color="#00BFC4")+
 
 
 mydata= read.table(paste(input,".EmpCycleDist",sep=""),header=FALSE)
-mydata=mydata[1:100,]
+maxCycle = 0
+for (i in 1:150)
+{
+  maxCycle = i
+  if(mydata[i,3] == 0) break
+}
+mydata=mydata[1:maxCycle,]
 colnames(mydata)=c("Cycle","VariantCount","BaseCount","EmpericalQuality","ReadCount")
 q2=ggplot(mydata)+geom_line(aes(y=EmpericalQuality,x=Cycle),color="#00BFC4")+
-  ggtitle("Sequencing Cycle V.S. Emperical Quality")+coord_cartesian(xlim=c(0,100))+ylim(0,45)+
+  ggtitle("Sequencing Cycle V.S. Emperical Quality")+coord_cartesian(xlim=c(0,maxCycle))+ylim(0,45)+
   theme(plot.title = element_text(hjust = 0.5,size=10))
 
 
@@ -205,7 +210,7 @@ Depth5=as.numeric(strsplit(mydata[fileLen-7],":")[[1]][2])
 Depth10=as.numeric(strsplit(mydata[fileLen-6],":")[[1]][2])
 
 plotdata=c(EstimatedQ30Depth,EstimatedQ20Depth,EstimatedDepth,ExpectedDepth)
-print(plotdata)
+#print(plotdata)
 plotname=c("EstimatedQ30Depth","EstimatedQ20Depth","EstimatedDepth","ExpectedDepth")
 mydate=cbind(read.table(text=plotname),plotdata)
 q7=ggplot(mydate,aes(x=mydate[,1],y=mydate[,2]))+ggtitle("Depth")+

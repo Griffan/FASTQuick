@@ -2265,7 +2265,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
 
   long total_base(0);
   long total_reads(0);
-  fout << "FILE 1|FILE 2|# of Reads|Average Length" << endl;
+  fout << "Pair-end 1|Pair-end 2|# of Reads|Average Length" << endl;
   fout << "---|---|---|---" << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
     fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
@@ -2289,8 +2289,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << "Estimated AvgDepth : ";
   fout << ((NumPositionCovered == 0)
                ? 0
-               : NumBaseMapped / (double)NumPositionCovered)
-       << " [" << NumBaseMapped<< "/" << NumPositionCovered << "]"<<endl;
+               : NumBaseMapped / (double)total_region_size)
+       << " [" << NumBaseMapped<< "/" << total_region_size << "]"<<endl;
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%" << endl;
   // output for fraction figure
