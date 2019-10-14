@@ -1,12 +1,7 @@
 [![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
 [![GitHub Downloads](https://img.shields.io/github/downloads/Griffan/FASTQuick/total.svg?style=flat)](https://github.com/Griffan/FASTQuick/releases)
 ### NAME
-   FASTQuick, a Fastq file based **ultra-rapid** QC tool which skips full-genome alignment and incoporates **ancestry estimation**, **contamination estimation** and variety of QC analysis. 
-   
-   
-### Tutorial
-   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
-   
+   FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC statistics, including **ancestry estimation** and **contamination estimation**, at 50x faster turnaround time.
    
 ### CONTENTS
 
@@ -26,7 +21,7 @@ To simplify the whole process, we prepared a one-stop script to process the whol
 ```
 bin/FASTQuick.sh [--steps All|AllButIndex|Index|Align|ContaminationAndAncestry] --candidateVCF <variant list> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
 ```
-
+In principal, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter.
 
 ### SYNOPSIS
 
@@ -40,7 +35,7 @@ FASTQuick align  --index_prefix reduced_ref_index --fq_list NA12878.fq.list --ou
 FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
 ```
 ### DESCRIPTION
-   FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your dataset. 
+   FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your data set. 
 ### DOWNLOAD AND INSTALL
    git clone https://github.com/Griffan/FASTQuick.git
    
@@ -208,15 +203,11 @@ You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
    
 ### USEFUL TIPS
 
+#### Wiki page
+   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
 #### Workflow
    The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
-#### Resource file preparation.
-   FASTQuick was released along with pre-selected variant sites for information collection, which could be found in resource directory. 
-   
-   If you want to use your own abitrary variant sites, you can also refer to https://github.com/Griffan/VerifyBamID for resource files preparation.
-   
-   or you can find generate_new_matrix.sh in $(FASTQUICK_HOME)/bin/ to update your own variant list and then you can update everything you need with the auxiliary tools in bin directory. 
-   
+ 
    
 ### BUGS
    List known bugs.
