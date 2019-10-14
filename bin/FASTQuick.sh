@@ -113,7 +113,7 @@ if [[ "$steps" == *"allbutindex"* ]] ; then
 	do_align=true
 	do_cont_anc=true
 elif [[ "$steps" == *"all"* ]] ; then
-  echo "Running All steps at once is not suggested because Index step only requires to be run once!"
+  echo "Running All steps at once is not suggested because indices can be reused!"
 	do_index=true
 	do_align=true
 	do_cont_anc=true
