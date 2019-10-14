@@ -58,7 +58,6 @@ int runIndex(int argc, char **argv) {
   std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),
       DBsnpPath("Empty"), Prefix("Empty"), PreDefinedVcf("Empty"),
       RegionList("Empty");
-  bool reselect(false);
   // std::string Prefix("Empty");
   paramList pl;
 

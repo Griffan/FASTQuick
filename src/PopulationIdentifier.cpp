@@ -236,7 +236,6 @@ int PopulationIdentifier::ReadMatrixUD(const std::string &path)
 {
 	std::ifstream fin(path);
 	std::string line;
-	uint32_t index(0);
 	std::vector<PCtype> tmpUD(2, 0);
 	if (!fin.is_open()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
@@ -278,7 +277,6 @@ int PopulationIdentifier::ReadMatrixPC(const std::string &path)
 {
 	std::ifstream fin(path);
 	std::string line;
-	uint32_t index(0);
 	std::vector<PCtype> tmpPC(2, 0);
 	if (!fin.is_open()) { std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 	while (std::getline(fin, line))
@@ -368,7 +366,7 @@ int PopulationIdentifier::ReadMatrixGL(const std::string& path)//Reading GL info
 static std::vector<double>  calLikelihood(const std::string & seq, const std::string & qual,char ref,char alt)//maj:ref, min:alt
 {	
 
-	double lik(0), GL0(0), GL1(0), GL2(0);
+	double GL0(0), GL1(0), GL2(0);
 	{
 		for (uint32_t i = 0; i != seq.size(); ++i)
 		{
@@ -420,7 +418,6 @@ int PopulationIdentifier::ReadPileup(const std::string& path)
 	char ref, alt;
 	if (!fin.isOpen()) {  std::cerr<<"Open file:"<<path<<"\t failed, exit!";exit(EXIT_FAILURE);  }
 
-	int sephore = -1;
 	while ((line="",fin.readLine(line)!=-1))
 	{
 		if (line[0] == '#') continue;

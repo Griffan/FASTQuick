@@ -3,6 +3,17 @@ project(FASTQuick)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_CXX_STANDARD 11)
 
+file( WRITE  ${CMAKE_CURRENT_SOURCE_DIR}/bin/cfg.sh "#!/bin/bash\n")
+file( APPEND  ${CMAKE_CURRENT_SOURCE_DIR}/bin/cfg.sh "CMAKE_CURRENT_SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"\n")
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick.sh
+		COMMAND cat ${CMAKE_CURRENT_SOURCE_DIR}/bin/cfg.sh ${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick_template.sh >${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick.sh
+		COMMAND chmod 755 ${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick.sh
+		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/bin/cfg.sh")
+
+add_custom_target(run ALL
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bin/FASTQuick.sh)
+
 find_path(HTS_INCLUDE_DIRS htslib/bgzf.h HINTS /usr/include/ /usr/local/include/)
 if(NOT HTS_INCLUDE_DIRS )
     message(FATAL_ERROR "libhts HTS_INCLUDE_DIRS not found")

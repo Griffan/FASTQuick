@@ -26,6 +26,7 @@ FastPopCon*
 *.Po
 tabix
 FASTQuick
+FASTQuick.sh
 FASTQuick.dSYM
 config.log
 Makefile

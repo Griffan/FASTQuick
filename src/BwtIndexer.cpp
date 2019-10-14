@@ -53,8 +53,8 @@ unsigned int mask[6] =
 { 0xffff0000, 0xffff, 0xff0000ff, 0xffff00, 0xff00ff00, 0xff00ff };
 #endif
 #ifdef KMER_64_BIT
-const uint64_t mask[6] =
-        {0xffffffff00000000, 0xffffffff, 0xffff00000000ffff, 0xffffffff0000, 0xffff0000ffff0000, 0xffff0000ffff};
+//const uint64_t mask[6] =
+//        {0xffffffff00000000, 0xffffffff, 0xffff00000000ffff, 0xffffffff0000, 0xffff0000ffff0000, 0xffff0000ffff};
 #endif
 
 #define NST_NT4_TABLE(X) (nst_nt4_table[(unsigned char)X]<4?nst_nt4_table[(unsigned char)X]:rand()%4)

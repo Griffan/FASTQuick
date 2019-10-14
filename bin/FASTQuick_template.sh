@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # FASTQuick: a ultra-fast full-alignment-free quality control toolkit
 #
@@ -229,9 +228,9 @@ echo "Max file handles: $(ulimit -n)" 1>&2
 echo "$(date)	Running FASTQuick. The full log is in $logfile"
 
 #TODO:start from here tomorrow
-FASTQuick_BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-FASTQuick_SRC_DIR="${FASTQuick_BIN_DIR}/../"
-FASTQuick_RESOURCE_DIR="${FASTQuick_SRC_DIR}/resource/"
+FASTQuick_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+FASTQuick_BIN_DIR="${FASTQuick_SRC_DIR}/bin/"
+#FASTQuick_RESOURCE_DIR="${FASTQuick_SRC_DIR}/resource/"
 
 FASTQuick_PROGRAM="${FASTQuick_SRC_DIR}/bin/FASTQuick"
 if [[ ! -f "${FASTQuick_PROGRAM}" ]] ; then
