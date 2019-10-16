@@ -142,18 +142,18 @@ for (i in 1:150)
   if(mydata[i,3] == 0) break
 }
 mydata=mydata[1:maxCycle,]
-colnames(mydata)=c("Cycle","VariantCount","BaseCount","EmpericalQuality","ReadCount")
-q2=ggplot(mydata)+geom_line(aes(y=EmpericalQuality,x=Cycle),color="#00BFC4")+
-  ggtitle("Sequencing Cycle V.S. Emperical Quality")+coord_cartesian(xlim=c(0,maxCycle))+ylim(0,45)+
+colnames(mydata)=c("Cycle","VariantCount","BaseCount","EmpiricalQuality","ReadCount")
+q2=ggplot(mydata)+geom_line(aes(y=EmpiricalQuality,x=Cycle),color="#00BFC4")+
+  ggtitle("Sequencing Cycle V.S. Empirical Quality")+coord_cartesian(xlim=c(0,maxCycle))+ylim(0,45)+
   theme(plot.title = element_text(hjust = 0.5,size=10))
 
 
 mydata=read.table(paste(input,".EmpRepDist",sep=""),header=FALSE)
 mydata=mydata[1:40,]
-colnames(mydata)=c("SequencingQuality","VariantCount","BaseCount","EmpericalQuality")
+colnames(mydata)=c("SequencingQuality","VariantCount","BaseCount","EmpiricalQuality")
 mydata$BaseCount=mydata$BaseCount
-q3=ggplot(mydata)+geom_line(aes(y=EmpericalQuality,x=SequencingQuality),color="#00BFC4")+
-  ggtitle("Sequencing Quality V.S. Emperical Quality")+geom_abline(intercept=0, slope=1,color="purple",linetype="dotted")+
+q3=ggplot(mydata)+geom_line(aes(y=EmpiricalQuality,x=SequencingQuality),color="#00BFC4")+
+  ggtitle("Sequencing Quality V.S. Empirical Quality")+geom_abline(intercept=0, slope=1,color="purple",linetype="dotted")+
   xlim(0,40)+ylim(0,40)+ theme(plot.title = element_text(hjust = 0.5,size=10))
 
 q4=ggplot(mydata)+geom_line(aes(y=BaseCount,x=SequencingQuality),color="red",linetype="dotted")+
