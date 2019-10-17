@@ -103,7 +103,7 @@ In principal, you can choose any common genetic variants database for --siteVCF;
 
 To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory(site-only vcf files).
 
-A example for repeat_mask.fasta: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/StrictMask/20140520.allAutosome.strict_mask.fasta.gz
+A example for repeat_mask file: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks//20141020.strict_mask.whole_genome.bed
 
 
 **align**
