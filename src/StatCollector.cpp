@@ -341,6 +341,9 @@ void StatCollector::UpdateInfoVecAtMarker(
          ++i, tmpCycle += 1 * sign[strand], ++relativeCoordOnRead) {
       if (VcfTable[chrom].find(i) != VcfTable[chrom].end()) // actual snp site
       {
+        if (not targetRegion.isEmpty and
+            not targetRegion.IsOverlapped(chrom, i))
+          continue;
         int tmpIndex = VcfTable[chrom][i];
         SeqVec[tmpIndex] += seq[relativeCoordOnRead];
         QualVec[tmpIndex] += qual[relativeCoordOnRead];
@@ -383,6 +386,8 @@ int StatCollector::UpdateInfoVecAtRegularSite(
     for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
              tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
              ++relativeCoordOnRef) {
+      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
+        continue;
       if (i < refRealStart + opt->read_len * FLANK_EDGE)
         continue;
       if (i > refRealEnd - opt->read_len * FLANK_EDGE)
@@ -417,6 +422,8 @@ int StatCollector::UpdateInfoVecAtRegularSite(
     for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
              tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
              ++relativeCoordOnRef) {
+      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
+        continue;
       if (i < refRealStart + opt->read_len * FLANK_EDGE)
         continue;
       if (i > refRealEnd - opt->read_len * FLANK_EDGE)
@@ -435,10 +442,11 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   // DEBUG related variables
   int total_effective_len(0);
   // DEBUG related variables end
+  int threshQual = -1;
   int seqid(0);
   int j(0);
 
-  if (p->type == BWA_TYPE_NO_MATCH or p->mapQ == 0) {
+  if (p->type == BWA_TYPE_NO_MATCH or p->mapQ <= threshQual) {
     return false;
   }
 
@@ -2206,6 +2214,14 @@ int StatCollector::SetGenomeSize(long total_size) {
   return 0;
 }
 
+int StatCollector::SetTargetRegion(const std::string &targetRegionPath) {
+  if (targetRegionPath == "Empty")
+    targetRegion.isEmpty = true;
+  else
+    targetRegion.ReadRegionList(targetRegionPath);
+  return 0;
+}
+
 /*convert lambda function into regular functions*/
 double StatCollector::Q20AvgDepth() {
   long long tmp(0);
@@ -2289,7 +2305,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
-       << " [" << NumBaseMapped<< "/" << total_region_size << "]"<<endl;
+       << " [" << NumBaseMapped << "/" << total_region_size << "]" << endl;
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%" << endl;
   // output for fraction figure
@@ -2345,9 +2361,9 @@ int StatCollector::SummaryOutput(const string &outputPath) {
       return 0;
   };*/
   fout << "Median Insert Size(>=300bp) : " << MIS300() << endl;
-//  fout << "Number of Long Region Variant : " << NumLongMarker << endl;
-//  fout << "Number of Short Region Variant : " << NumShortMarker << endl;
-//  fout << "Number of XorY Variant : " << NumXorYMarker << endl;
+  //  fout << "Number of Long Region Variant : " << NumLongMarker << endl;
+  //  fout << "Number of Short Region Variant : " << NumShortMarker << endl;
+  //  fout << "Number of XorY Variant : " << NumXorYMarker << endl;
 
   return 0;
 }

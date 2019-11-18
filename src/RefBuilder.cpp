@@ -1,17 +1,23 @@
 #include "RefBuilder.h"
 #include "../libbwa/bwtaln.h"
 #include "Error.h"
+#include "TargetRegion.h"
 #include "Utility.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <random>
 #include <sstream>
 
 #define DEBUG 0
 #define MIN_AF 0.01
 #define CALLABLE_RATE 0.95f
+
+// std::default_random_engine generator;
+// std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
 static void CalculateGC(const int flank_len, const faidx_t *seq,
                         const std::string &Chrom, const int Position,
                         std::ofstream &FGC) { // Calculate GC content
@@ -68,28 +74,30 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
     flank_len = flank_short_len;
 
   // ensure no overlapping regions
-  if (VcfTable.find(chr) != VcfTable.end()) {
-    auto low_iter = VcfTable[chr].upper_bound(position);
-    if (low_iter != VcfTable[chr].begin()) {
-      auto up_iter = low_iter--;
+  if (regionWhiteList.empty()) { // whole genome mode
+    if (VcfTable.find(chr) != VcfTable.end()) {
+      auto low_iter = VcfTable[chr].upper_bound(position);
+      if (low_iter != VcfTable[chr].begin()) {
+        auto up_iter = low_iter--;
 
-      int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
-      int adjacentFlankLen = GetFlankLen(low_iter->second);
+        int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
+        int adjacentFlankLen = GetFlankLen(low_iter->second);
 
-      if (abs(position - adjacentPos) <
-          adjacentFlankLen + flank_len) {
-        warning("%s:%d is too close to other variants", chr.c_str(), position);
-        return true; // overlap with left region
-      }
+        if (abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
+          warning("%s:%d is too close to other variants", chr.c_str(),
+                  position);
+          return true; // overlap with left region
+        }
 
-      adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
-      adjacentFlankLen = GetFlankLen(up_iter->second);
+        adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
+        adjacentFlankLen = GetFlankLen(up_iter->second);
 
-      if (up_iter != VcfTable[chr].end() and
-          abs(position - adjacentPos) <
-          adjacentFlankLen + flank_len) {
-        warning("%s:%d is too close to other variants", chr.c_str(), position);
-        return true; // overlap with right region
+        if (up_iter != VcfTable[chr].end() and
+            abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
+          warning("%s:%d is too close to other variants", chr.c_str(),
+                  position);
+          return true; // overlap with right region
+        }
       }
     }
   }
@@ -97,9 +105,9 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
   if (MaskPath != "Empty") {
     std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
     if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
-      if (IsInCallableRegion(chr, position - flank_len, position + flank_len)) return true;
-    }
-    else {
+      if (IsInCallableRegion(chr, position - flank_len, position + flank_len))
+        return true;
+    } else {
       int dummy_t;
       char region[1024];
       sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
@@ -114,8 +122,7 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
   return false;
 }
 
-int RefBuilder::GetFlankLen(int index)
-{
+int RefBuilder::GetFlankLen(int index) {
   int adjacentFlankLen = 0;
   if (std::string(VcfVec[index]->getIDStr()).back() == 'L')
     adjacentFlankLen = flank_long_len;
@@ -151,41 +158,62 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
     flank_len = flank_short_len;
 
   // ensure no overlapping regions
-  if (VcfTable.find(chr) != VcfTable.end()) {
-    auto low_iter = VcfTable[chr].upper_bound(position);
-    if (low_iter != VcfTable[chr].begin()) {
-      auto up_iter = low_iter--;
+  if (1 || regionWhiteList.empty()) { // whole genome mode
+    if (VcfTable.find(chr) != VcfTable.end()) {
+      auto low_iter = VcfTable[chr].upper_bound(position);
+      if (low_iter != VcfTable[chr].begin()) {
+        auto up_iter = low_iter--;
 
-      int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
-      int adjacentFlankLen = GetFlankLen(low_iter->second);
+        int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
+        int adjacentFlankLen = GetFlankLen(low_iter->second);
 
-      if (abs(position - adjacentPos) <
-          adjacentFlankLen + flank_len) {
-        return true; // overlap with left region
-      }
+        //        std::cerr<<"out of "<<VcfTable[chr].size()<<"\tcurrent
+        //        marker:"<<position<<"("<<flank_len<<")"<<"\tleft:"
+        //        <<adjacentPos<<"("<<adjacentFlankLen<<")";
 
-      adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
-      adjacentFlankLen = GetFlankLen(up_iter->second);
+        if (abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
+          //          std::cerr<<"\toverlapped"<<std::endl;
+          return true; // overlap with left region
+        }
+        //        std::cerr<<"\tnon-overlapped"<<std::endl;
+        if (up_iter != VcfTable[chr].end()) {
+          adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
+          adjacentFlankLen = GetFlankLen(up_iter->second);
 
-      if (up_iter != VcfTable[chr].end() and
-                 abs(position - adjacentPos) <
-                     adjacentFlankLen + flank_len) {
-        return true; // overlap with right region
+          //          std::cerr << "out of " << VcfTable[chr].size()
+          //                    << "\tcurrent marker:" << position << "(" <<
+          //                    flank_len
+          //                    << ")"
+          //                    << "\tright:" << adjacentPos << "(" <<
+          //                    adjacentFlankLen
+          //                    << ")";
+
+          if (up_iter != VcfTable[chr].end() and
+              abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
+            //            std::cerr << "\toverlapped" << std::endl;
+            return true; // overlap with right region
+          }
+          //          std::cerr << "\tnon-overlapped" << std::endl;
+        }
+      } else {
+        int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
+        int adjacentFlankLen = GetFlankLen(low_iter->second);
+        return abs(position - adjacentPos + 1) < adjacentFlankLen + flank_len;
       }
     }
   }
-  // ensure no low complexity regions
 
+  // ensure no low complexity regions
   if (MaskPath != "Empty") {
     std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
     if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
-      if (not IsInCallableRegion(chr, position - flank_len, position + flank_len))
-      {
-        std::cerr<<"[DEBUG]Position:"<<chr<<"\t"<<position<<" is in repetitive region."<<std::endl;
+      if (not IsInCallableRegion(chr, position - flank_len,
+                                 position + flank_len)) {
+        std::cerr << "[DEBUG]Position:" << chr << "\t" << position
+                  << " is in repetitive region." << std::endl;
         return true;
       }
-    }
-    else {
+    } else {
       int dummy_t;
       char region[1024];
       sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
@@ -193,7 +221,8 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
       std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
       double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
       if (n < CALLABLE_RATE * MaskSeq.size()) {
-        std::cerr<<"[DEBUG]Position:"<<chr<<"\t"<<position<<" is in repetitive region."<<std::endl;
+        std::cerr << "[DEBUG]Position:" << chr << "\t" << position
+                  << " is in repetitive region." << std::endl;
         return true;
       }
     }
@@ -209,38 +238,12 @@ bool RefBuilder::IsChromInWhiteList(std::string &Chrom) {
   return (chromWhiteList.find(Chrom) != chromWhiteList.end());
 }
 
-bool RefBuilder::IsInWhiteList(std::string Chrom, int start) {
-  std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-  if (Chrom.find("chr") != std::string::npos or
-      Chrom.find("CHR") != std::string::npos) {
-    Chrom = Chrom.substr(3); // strip chr
-  }
-  if (regionWhiteList.find(Chrom) == regionWhiteList.end())
-    return false;
-  else {
-    auto lower_iter = regionWhiteList[Chrom].lower_bound(start);
-    if (lower_iter != regionWhiteList[Chrom].begin())
-      lower_iter--;
-    // std::cerr<<"lower_bound:(size:"<<regionWhiteList[Chrom].size()<<")"<<Chrom<<"
-    // "<<lower_iter->first<<" "<<lower_iter->second<<"
-    // input:"<<start<<std::endl;
-    if (lower_iter->first <= (start - flank_short_len) and
-        lower_iter->second > (start + flank_short_len))
-      return true;
-    else
-      return (++lower_iter)->first <= (start - flank_short_len) and
-             lower_iter->second > (start + flank_short_len);
-  }
-}
-
-inline static int OverlapLen(int a, int c, int b, int d)
-{
+inline static int OverlapLen(int a, int c, int b, int d) {
   if (a <= d && c >= b) {
     // overlap
-    return abs(std::min(c,d) - std::max(a,b));
-  }
-  else {
-    return 0;// no overlap
+    return abs(std::min(c, d) - std::max(a, b));
+  } else {
+    return 0; // no overlap
   }
 }
 
@@ -257,17 +260,16 @@ bool RefBuilder::IsInCallableRegion(std::string Chrom, int start, int end) {
     auto lower_iter = repeatRegionList[Chrom].lower_bound(start);
     if (lower_iter != repeatRegionList[Chrom].begin()) {
       lower_iter--;
-      while(lower_iter->first <= end)
-      {
-        overlap += OverlapLen(start, end, lower_iter->first, lower_iter->second);
+      while (lower_iter->first <= end) {
+        overlap +=
+            OverlapLen(start, end, lower_iter->first, lower_iter->second);
         ++lower_iter;
       }
-    }
-    else//the first region
+    } else // the first region
     {
-      while(lower_iter->first <= end)
-      {
-        overlap += OverlapLen(start, end, lower_iter->first, lower_iter->second);
+      while (lower_iter->first <= end) {
+        overlap +=
+            OverlapLen(start, end, lower_iter->first, lower_iter->second);
         ++lower_iter;
       }
     }
@@ -349,15 +351,25 @@ bool RefBuilder::IsMaxNumMarker(
       return true;
     chrFlag = 2;
   } else { // must be from chr1-chr22
-    if (isLong)
+    if (isLong) {
       chrFlag = 1;
-    else if (nLongMarker < num_variant_long) {
-      chrFlag = 1;
-    } else if (nShortMarker < num_variant_short) // must be from chr1-chr22
-    {
-      chrFlag = 0;
-    } else
-      return true;
+    } else {
+      //      float ratio =
+      //          num_variant_short / (float)(num_variant_short +
+      //          num_variant_long);
+      //      double sample = distribution(generator);
+      if (/*sample > ratio and*/ nLongMarker < num_variant_long) {
+        chrFlag = 1;
+      } else if (                                  /*sample <= ratio and*/
+                 nShortMarker < num_variant_short) // must be from chr1-chr22
+      {
+        chrFlag = 0;
+      }
+      if (nLongMarker >= num_variant_long and
+          nShortMarker >= num_variant_short) {
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -382,39 +394,11 @@ void RefBuilder::IncreaseNumMarker(int chrFlag) {
   }
 }
 
-int RefBuilder::ReadRegionList(const std::string &regionListPath) {
-  notice("Read target region list...\n");
-  std::ifstream fin(regionListPath);
-  if (!fin.is_open())
-    error("Region list bed file:%s open failed!", regionListPath.c_str());
-  std::string line;
-  while (std::getline(fin, line)) {
-    std::string chr;
-    int start(0), end(0);
-    std::stringstream ss(line);
-    ss >> chr >> start >> end;
-    if (chr.find("chr") != std::string::npos)
-      chr = chr.substr(3);
-    if (regionWhiteList.find(chr) != regionWhiteList.end()) {
-      if (regionWhiteList[chr].find(start) != regionWhiteList[chr].end()) {
-        if (regionWhiteList[chr][start] < end)
-          regionWhiteList[chr][start] = end;
-      } else {
-        regionWhiteList[chr][start] = end;
-      }
-    } else {
-      regionWhiteList[chr] = std::map<int, int>();
-      regionWhiteList[chr][start] = end;
-    }
-  }
-  fin.close();
-  return 0;
-}
-
 int RefBuilder::SelectMarker(const std::string &RegionList) {
 
+  TargetRegion GI;
   if (RegionList != "Empty")
-    ReadRegionList(RegionList);
+    GI.ReadRegionList(RegionList);
   notice("Start to select marker set...\n");
   std::string SelectedSite = NewRef + ".SelectedSite.vcf";
   InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
@@ -430,6 +414,39 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
   std::string Chrom;
   int Position;
 
+  // begin select exome variants
+  while (!reader.isEOF()) {
+    int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
+    VcfRecord *VcfLine = new VcfRecord;
+    reader.readRecord(*VcfLine);
+    Position = VcfLine->get1BasedPosition();
+    Chrom = VcfLine->getChromStr();
+
+    if (IsMaxNumMarker(Chrom, chrFlag, false) ||
+        (RegionList != "Empty" and not GI.IsOverlapped(Chrom, Position - 1))) {
+      delete VcfLine;
+      continue;
+    }
+
+    if (Skip(Chrom, Position, VcfLine, chrFlag)) {
+      delete VcfLine;
+      continue;
+    }
+
+    if (chrFlag == 1)
+      VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E|L").c_str());
+    else
+      VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E").c_str());
+
+    VcfTable[Chrom][Position] =
+        nShortMarker + nLongMarker + nXMarker + nYMarker;
+    VcfVec.push_back(VcfLine);
+
+    IncreaseNumMarker(chrFlag);
+  }
+  reader.close();
+  reader.open(VcfPath.c_str(), header);
+
   // begin select
   while (!reader.isEOF()) {
     int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
@@ -439,7 +456,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
     Chrom = VcfLine->getChromStr();
 
     if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and not IsInWhiteList(Chrom, Position - 1))) {
+        (RegionList != "Empty" and GI.IsOverlapped(Chrom, Position - 1))) {
       delete VcfLine;
       continue;
     }
@@ -458,6 +475,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
 
     IncreaseNumMarker(chrFlag);
   }
+  reader.close();
 
   if (nShortMarker + nLongMarker <
       num_variant_long + num_variant_short) // not enough essential markers

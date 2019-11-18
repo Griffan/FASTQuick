@@ -66,8 +66,6 @@ public:
 
   bool IsChromInWhiteList(std::string &Chrom);
 
-  bool IsInWhiteList(std::string Chrom, int start);
-
   bool IsInCallableRegion(std::string Chrom, int start, int end);
 
   bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
@@ -75,8 +73,6 @@ public:
                                             // marker, and also set marker type
 
   void IncreaseNumMarker(int chrFlag);
-
-  int ReadRegionList(const std::string &regionListPath);
 
 private:
   int nYMarker = 0, nXMarker = 0, nShortMarker = 0, nLongMarker = 0;

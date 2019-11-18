@@ -28,6 +28,7 @@ SOFTWARE.
 #include "../misc/vcf/VcfFileReader.h"
 #include "../misc/vcf/VcfHeader.h"
 #include "../misc/vcf/VcfRecord.h"
+#include "TargetRegion.h"
 #include "Utility.h"
 #include "cmath"
 #include "fstream"
@@ -50,7 +51,7 @@ public:
   long long NumBase;
   std::string FileName1, FileName2;
   FileStatCollector() : NumRead(0), NumBase(0), FileName1(0), FileName2(0) {}
-  FileStatCollector(const char *filename)
+  explicit FileStatCollector(const char *filename)
       : NumRead(0), NumBase(0), FileName1(filename), FileName2("") {}
   FileStatCollector(const char *filename1, const char *filename2)
       : NumRead(0), NumBase(0), FileName1(filename1), FileName2(filename2) {}
@@ -111,6 +112,10 @@ private:
   std::unordered_map<std::string, ContigStatus> contigStatusTable;
 
   std::vector<FileStatCollector> FSCVec;
+
+  // target region
+  TargetRegion targetRegion;
+
 
 private:
   bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
@@ -197,6 +202,7 @@ public:
 
   int AddFSC(FileStatCollector a);
   int SetGenomeSize(long total_size);
+  int SetTargetRegion(const std::string & targetRegionPath);
   int SummaryOutput(const std::string &outputPath);
 
   double Q20AvgDepth();
