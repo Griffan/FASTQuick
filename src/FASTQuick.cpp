@@ -57,7 +57,7 @@ int runIndex(int argc, char **argv) {
    */
   std::string RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),
       DBsnpPath("Empty"), Prefix("Empty"), PreDefinedVcf("Empty"),
-      RegionList("Empty");
+      TargetRegionPath("Empty");
   // std::string Prefix("Empty");
   paramList pl;
 
@@ -72,7 +72,7 @@ int runIndex(int argc, char **argv) {
   LONG_STRING_PARAM("predefinedVCF", &PreDefinedVcf,
                     "[String] VCF file with predefined variant sites "
                     "[Required if --siteVCF not specified]")
-  LONG_STRING_PARAM("regionList", &RegionList,
+  LONG_STRING_PARAM("regionList", &TargetRegionPath,
                     "[String] Bed file with target region list [Optional]")
   LONG_STRING_PARAM("dbsnpVCF", &DBsnpPath, "[String] dbSNP VCF file[Required]")
   LONG_STRING_PARAM("ref", &RefPath, "[String] Reference FASTA file[Required]")
@@ -134,7 +134,7 @@ int runIndex(int argc, char **argv) {
                        opt->flank_len, opt->flank_long_len,
                        opt->num_variant_short, opt->num_variant_long);
     if (PreDefinedVcf == "Empty")
-      ArtiRef.SelectMarker(RegionList);
+      ArtiRef.SelectMarker(TargetRegionPath);
     else
       ArtiRef.InputPredefinedMarker(PreDefinedVcf);
     ArtiRef.PrepareRefSeq();
@@ -150,11 +150,12 @@ int runIndex(int argc, char **argv) {
     cerr << "Open file :" << NewRef + ".param"
          << "failed!" << endl;
   }
-  ParamOut << "reference_path:\t" << RefPath << endl;
-  ParamOut << "var_long:\t" << opt->num_variant_long << endl;
-  ParamOut << "var_short:\t" << opt->num_variant_short << endl;
-  ParamOut << "flank_len:\t" << opt->flank_len << endl;
-  ParamOut << "flank_long_len:\t" << opt->flank_long_len << endl;
+  ParamOut << "REFERENCE_PATH\t" << RefPath << endl;
+  ParamOut << "TARGET_REGION_PATH\t" << TargetRegionPath << endl;
+  ParamOut << "NUM_VAR_LONG\t" << opt->num_variant_long << endl;
+  ParamOut << "NUM_VAR_SHORT\t" << opt->num_variant_short << endl;
+  ParamOut << "SHORT_FLANK_LENGTH\t" << opt->flank_len << endl;
+  ParamOut << "LONG_FLANK_LENGTH\t" << opt->flank_long_len << endl;
   ParamOut.close();
 
   notice("Version: %s\n", PACKAGE_VERSION);
@@ -162,6 +163,7 @@ int runIndex(int argc, char **argv) {
          cputime());
   return 0;
 }
+
 int runAlign(int argc, char **argv) {
   // ProfilerStart("FastPopCon.prof");
   double t_real, t_tmp(0);
@@ -371,16 +373,41 @@ int runAlign(int argc, char **argv) {
   }
   std::string ParaStr, TmpStr;
   std::string RefPath;
+  std::string TargetRegionPath;
+
+  //NewRef.param file parsing begin
   std::getline(ParamIn, ParaStr); // RefPath
   stringstream ss(ParaStr);
-  ss >> RefPath >> RefPath;
-  Indexer.RefPath = RefPath;
+  ss >> TmpStr;
+  if (TmpStr == "REFERENCE_PATH") {
+    ss >> RefPath;
+    Indexer.RefPath = RefPath;
+  }
+  else {
+    std::cerr << NewRef + ".param"
+              << " corrupted!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  std::getline(ParamIn, ParaStr); // TARGET_REGION_PATH
+  ss.str("");
+  ss.clear();
+  ss << ParaStr;
+  ss >> TmpStr;
+  if (TmpStr == "TARGET_REGION_PATH")
+    ss >> TargetRegionPath;
+  else {
+    std::cerr << NewRef + ".param"
+              << " corrupted!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
   std::getline(ParamIn, ParaStr); // variant long
   ss.str("");
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "var_long:")
+  if (TmpStr == "NUM_VAR_LONG")
     ss >> opt->num_variant_long;
   else {
     std::cerr << NewRef + ".param"
@@ -392,7 +419,7 @@ int runAlign(int argc, char **argv) {
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "var_short:")
+  if (TmpStr == "NUM_VAR_SHORT")
     ss >> opt->num_variant_short;
   else {
     std::cerr << NewRef + ".param"
@@ -404,7 +431,7 @@ int runAlign(int argc, char **argv) {
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "flank_len:")
+  if (TmpStr == "SHORT_FLANK_LENGTH")
     ss >> opt->flank_len;
   else {
     std::cerr << NewRef + ".param"
@@ -416,13 +443,14 @@ int runAlign(int argc, char **argv) {
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "flank_long_len:")
+  if (TmpStr == "LONG_FLANK_LENGTH")
     ss >> opt->flank_long_len;
   else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
     exit(EXIT_FAILURE);
   }
+
   ParamIn.close();
 
   std::string BwtPath = NewRef + ".bwt";
@@ -438,9 +466,9 @@ int runAlign(int argc, char **argv) {
     notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
     t_tmp = realtime();
     if (FaList != "Empty") {
-      BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt);
+      BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt, TargetRegionPath);
     } else {
-      BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt);
+      BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt, TargetRegionPath);
     }
     notice("[main]Mapping...%f sec\n", realtime() - t_tmp);
   }
