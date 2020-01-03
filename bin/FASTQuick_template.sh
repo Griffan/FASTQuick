@@ -315,6 +315,7 @@ if [[ $do_align == true ]] ; then
 			--index_prefix $indexPrefix \
 			--fq_list $fastqList \
 			--out_prefix ${outputPrefix} \
+			--q 15 \
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
