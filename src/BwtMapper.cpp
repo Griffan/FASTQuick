@@ -2619,14 +2619,11 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
     if (pacseq == 0) // indexing path
     {
       /*pacseq = */
-      if(ii.avg < 0.0) ii = last_ii;
       pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs[0], seqs,
                              popt, &ii, opt->mode);
     }
     else {
       /*pacseq = */
-      if (ii.avg < 0.0)
-        ii = last_ii;
       pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs[0], seqs, popt, &ii,
                              opt->mode);
     }
