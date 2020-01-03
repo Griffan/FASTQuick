@@ -2617,13 +2617,19 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
 
     // fprintf(stderr, "NOTICE - align unmapped mate...\n");
     if (pacseq == 0) // indexing path
+    {
       /*pacseq = */
+      if(ii.avg < 0.0) ii = last_ii;
       pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs[0], seqs,
                              popt, &ii, opt->mode);
-    else
+    }
+    else {
       /*pacseq = */
+      if (ii.avg < 0.0)
+        ii = last_ii;
       pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs[0], seqs, popt, &ii,
                              opt->mode);
+    }
     fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
             (float)(clock() - t) / CLOCKS_PER_SEC);
     t = clock();

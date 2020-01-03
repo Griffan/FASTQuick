@@ -281,14 +281,20 @@ StatCollector::StatCollector(const string &OutFile) {
   //    MaxInsertSizeDist = vector<size_t>(INSERT_SIZE_LIMIT, 0);
 }
 
-void StatCollector::StatVecDistUpdate(const string &qual, const string &refSeq,
+void StatCollector::StatVecDistUpdate(const string &chrom, int i,
+                                      const string &qual, const string &refSeq,
                                       const string &seq, int tmpCycle,
                                       int relativeCoordOnRead,
                                       int relativeCoordOnRef) {
 
   EmpRepDist[qual[relativeCoordOnRead]]++;
   EmpCycleDist[tmpCycle]++;
-  if (refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead]) {
+  if (seq[relativeCoordOnRead] != 'N'
+      and refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead]
+      and refSeq[relativeCoordOnRef] != 'N'
+      and dbSNPTable[chrom].find(i) == dbSNPTable[chrom].end())
+  {
+//    std::cerr<<"pos:"<<chrom<<":"<<i<<" "<<refSeq[relativeCoordOnRef]<<" "<<seq[relativeCoordOnRead]<<std::endl;
     misEmpRepDist[qual[relativeCoordOnRead]]++;
     misEmpCycleDist[tmpCycle]++;
   }
@@ -321,12 +327,9 @@ void StatCollector::AddBaseInfoToNewCoord(const string &chrom, int i,
   //    DebugQualVec.push_back("");
   //    DebugCycleVec.push_back(std::vector<int>());
   /*********end debug*****/
-  if (dbSNPTable[chrom].find(i) ==
-      dbSNPTable[chrom].end()) // not in dbsnp table
-  {
-    StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead,
-                      relativeCoordOnRef);
-  }
+    StatVecDistUpdate(chrom, i, qual, refSeq, seq, tmpCycle,
+                      relativeCoordOnRead, relativeCoordOnRef);
+
   index++;
 }
 
@@ -386,12 +389,12 @@ int StatCollector::UpdateInfoVecAtRegularSite(
     for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
              tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
              ++relativeCoordOnRef) {
-      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
-        continue;
       if (i < refRealStart + opt->read_len * FLANK_EDGE)
         continue;
       if (i > refRealEnd - opt->read_len * FLANK_EDGE)
         break;
+      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
+        continue;
 
       if (PositionTable[chr].find(i) !=
           PositionTable[chr].end()) { // site already exists
@@ -404,12 +407,9 @@ int StatCollector::UpdateInfoVecAtRegularSite(
           }
         }
         total_effective_len++;
-        if (dbSNPTable[chr].find(i) ==
-            dbSNPTable[chr].end()) // not in dbsnp table
-        {
-          StatVecDistUpdate(qual, refSeq, seq, tmpCycle, relativeCoordOnRead,
-                            relativeCoordOnRef);
-        }
+        StatVecDistUpdate(chr, i, qual, refSeq, seq, tmpCycle,
+                            relativeCoordOnRead, relativeCoordOnRef);
+
       } else // coord not exists
       {
         total_effective_len++;
@@ -422,12 +422,12 @@ int StatCollector::UpdateInfoVecAtRegularSite(
     for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
              tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
              ++relativeCoordOnRef) {
-      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
-        continue;
       if (i < refRealStart + opt->read_len * FLANK_EDGE)
         continue;
       if (i > refRealEnd - opt->read_len * FLANK_EDGE)
         break;
+      if (not targetRegion.isEmpty and not targetRegion.IsOverlapped(chr, i))
+        continue;
       total_effective_len++;
       AddBaseInfoToNewCoord(chr, i, qual, refSeq, seq, tmpCycle,
                             relativeCoordOnRead, relativeCoordOnRef);
@@ -442,7 +442,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   // DEBUG related variables
   int total_effective_len(0);
   // DEBUG related variables end
-  int threshQual = -1;
+  int threshQual = 0;
   int seqid(0);
   int j(0);
 
@@ -903,7 +903,7 @@ int StatCollector::IsDuplicated(
         q->pos); // length of read including cigar for bns tracking, length of
                  // the reference in the alignment
     bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
-    if (q->mapQ >= threshQual) {
+    if (q->mapQ > threshQual) {
       status = "RevOnly";
 
       if (q->cigar) {
@@ -973,7 +973,7 @@ int StatCollector::IsDuplicated(
                  // the reference in the alignment
     bns_coor_pac2real(bns, p->pos, readLength, &seqid_p);
 
-    if (p->mapQ >= threshQual) {
+    if (p->mapQ > threshQual) {
       status = "FwdOnly";
 
       if (p->cigar) {
@@ -1133,7 +1133,7 @@ int StatCollector::IsDuplicated(
          << "\tNotPair" << endl;
     return 0;
   }
-  if (p->mapQ >= threshQual && q->mapQ >= threshQual) {
+  if (p->mapQ > threshQual && q->mapQ > threshQual) {
     int ActualInsert(-1), start(0), end(0); //[start, end)
 
     status = "PartialPair";
@@ -1429,7 +1429,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   }
   /*done checking if reads bridges two reference contigs*/
   if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
-    if (q != 0 &&
+    if (q != 0  &&
         AddSingleAlignment(bns, q, opt)) // adding single via pair interface
     {
       string qname(bns->anns[seqid2].name);
@@ -1452,7 +1452,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   // until now p is aligned
   string pname(bns->anns[seqid].name);
   if (q == 0 || q->type == BWA_TYPE_NO_MATCH) {
-    if (AddSingleAlignment(bns, p, opt)) // adding single via pair interface
+    if ( AddSingleAlignment(bns, p, opt)) // adding single via pair interface
     {
       if (string(pname).find('Y') != string::npos ||
           string(pname).find('X') != string::npos) {
@@ -1564,7 +1564,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
   if (VErrors.numErrors() > 0)
     fprintf(stderr, "%s", VErrors.getNextError()->getMessage());
 
-  if (p == 0 || (p->getFlag() & SAM_FSU)) {
+  if (p == 0 || (p->getFlag() & SAM_FSU)) { //p is not aligned
     if (q == 0 || (q->getFlag() & SAM_FSU)) // both end are not mapped
       return 0;
     else if (IsPartialAlign(*q)) // q is partially mapped, p is not
@@ -1663,7 +1663,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
       }
       if (AddSingleAlignment(*p, opt)) // adding single via pair interface
       {
-        // TO-DO:adding IsDup function here to generate single end MAX insersize
+        // TO-DO:adding IsDup function here to generate single end MAX insert size
         // info
         IsDuplicated(SFH, *p, *q, opt, 3, fout); // 3 is p
         return 1;
@@ -1950,8 +1950,8 @@ int StatCollector::GetEmpRepDist(const string &outputPath) {
   for (uint32_t i = 0; i != EmpRepDist.size(); ++i) {
     fout << i << "\t" << (misEmpRepDist[i]) << "\t" << (EmpRepDist[i]) << "\t"
          << (EmpRepDist[i] == 0 ? 0
-                                : PHRED((double)(misEmpRepDist[i] + 1e-6) /
-                                        (EmpRepDist[i] + 1e-6)))
+                                : PHRED((double)(misEmpRepDist[i] + 1) /
+                                        (EmpRepDist[i] + 2)))
          << endl;
     //        if(misEmpRepDist[i]!=0)
     //            prevQual = PHRED((double) (misEmpRepDist[i] + 1e-6) /

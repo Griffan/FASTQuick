@@ -123,8 +123,8 @@ private:
 
   bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
 
-  void StatVecDistUpdate(const std::string &qual, const std::string &refSeq,
-                         const std::string &seq, int tmpCycle,
+  void StatVecDistUpdate(const std::string &chrom, int i, const std::string &qual,
+                         const std::string &refSeq, const std::string &seq, int tmpCycle,
                          int relativeCoordOnRead, int relativeCoordOnRef);
 
   void AddBaseInfoToNewCoord(const std::string &chrom, int i,

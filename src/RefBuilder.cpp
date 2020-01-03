@@ -396,24 +396,18 @@ void RefBuilder::IncreaseNumMarker(int chrFlag) {
 
 int RefBuilder::SelectMarker(const std::string &RegionList) {
 
-  TargetRegion GI;
+  TargetRegion targetRegion;
   if (RegionList != "Empty")
-    GI.ReadRegionList(RegionList);
+    targetRegion.ReadRegionList(RegionList);
   notice("Start to select marker set...\n");
   std::string SelectedSite = NewRef + ".SelectedSite.vcf";
-  InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
-  std::string BedPath = NewRef + ".bed";
-  std::ofstream BedFile(BedPath);
 
   // read in vcf, hapmap3 sites
+  std::string Chrom;
+  int Position;
   VcfHeader header;
   VcfFileReader reader;
   reader.open(VcfPath.c_str(), header);
-  header.write(&FoutHapMapSelectedSite);
-
-  std::string Chrom;
-  int Position;
-
   // begin select exome variants
   while (!reader.isEOF()) {
     int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
@@ -423,7 +417,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
     Chrom = VcfLine->getChromStr();
 
     if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and not GI.IsOverlapped(Chrom, Position - 1))) {
+        (RegionList != "Empty" and not targetRegion.IsOverlapped(Chrom, Position - 1))) {
       delete VcfLine;
       continue;
     }
@@ -445,6 +439,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
     IncreaseNumMarker(chrFlag);
   }
   reader.close();
+
   reader.open(VcfPath.c_str(), header);
 
   // begin select
@@ -456,7 +451,8 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
     Chrom = VcfLine->getChromStr();
 
     if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and GI.IsOverlapped(Chrom, Position - 1))) {
+        (RegionList != "Empty" and
+         targetRegion.IsOverlapped(Chrom, Position - 1))) {
       delete VcfLine;
       continue;
     }
@@ -485,6 +481,10 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
             VcfPath.c_str());
   }
   // output vcf and bed files
+  InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
+  std::string BedPath = NewRef + ".bed";
+  std::ofstream BedFile(BedPath);
+  header.write(&FoutHapMapSelectedSite);
   int flank_len = 0;
   for (const auto &kv : VcfTable) {
     for (auto pq : kv.second) {
