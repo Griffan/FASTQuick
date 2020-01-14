@@ -323,10 +323,10 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
         }
       }
       fin.close();
-      notice("Loading Mask Bed file done!\n");
+      notice("Loading Mask Bed file done!");
     } else if (suffix == ".fa" or suffix == "sta" or suffix == ".gz") {
       FastaMask = fai_load(MaskPath.c_str());
-      notice("Loading Mask fai file done!\n");
+      notice("Loading Mask fai file done!");
     } else {
       warning("Unknow file type for %s, fasta or bed file is required",
               MaskPath.c_str());
@@ -399,7 +399,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
   TargetRegion targetRegion;
   if (RegionList != "Empty")
     targetRegion.ReadRegionList(RegionList);
-  notice("Start to select marker set...\n");
+  notice("Start to select marker set...");
   std::string SelectedSite = NewRef + ".SelectedSite.vcf";
 
   // read in vcf, hapmap3 sites
@@ -417,7 +417,8 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
     Chrom = VcfLine->getChromStr();
 
     if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and not targetRegion.IsOverlapped(Chrom, Position - 1))) {
+        (RegionList != "Empty" and
+         not targetRegion.IsOverlapped(Chrom, Position - 1))) {
       delete VcfLine;
       continue;
     }
@@ -664,7 +665,7 @@ int RefBuilder::PrepareRefSeq() {
   faidx_t *seq = fai_load(RefPath.c_str());
   if (seq == 0)
     error("Please check if %s file exists!", RefPath.c_str());
-  notice("Loading Ref fai file done!\n");
+  notice("Loading Ref fai file done!");
   std::string GCpath = NewRef + ".gc";
   std::ofstream FGC(GCpath, std::ios_base::binary);
   std::ofstream FaOut(NewRef);

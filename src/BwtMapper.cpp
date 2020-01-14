@@ -1,4 +1,3 @@
-
 #include "BwtMapper.h"
 #include "../libbwa/bwape.h"
 #include "../libbwa/bwase.h"
@@ -8,19 +7,11 @@
 #include "Error.h"
 #include <algorithm>
 #include <iostream>
-#include <sstream>
 #include <stdio.h>
 #include <time.h>
 //#include <gperftools/profiler.h>
 
 using namespace std;
-
-// extern string Prefix;
-extern void notice(const char *, ...);
-
-extern void warning(const char *, ...);
-
-extern void error(const char *, ...);
 
 KHASH_MAP_INIT_INT64(64, poslist_t)
 
@@ -120,8 +111,8 @@ pthread_mutex_unlock(&g_seq_lock);
     p->aln = 0;
     if (/* drand48() >opt->frac ||*/ p
             ->filtered) //|| Indexer->IsReadFiltered(p->seq, p->qual,
-                        //p->len))//here I use BWA_TYPE_UNIQUE as a flag of
-                        //being downsampled
+                        // p->len))//here I use BWA_TYPE_UNIQUE as a flag of
+                        // being downsampled
     {
       // unmapped_num++;
       continue;
@@ -188,11 +179,11 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
   if (bwa_set_rg(opt->RG) == -1)
     warning("Setting @RG tag failed!\n");
   if (opt->in_bam != 0) {
-    notice("Input alignments from Bam file...\n");
+    notice("Input alignments from Bam file...");
     /*
     SamFileHeader SFH;
     SamFile SFIO;*/
-    notice("Restore Variant Site Info...\n");
+    notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
@@ -204,10 +195,10 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     fout.close();
     // BamFile->ifclose();
     // destroy
-    notice("Calculate distributions...\n ");
+    notice("Calculate distributions...");
     collector.ProcessCore(Prefix, opt);
   } else if (Fastq_2 != "Empty") {
-    notice("Using Pair End mapping...\n");
+    notice("Using Pair End mapping...");
     SamFileHeader SFH;
     BamInterface BamIO;
     IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
@@ -228,7 +219,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
       SetSamFileHeader(SFH, BwtIndex);
       BamIO.writeHeader(BamFile, SFH, StatusTracker);
     }
-    notice("Restore Variant Site Info...\n");
+    notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
@@ -243,11 +234,11 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     fout.close();
     BamFile->ifclose();
     delete BamFile; // destroy
-    notice("Calculate distributions... \n");
+    notice("Calculate distributions...");
     collector.ProcessCore(Prefix, opt);
 
   } else {
-    notice("Using Single End mapping...\n");
+    notice("Using Single End mapping...");
     SamFileHeader SFH;
     BamInterface BamIO;
     IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
@@ -268,7 +259,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
       SetSamFileHeader(SFH, BwtIndex);
       BamIO.writeHeader(BamFile, SFH, StatusTracker);
     }
-    notice("Restore Variant Site Info...\n");
+    notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
@@ -281,7 +272,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     BamFile->ifclose();
     delete BamFile;
     // destroy
-    notice("Calculate distributions...\n ");
+    notice("Calculate distributions...");
     collector.ProcessCore(Prefix, opt);
   }
 }
@@ -293,11 +284,11 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {
   bwa_set_rg(opt->RG);
   if (opt->in_bam != 0) {
-    notice("Input alignments from Bam file...\n");
+    notice("Input alignments from Bam file...");
     /*
     SamFileHeader SFH;
     SamFile SFIO;*/
-    notice("Restore Variant Site Info...\n");
+    notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
@@ -305,13 +296,13 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     int total_add = 0;
     collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout,
                                    total_add);
-    notice("%d reads were calculated!\n", total_add);
+    notice("%d reads were calculated!", total_add);
     fout.close();
     // BamFile->ifclose();
-    notice("Calculate distributions...\n");
+    notice("Calculate distributions...");
     collector.ProcessCore(Prefix, opt);
   } else {
-    notice("Open Fastq List ...\n");
+    notice("Open Fastq List ...");
     SamFileHeader SFH;
     BamInterface BamIO;
     IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
@@ -334,7 +325,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
-    notice("Restore Variant Site Info...%f sec\n", realtime() - t_tmp);
+    notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
     int total_add = 0;
     ifstream fin(FaList);
@@ -356,7 +347,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         /*PairEndMapper*/ /*PairEndMapper_dev*/ PairEndMapper_without_asyncIO(
             BwtIndex, Fastq_1.c_str(), Fastq_2.c_str(), popt, opt, SFH, BamIO,
             BamFile, StatusTracker, fout, total_add);
-        notice("Processed Pair End mapping in %f sec\n", realtime() - t_tmp);
+        notice("Processed Pair End mapping in %f sec", realtime() - t_tmp);
       } else {
         notice("Processing Single End mapping\t%d\n%s\n", i, Fastq_1.c_str());
         SingleEndMapper(BwtIndex, Fastq_1.c_str(), opt, SFH, BamIO, BamFile,
@@ -370,7 +361,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     // destroy
     t_tmp = realtime();
     collector.ProcessCore(Prefix, opt);
-    notice("Calculate distributions... %f sec\n", realtime() - t_tmp);
+    notice("Calculate distributions... %f sec", realtime() - t_tmp);
   }
 }
 
@@ -548,8 +539,7 @@ static bwa_seq_t *bwa_read_seq_with_hash(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 
   *n = n_seqs;
   if (n_seqs && trim_qual >= 1)
-    fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n",
-            100.0f * n_trimmed / n_tot);
+    notice("%.1f%% bases are trimmed.", 100.0f * n_trimmed / n_tot);
   if (n_seqs == 0) {
     free(seqs);
     // delete[] seqs;
@@ -675,8 +665,9 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
     // strncpy(p->name, seq->name.s, seq->name.l);
     //		{ // trim /[12]$
     //			int t = strlen(p->name);
-    //			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' ||
-    //p->name[t - 1] == '2')) p->name[t - 2] = '\0';
+    //			if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] ==
+    //'1'
+    //|| p->name[t - 1] == '2')) p->name[t - 2] = '\0';
     //		}
 
     if (n_seqs == n_needed)
@@ -684,8 +675,7 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
   }
   *n = n_seqs;
   if (n_seqs && trim_qual >= 1)
-    fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n",
-            100.0f * n_trimmed / n_tot);
+    fprintf(stderr, "%.1f%% bases are trimmed.\n", 100.0f * n_trimmed / n_tot);
   if (n_seqs == 0) {
     // free(seqs);
     // delete[] seqs;
@@ -704,37 +694,38 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 //	kseq_t *seq = bs->ks;
 //	kseq_t *seq2 = bs2->ks;
 //	int n_seqs, l, i, is_comp = mode&BWA_MODE_COMPREAD, is_64 =
-//mode&BWA_MODE_IL13, l_bc = mode >> 24; 	long n_trimmed = 0, n_tot = 0;
+// mode&BWA_MODE_IL13, l_bc = mode >> 24; 	long n_trimmed = 0, n_tot = 0;
 //
 //	if (l_bc > 15) {
 //		fprintf(stderr, "[%s] the maximum barcode length is 15.\n",
 //__func__); 		return 0;
 //	}
 //	//if (bs->is_bam) return bwa_read_bam(bs, n_needed, n, is_comp,
-//trim_qual); // l_bc has no effect for BAM input 	n_seqs = 0; 	seqs =
+// trim_qual); // l_bc has no effect for BAM input 	n_seqs = 0; 	seqs =
 //(bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t)); 	seqs2 =
-//(bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t)); 	while ((l = kseq_read2(seq,
-//seq2)) >= 0) {
+//(bwa_seq_t*)calloc(n_needed, sizeof(bwa_seq_t)); 	while ((l =
+// kseq_read2(seq, seq2)) >= 0) {
 //
 //		if (Skip(BwtIndex, mode, seq->seq.s, seq->qual.s, seq2->seq.s,
-//seq2->qual.s, seq2->seq.l, frac)) continue;
+// seq2->qual.s, seq2->seq.l, frac)) continue;
 //
 //		if (is_64 && seq->qual.l)
 //		{
 //			for (i = 0; i < seq->qual.l; ++i) seq->qual.s[i] -= 31;
 //			for (i = 0; i < seq2->qual.l; ++i) seq2->qual.s[i] -=
-//31;
+// 31;
 //		}
 //		if (seq->seq.l <= l_bc) continue; // sequence length equals or
-//smaller than the barcode length 		p2 = &seqs2[n_seqs]; 		p = &seqs[n_seqs++];
+// smaller than the barcode length 		p2 = &seqs2[n_seqs]; p =
+// &seqs[n_seqs++];
 //
 //		if (l_bc) { // then trim barcode
 //			for (i = 0; i < l_bc; ++i)
 //			{
 //				p->bc[i] = (seq->qual.l && seq->qual.s[i] - 33 <
-//BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]); 				p2->bc[i]
-//= (seq2->qual.l && seq2->qual.s[i] - 33 < BARCODE_LOW_QUAL) ?
-//tolower(seq2->seq.s[i]) : toupper(seq2->seq.s[i]);
+// BARCODE_LOW_QUAL) ? tolower(seq->seq.s[i]) : toupper(seq->seq.s[i]);
+// p2->bc[i] = (seq2->qual.l && seq2->qual.s[i] - 33 < BARCODE_LOW_QUAL) ?
+// tolower(seq2->seq.s[i]) : toupper(seq2->seq.s[i]);
 //			}
 //			p->bc[i] = 0;
 //			p2->bc[i] = 0;
@@ -749,12 +740,13 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 //				for (i = l_bc; i < seq->qual.l; ++i)
 //					seq->qual.s[i - l_bc] = seq->qual.s[i];
 //				seq->qual.l -= l_bc; seq->qual.s[seq->qual.l] =
-//0;
+// 0;
 //			}
 //			if (seq2->qual.l) {
 //				for (i = l_bc; i < seq2->qual.l; ++i)
 //					seq2->qual.s[i - l_bc] =
-//seq2->qual.s[i]; 				seq2->qual.l -= l_bc; seq2->qual.s[seq2->qual.l] = 0;
+// seq2->qual.s[i]; 				seq2->qual.l -= l_bc;
+// seq2->qual.s[seq2->qual.l] = 0;
 //			}
 //			l = seq->seq.l;
 //		}
@@ -785,13 +777,13 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 //			p2->seq[i] = nst_nt4_table[(int)seq2->seq.s[i]];
 //		if (seq->qual.l) { // copy quality
 //			p->qual = (ubyte_t*)strdup((char*)seq->qual.s);
-//			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual,
-//p);
+//			if (trim_qual >= 1) n_trimmed +=
+// bwa_trim_read(trim_qual, p);
 //		}
 //		if (seq2->qual.l) { // copy quality
 //			p2->qual = (ubyte_t*)strdup((char*)seq2->qual.s);
-//			if (trim_qual >= 1) n_trimmed += bwa_trim_read(trim_qual,
-//p);
+//			if (trim_qual >= 1) n_trimmed +=
+// bwa_trim_read(trim_qual, p);
 //		}
 //		p->rseq = (ubyte_t*)calloc(p->full_len, 1);
 //		memcpy(p->rseq, p->seq, p->len);
@@ -799,26 +791,29 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 //		memcpy(p2->rseq, p2->seq, p2->len);
 //		//fprintf(stderr, "I have been here: %d times!\n",i);
 //		seq_reverse(p->len, p->seq, 0); // *IMPORTANT*: will be reversed
-//back in bwa_refine_gapped() 		seq_reverse(p->len, p->rseq, is_comp);
-//		seq_reverse(p2->len, p2->seq, 0); // *IMPORTANT*: will be reversed
-//back in bwa_refine_gapped() 		seq_reverse(p2->len, p2->rseq, is_comp); 		p->name =
-//strdup((const char*)seq->name.s); 		{ // trim /[12]$ 			int t = strlen(p->name); 			if
-//(t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t - 1] ==
-//'2')) p->name[t - 2] = '\0';
+// back in bwa_refine_gapped() 		seq_reverse(p->len, p->rseq, is_comp);
+//		seq_reverse(p2->len, p2->seq, 0); // *IMPORTANT*: will be
+// reversed back in bwa_refine_gapped() 		seq_reverse(p2->len,
+// p2->rseq,
+// is_comp); 		p->name = strdup((const char*)seq->name.s);
+// { // trim /[12]$ 			int t = strlen(p->name);
+// if (t > 2 && p->name[t - 2] == '/' && (p->name[t - 1] == '1' || p->name[t -
+// 1]
+//== '2')) p->name[t - 2] = '\0';
 //		}
 //		p2->name = strdup((const char*)seq2->name.s);
 //		{ // trim /[12]$
 //			int t = strlen(p2->name);
-//			if (t > 2 && p2->name[t - 2] == '/' && (p2->name[t - 1] ==
-//'1' || p2->name[t - 1] == '2')) p2->name[t - 2] = '\0';
+//			if (t > 2 && p2->name[t - 2] == '/' && (p2->name[t - 1]
+//== '1' || p2->name[t - 1] == '2')) p2->name[t - 2] = '\0';
 //		}
 //		if (n_seqs == n_needed) break;
 //	}
 //	*n = n_seqs;//now it's pairs
 //	if (n_seqs && trim_qual >= 1)
 //		fprintf(stderr, "[bwa_read_seq] %.1f%% bases are trimmed.\n",
-//100.0f * n_trimmed / n_tot); 	if (n_seqs == 0) { 		free(seqs); 		free(seqs2) 			return
-//0;
+// 100.0f * n_trimmed / n_tot); 	if (n_seqs == 0) {
+// free(seqs); free(seqs2) 			return 0;
 //	}
 //	return 1;
 //}
@@ -845,9 +840,7 @@ static void *worker(void *data) {
   return 0;
 }
 
-typedef struct // if((seqs[0] = bwa_read_seq(ks[0], 10000000, &n_seqs,
-               // opt->mode, opt->trim_qual))==0) ReadIsGood=1;
-{
+typedef struct {
   BwtIndexer *BwtIndex;
   bwa_seq_t *seqAddress;
   bwa_seqio_t *ksAddress;
@@ -1232,7 +1225,9 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
     //		{
     //			for (j = 0; j != p->n_cigar; ++j)
     //				//printf("%d%c",
-    //__cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]); 				ss <<
+    //__cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
+    // ss
+    //<<
     //__cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
     //		}
     //		else
@@ -1300,7 +1295,8 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
 #endif
     } else if (mate) // mate is unmapped
                      // printf("\t=\t%d\t0\t", (int) (p->pos -
-                     // bns->anns[seqid].offset + 1)); ss<<"\t=\t"<<(int) (p->pos
+                     // bns->anns[seqid].offset + 1)); ss<<"\t=\t"<<(int)
+                     // (p->pos
                      // - bns->anns[seqid].offset + 1)<<"\t0\t";
     {
       SR.setMateReferenceName(SFH, "=");
@@ -1585,7 +1581,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
       //				data[j].opt = opt;
       //				data[j].Indexer_Ptr = &BwtIndex;
       //				pthread_create(&tid[j], &attr, worker,
-      //data + j);
+      // data + j);
       //			}
       for (j = 0; j < n_align_thread; ++j) {
         data[j].tid = j;
@@ -1712,8 +1708,8 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
   return 0;
 }
 // bool BwtMapper::PairEndMapper(BwtIndexer& BwtIndex, const char *fn_fa1, const
-// char * fn_fa2, const pe_opt_t *popt, const gap_opt_t* opt, SamFileHeader& SFH,
-// BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker,
+// char * fn_fa2, const pe_opt_t *popt, const gap_opt_t* opt, SamFileHeader&
+// SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker,
 // std::ofstream& fout, int &total_add)
 //{
 //
@@ -1744,8 +1740,8 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //	FileStatCollector FSC(fn_fa1, fn_fa2);
 //	int ReadIsGood = 2;
 //	/*while ((seqs[0] = bwa_read_seq(ks[0], 10000000, &n_seqs, opt->mode,
-//									opt->trim_qual)) !=
-//0)*/ 	uint32_t round = 0;
+//									opt->trim_qual))
+//!= 0)*/ 	uint32_t round = 0;
 //	//notice("Read 1 length: %d\n", kseq_get_seq_len_fpc(ks[0]->ks));
 //	//notice("Read 2 length: %d\n", kseq_get_seq_len_fpc(ks[1]->ks));
 //	while (ReadIsGood)
@@ -1753,8 +1749,10 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		if (ReadIsGood == 2)
 //		{
 //			if ((seqs[0] = bwa_read_seq_with_hash(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round)) != 0)
-//ReadIsGood = 1; 			else ReadIsGood = 0; 			FSC.NumRead += n_seqs;
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round)) !=
+// 0)
+// ReadIsGood = 1; 			else ReadIsGood = 0;
+// FSC.NumRead += n_seqs;
 //		}
 //		//FSC.NumRead+=n_seqs;
 //		int cnt_chg;
@@ -1762,12 +1760,12 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //
 //		t = clock();
 //		// seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs,
-//opt->mode, opt->trim_qual);
+// opt->mode, opt->trim_qual);
 //
 //		tot_seqs += n_seqs;
 //
 //		//fprintf(stderr, "NOTICE - Reading in %d sequences into
-//buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
+// buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
 //
 //		//#pragma omp parallel for
 //#ifdef HAVE_PTHREAD
@@ -1775,16 +1773,17 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		if (opt->n_threads <= 1)
 //		{ // no multi-threading at all
 //			seqs[1] = bwa_read_seq_with_hash(&BwtIndex, ks[1],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round);
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round);
 //			FSC.NumRead += n_seqs;
 //			for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 //			{
-//				bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx],
-//opt, &BwtIndex);
+//				bwa_cal_sa_reg_gap(0, bwt, n_seqs,
+// seqs[pair_idx], opt, &BwtIndex);
 //			}
 //			round++;
-//			if ((seqs_buff[0] = bwa_read_seq_with_hash(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac, round))
+//			if ((seqs_buff[0] = bwa_read_seq_with_hash(&BwtIndex,
+// ks[0], READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac,
+// round))
 //!= 0)
 //			{
 //				ReadIsGood = 1;
@@ -1804,38 +1803,41 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				/*added for IO begin*/
 //				int n_align_thread = opt->n_threads - 1;
 //				thread_IO_t* IO_param = (thread_IO_t*)calloc(1,
-//sizeof(thread_IO_t));
+// sizeof(thread_IO_t));
 //				/*added for IO end*/
 //				pthread_attr_init(&attr);
 //				pthread_attr_setdetachstate(&attr,
-//PTHREAD_CREATE_JOINABLE); 				data = (thread_aux_t*)calloc(n_align_thread,
-//sizeof(thread_aux_t)); 				tid = (pthread_t*)calloc(opt->n_threads,
-//sizeof(pthread_t));
+// PTHREAD_CREATE_JOINABLE); 				data =
+// (thread_aux_t*)calloc(n_align_thread, sizeof(thread_aux_t));
+// tid = (pthread_t*)calloc(opt->n_threads, sizeof(pthread_t));
 //				/*decopling of the multithread*/
 //				size_t grain_size = n_seqs / n_align_thread;
 //				for (j = 0; j < n_align_thread; ++j)
 //				{
 //					data[j].tid =
-//j;//+pair_idx*opt->n_threads; 					data[j].bwt[0] = bwt[0]; 					data[j].bwt[1] =
-//bwt[1];
+// j;//+pair_idx*opt->n_threads;
+// data[j].bwt[0] = bwt[0]; 					data[j].bwt[1] =
+// bwt[1];
 //					//data[j].n_seqs = n_seqs;
 //					//data[j].seqs = seqs[pair_idx];
-//					if (j == n_align_thread - 1) data[j].n_seqs =
-//n_seqs - grain_size*(n_align_thread - 1); 					else data[j].n_seqs = grain_size;
-//					data[j].seqs = seqs[pair_idx] +
-//j*grain_size; 					data[j].opt = opt; 					data[j].Indexer_Ptr = &BwtIndex;
-//					pthread_create(&tid[j], &attr, worker, data +
-//j);
+//					if (j == n_align_thread - 1)
+// data[j].n_seqs
+//=
+// n_seqs - grain_size*(n_align_thread - 1); else data[j].n_seqs = grain_size;
+// data[j].seqs = seqs[pair_idx] + j*grain_size; data[j].opt = opt;
+// data[j].Indexer_Ptr = &BwtIndex;
+// pthread_create(&tid[j], &attr, worker, data + j);
 //				}
 //				  {
 //					  IO_param->BwtIndex = &BwtIndex;
 //					  IO_param->ksAddress = ks[1 -
-//pair_idx]; 					  IO_param->n_seqs = &n_seqs_buff; 					  IO_param->mode = opt->mode;
-//					  IO_param->trim_qual = opt->trim_qual;
+// pair_idx]; 					  IO_param->n_seqs =
+// &n_seqs_buff; IO_param->mode = opt->mode;
+// IO_param->trim_qual = opt->trim_qual;
 //					  IO_param->frac = opt->frac;
 //					  IO_param->round = round;
-//					  pthread_create(&tid[opt->n_threads - 1],
-//&attr, IOworker, IO_param);
+//					  pthread_create(&tid[opt->n_threads -
+// 1], &attr, IOworker, IO_param);
 //				  }
 //
 //				for (j = 0; j < opt->n_threads; ++j)
@@ -1862,26 +1864,27 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //
 //
 //		seqs[1] = bwa_read_seq_with_hash(&BwtIndex, ks[1],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,round);
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,round);
 //		FSC.NumRead += n_seqs;
 //		for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 //		{
 //			//DBG(fprintf(stderr,"Before come into cal sa reg
-//gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
+// gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 //			bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx], opt,
 //&BwtIndex);
 //			//DBG(fprintf(stderr,"After come into cal sa reg
-//gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
+// gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 //		}
 //		round++;
 //		if ((seqs[0] = bwa_read_seq_with_hash(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,round)) != 0)
-//ReadIsGood = 1; 		else ReadIsGood = 0; 		FSC.NumRead += n_seqs; #endif
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,round)) != 0)
+// ReadIsGood = 1; 		else ReadIsGood = 0; 		FSC.NumRead +=
+// n_seqs; #endif
 //
 //		//}
 //		fprintf(stderr, "NOTICE - Calculate SA coordinate... ");
 //		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC); 		t = clock();
+// CLOCKS_PER_SEC); 		t = clock();
 //
 //		//t = clock();
 //		//fprintf(stderr, "[bwa_aln_core] write to the disk... ");
@@ -1891,36 +1894,40 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		 bwa_seq_t *p = seqs[iter] + i;
 //		 //fwrite(&p->n_aln, 4, 1, stdout);
 //		 //if (p->n_aln) fwrite(p->aln, sizeof(bwt_aln1_t), p->n_aln,
-//stdout);
+// stdout);
 //		 }
 //		 }*/
 //
 //		fprintf(stderr, "NOTICE - convert to sequence coordinate...
-//\n"); 		cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs, seqs, &ii, popt, opt,
-//&last_ii,n_filtered); 		fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
-//			(float)(clock() - t) / CLOCKS_PER_SEC);
-//		t = clock();
-//		fprintf(stderr, "NOTICE - changing coordinates of %d
-//alignments.\n", cnt_chg);
+//\n"); 		cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs, seqs, &ii,
+// popt, opt,
+//&last_ii,n_filtered); 		fprintf(stderr, "NOTICE - time elapses:
+//%.2f
+// sec\n", 			(float)(clock() - t) / CLOCKS_PER_SEC);
+// t
+// = clock(); 		fprintf(stderr, "NOTICE - changing coordinates of %d
+// alignments.\n", cnt_chg);
 //
 //		fprintf(stderr, "NOTICE - align unmapped mate...\n");
 //		if (pacseq == 0) //indexing path
 //			/*pacseq = */
 //			pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf,
-//n_seqs, seqs, popt, &ii, opt->mode); 		else
+// n_seqs, seqs, popt, &ii, opt->mode); 		else
 //			/*pacseq = */
-//			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs,
-//popt, &ii, opt->mode); 		fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
-//			(float)(clock() - t) / CLOCKS_PER_SEC);
-//		t = clock();
+//			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs,
+// seqs, popt, &ii, opt->mode); 		fprintf(stderr, "NOTICE - time
+// elapses:
+// %.2f sec\n", 			(float)(clock() - t) / CLOCKS_PER_SEC);
+// t = clock();
 //
 //		fprintf(stderr, "NOTICE - refine gapped alignments... ");
 //		for (j = 0; j < 2; ++j)
 //			/*  if (BwtIndex.bns->fp_pac == 0) //indexing path
 //				bwa_refine_gapped(BwtIndex.bns, n_seqs, seqs[j],
-//BwtIndex.pac_buf, 				ntbns); 				else*/ 				bwa_refine_gapped(BwtIndex.bns, n_seqs,
-//seqs[j], pacseq, ntbns); 		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC); 		t = clock();
+// BwtIndex.pac_buf, 				ntbns);
+// else*/ bwa_refine_gapped(BwtIndex.bns, n_seqs, seqs[j], pacseq, ntbns);
+// fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
+// CLOCKS_PER_SEC); 		t = clock();
 //		//if (pacseq!= 0) free(pacseq);
 //
 //		fprintf(stderr, "NOTICE - print alignments... ");
@@ -1935,9 +1942,11 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				FSC.NumBase += p[0]->full_len;
 //				FSC.NumBase += p[1]->full_len;
 //				if (p[0]->filtered && p[1]->filtered) continue;
-//				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
-//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue; 				if (p[0]->bc[0] ||
-//p[1]->bc[0])
+//				if ((p[0] == 0 || p[0]->type ==
+// BWA_TYPE_NO_MATCH)
+//&&
+//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
+// if (p[0]->bc[0] || p[1]->bc[0])
 //				{
 //					strcat(p[0]->bc, p[1]->bc);
 //					strcpy(p[1]->bc, p[0]->bc);
@@ -1950,9 +1959,10 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				//
 //==0)
 //				// continue;
-//				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode,
-//opt->max_top2); 				bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode,
-//opt->max_top2);
+//				bwa_print_sam1(BwtIndex.bns, p[0], p[1],
+// opt->mode,
+// opt->max_top2); 				bwa_print_sam1(BwtIndex.bns,
+// p[1], p[0], opt->mode, opt->max_top2);
 //			}
 //		}
 //		else
@@ -1966,8 +1976,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				FSC.NumBase += p[0]->full_len;
 //				FSC.NumBase += p[1]->full_len;
 //				if (p[0]->filtered && p[1]->filtered) continue;
-//				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
-//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH))
+//				if ((p[0] == 0 || p[0]->type ==
+// BWA_TYPE_NO_MATCH)
+//&& (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH))
 //				{
 //					continue;
 //				}
@@ -1985,22 +1996,23 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 //				//continue;
 //				SamRecord SR[2];
-//				SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i,
-//opt->mode, opt->max_top2, SFH, SR[0]); 				SetSamRecord(BwtIndex.bns, seqs[1] + i,
-//seqs[0] + i, opt->mode, opt->max_top2, SFH, SR[1]);
+//				SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1]
+//+ i, opt->mode, opt->max_top2, SFH, SR[0]);
+// SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, opt->mode,
+// opt->max_top2, SFH, SR[1]);
 //
 //				BamIO.writeRecord(BamFile, SFH, SR[0],
-//SamRecord::SequenceTranslation::NONE);
+// SamRecord::SequenceTranslation::NONE);
 //					//std::cerr<<"\nPassed
-//Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1,
+// Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1,
 //[](bwa_seq_t* s, int j ){return  "ACGTN"[(int) *s+j];})<<endl;
 //				BamIO.writeRecord(BamFile, SFH, SR[1],
-//SamRecord::SequenceTranslation::NONE);
+// SamRecord::SequenceTranslation::NONE);
 //			}
 //		}
 //
 //		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC);
+// CLOCKS_PER_SEC);
 //		//cerr<<"In total "<<total_add<<" reads were calculated!"<<endl;
 //		t = clock();
 //
@@ -2012,7 +2024,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //			seqs[j] = seqs_buff[j];
 //		}
 //		fprintf(stderr, "NOTICE - %d sequences are loaded.\n",
-//tot_seqs);
+// tot_seqs);
 //
 //		last_ii = ii;
 //	} //end while
@@ -2036,8 +2048,8 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //}
 //
 // bool BwtMapper::PairEndMapper_dev(BwtIndexer& BwtIndex, const char *fn_fa1,
-// const char * fn_fa2, const pe_opt_t *popt, gap_opt_t* opt, SamFileHeader& SFH,
-// BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker,
+// const char * fn_fa2, const pe_opt_t *popt, gap_opt_t* opt, SamFileHeader&
+// SFH, BamInterface & BamIO, IFILE BamFile, StatGenStatus& StatusTracker,
 // std::ofstream& fout, int &total_add)
 //{
 //
@@ -2085,8 +2097,9 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		if (ReadIsGood == 2)
 //		{
 //			if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,
-//seqs[0], opt->read_len)) != 0) ReadIsGood = 1; 			else ReadIsGood = 0;
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,
+// seqs[0], opt->read_len)) != 0) ReadIsGood = 1; 			else
+// ReadIsGood = 0;
 //			//FSC.NumRead += n_seqs;
 //		}
 //		//FSC.NumRead+=n_seqs;
@@ -2095,12 +2108,12 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //
 //		t = clock();
 //		// seqs[1] = bwa_read_seq(ks[1], READ_BUFFER_SIZE, &n_seqs,
-//opt->mode, opt->trim_qual);
+// opt->mode, opt->trim_qual);
 //
 //		tot_seqs += n_seqs;
 //
 //		//fprintf(stderr, "NOTICE - Reading in %d sequences into
-//buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
+// buffer...%fsecs\n", n_seqs, (float)(clock() - t) / CLOCKS_PER_SEC);
 //
 //		//#pragma omp parallel for
 //#ifdef HAVE_PTHREAD
@@ -2108,17 +2121,17 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		if (opt->n_threads <= 1)
 //		{ // no multi-threading at all
 //			ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,
-//seqs[1], opt->read_len); 			FSC.NumRead += n_seqs; 			for (int pair_idx = 0;
-//pair_idx < 2; ++pair_idx)
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac, round,
+// seqs[1], opt->read_len); 			FSC.NumRead += n_seqs;
+// for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 //			{
-//				bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx],
-//opt, &BwtIndex);
+//				bwa_cal_sa_reg_gap(0, bwt, n_seqs,
+// seqs[pair_idx], opt, &BwtIndex);
 //			}
 //			round++;
 //			if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac, round,
-//seqs_buff[0], opt->read_len)) != 0)
+// READ_BUFFER_SIZE, &n_seqs_buff, opt->mode, opt->trim_qual, opt->frac, round,
+// seqs_buff[0], opt->read_len)) != 0)
 //			{
 //				ReadIsGood = 1;
 //				FSC.NumRead += n_seqs;
@@ -2137,39 +2150,43 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				/*added for IO begin*/
 //				int n_align_thread = opt->n_threads - 1;
 //				thread_IO_t* IO_param = (thread_IO_t*)calloc(1,
-//sizeof(thread_IO_t));
+// sizeof(thread_IO_t));
 //				/*added for IO end*/
 //				pthread_attr_init(&attr);
 //				pthread_attr_setdetachstate(&attr,
-//PTHREAD_CREATE_JOINABLE); 				data = (thread_aux_t*)calloc(n_align_thread,
-//sizeof(thread_aux_t)); 				tid = (pthread_t*)calloc(opt->n_threads,
-//sizeof(pthread_t));
+// PTHREAD_CREATE_JOINABLE); 				data =
+// (thread_aux_t*)calloc(n_align_thread, sizeof(thread_aux_t));
+// tid = (pthread_t*)calloc(opt->n_threads, sizeof(pthread_t));
 //				/*decopling of the multithread*/
 //				size_t grain_size = n_seqs / n_align_thread;
 //				for (j = 0; j < n_align_thread; ++j)
 //				{
 //					data[j].tid =
-//j;//+pair_idx*opt->n_threads; 					data[j].bwt[0] = bwt[0]; 					data[j].bwt[1] =
-//bwt[1];
+// j;//+pair_idx*opt->n_threads;
+// data[j].bwt[0] = bwt[0]; 					data[j].bwt[1] =
+// bwt[1];
 //					//data[j].n_seqs = n_seqs;
 //					//data[j].seqs = seqs[pair_idx];
-//					if (j == n_align_thread - 1) data[j].n_seqs =
-//n_seqs - grain_size*(n_align_thread - 1); 					else data[j].n_seqs = grain_size;
-//					data[j].seqs = seqs[pair_idx] +
-//j*grain_size; 					data[j].opt = opt; 					data[j].Indexer_Ptr = &BwtIndex;
-//					pthread_create(&tid[j], &attr, worker, data +
-//j);
+//					if (j == n_align_thread - 1)
+// data[j].n_seqs
+//=
+// n_seqs - grain_size*(n_align_thread - 1); else data[j].n_seqs = grain_size;
+// data[j].seqs = seqs[pair_idx] + j*grain_size; data[j].opt = opt;
+// data[j].Indexer_Ptr = &BwtIndex;
+// pthread_create(&tid[j], &attr, worker, data + j);
 //				}
 //				  {
 //					  IO_param->BwtIndex = &BwtIndex;
 //					  IO_param->ksAddress = ks[1 -
-//pair_idx]; 					  IO_param->n_seqs = &n_seqs_buff; 					  IO_param->mode = opt->mode;
-//					  IO_param->trim_qual = opt->trim_qual;
+// pair_idx]; 					  IO_param->n_seqs =
+// &n_seqs_buff; IO_param->mode = opt->mode;
+// IO_param->trim_qual = opt->trim_qual;
 //					  IO_param->frac = opt->frac;
 //					  IO_param->round = round;
 //					  IO_param->seqAddress = seqs_buff[1 -
-//pair_idx]; 					  IO_param->ret = &ret; 					  IO_param->read_len = opt->read_len;
-//					  pthread_create(&tid[opt->n_threads - 1],
+// pair_idx]; 					  IO_param->ret = &ret;
+// IO_param->read_len = opt->read_len;
+// pthread_create(&tid[opt->n_threads - 1],
 //&attr, IOworker, IO_param);
 //				  }
 //
@@ -2200,28 +2217,27 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //
 //
 //		ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,
-//round,seqs[1],opt->read_len); 		FSC.NumRead += n_seqs; 		for (int pair_idx = 0;
-//pair_idx < 2; ++pair_idx)
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,
+// round,seqs[1],opt->read_len); 		FSC.NumRead += n_seqs;
+// for (int pair_idx = 0; pair_idx < 2; ++pair_idx)
 //		{
 //			//DBG(fprintf(stderr,"Before come into cal sa reg
-//gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
+// gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 //			bwa_cal_sa_reg_gap(0, bwt, n_seqs, seqs[pair_idx], opt,
 //&BwtIndex);
 //			//DBG(fprintf(stderr,"After come into cal sa reg
-//gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
+// gap...%s\n%d\nlength:%d\n",seqs->name,seqs->seq[0],seqs->len);)
 //		}
 //		round++;
 //		if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0],
-//READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,
-//round,seqs[0],opt->read_len)) != 0) ReadIsGood = 1; 		else ReadIsGood = 0;
-//		FSC.NumRead += n_seqs;
-//#endif
+// READ_BUFFER_SIZE, &n_seqs, opt->mode, opt->trim_qual, opt->frac,
+// round,seqs[0],opt->read_len)) != 0) ReadIsGood = 1; 		else ReadIsGood
+// = 0; 		FSC.NumRead += n_seqs; #endif
 //
 //		//}
 //		fprintf(stderr, "NOTICE - Calculate SA coordinate... ");
 //		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC); 		t = clock();
+// CLOCKS_PER_SEC); 		t = clock();
 //
 //		//t = clock();
 //		//fprintf(stderr, "[bwa_aln_core] write to the disk... ");
@@ -2231,36 +2247,40 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //		bwa_seq_t *p = seqs[iter] + i;
 //		//fwrite(&p->n_aln, 4, 1, stdout);
 //		//if (p->n_aln) fwrite(p->aln, sizeof(bwt_aln1_t), p->n_aln,
-//stdout);
+// stdout);
 //		}
 //		}*/
 //
 //		fprintf(stderr, "NOTICE - convert to sequence coordinate...
-//\n"); 		cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs, seqs, &ii, popt, opt,
-//&last_ii,n_filtered); 		fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
-//			(float)(clock() - t) / CLOCKS_PER_SEC);
-//		t = clock();
-//		fprintf(stderr, "NOTICE - changing coordinates of %d
-//alignments.\n", cnt_chg);
+//\n"); 		cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs, seqs, &ii,
+// popt, opt,
+//&last_ii,n_filtered); 		fprintf(stderr, "NOTICE - time elapses:
+//%.2f
+// sec\n", 			(float)(clock() - t) / CLOCKS_PER_SEC);
+// t
+// = clock(); 		fprintf(stderr, "NOTICE - changing coordinates of %d
+// alignments.\n", cnt_chg);
 //
 //		fprintf(stderr, "NOTICE - align unmapped mate...\n");
 //		if (pacseq == 0) //indexing path
 //			/*pacseq = */
 //			pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf,
-//n_seqs, seqs, popt, &ii, opt->mode); 		else
+// n_seqs, seqs, popt, &ii, opt->mode); 		else
 //			/*pacseq = */
-//			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs, seqs,
-//popt, &ii, opt->mode); 		fprintf(stderr, "NOTICE - time elapses: %.2f sec\n",
-//			(float)(clock() - t) / CLOCKS_PER_SEC);
-//		t = clock();
+//			pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs,
+// seqs, popt, &ii, opt->mode); 		fprintf(stderr, "NOTICE - time
+// elapses:
+// %.2f sec\n", 			(float)(clock() - t) / CLOCKS_PER_SEC);
+// t = clock();
 //
 //		fprintf(stderr, "NOTICE - refine gapped alignments... ");
 //		for (j = 0; j < 2; ++j)
 //			/*  if (BwtIndex.bns->fp_pac == 0) //indexing path
 //			bwa_refine_gapped(BwtIndex.bns, n_seqs, seqs[j],
-//BwtIndex.pac_buf, 			ntbns); 			else*/ 			bwa_refine_gapped(BwtIndex.bns, n_seqs,
-//seqs[j], pacseq, ntbns); 		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC); 		t = clock();
+// BwtIndex.pac_buf, 			ntbns); 			else*/
+// bwa_refine_gapped(BwtIndex.bns, n_seqs, seqs[j], pacseq, ntbns);
+// fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
+// CLOCKS_PER_SEC); 		t = clock();
 //		//if (pacseq!= 0) free(pacseq);
 //
 //		fprintf(stderr, "NOTICE - print alignments... ");
@@ -2275,9 +2295,11 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				FSC.NumBase += p[0]->full_len;
 //				FSC.NumBase += p[1]->full_len;
 //				if (p[0]->filtered && p[1]->filtered) continue;
-//				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
-//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue; 				if (p[0]->bc[0] ||
-//p[1]->bc[0])
+//				if ((p[0] == 0 || p[0]->type ==
+// BWA_TYPE_NO_MATCH)
+//&&
+//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
+// if (p[0]->bc[0] || p[1]->bc[0])
 //				{
 //					strcat(p[0]->bc, p[1]->bc);
 //					strcpy(p[1]->bc, p[0]->bc);
@@ -2290,9 +2312,10 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				//
 //==0)
 //				// continue;
-//				bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode,
-//opt->max_top2); 				bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode,
-//opt->max_top2);
+//				bwa_print_sam1(BwtIndex.bns, p[0], p[1],
+// opt->mode,
+// opt->max_top2); 				bwa_print_sam1(BwtIndex.bns,
+// p[1], p[0], opt->mode, opt->max_top2);
 //			}
 //		}
 //		else
@@ -2306,9 +2329,11 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				FSC.NumBase += p[0]->full_len;
 //				FSC.NumBase += p[1]->full_len;
 //				if (p[0]->filtered && p[1]->filtered) continue;
-//				if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
-//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue; 				if (p[0]->bc[0] ||
-//p[1]->bc[0])
+//				if ((p[0] == 0 || p[0]->type ==
+// BWA_TYPE_NO_MATCH)
+//&&
+//(p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) continue;
+// if (p[0]->bc[0] || p[1]->bc[0])
 //				{
 //					strcat(p[0]->bc, p[1]->bc);
 //					strcpy(p[1]->bc, p[0]->bc);
@@ -2322,22 +2347,23 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //				//   if((seqs[0]+i)->type== BWA_TYPE_NO_MATCH)
 //				//continue;
 //				SamRecord SR[2];
-//				SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i,
-//opt->mode, opt->max_top2, SFH, SR[0]); 				SetSamRecord(BwtIndex.bns, seqs[1] + i,
-//seqs[0] + i, opt->mode, opt->max_top2, SFH, SR[1]);
+//				SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1]
+//+ i, opt->mode, opt->max_top2, SFH, SR[0]);
+// SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, opt->mode,
+// opt->max_top2, SFH, SR[1]);
 //
 //				BamIO.writeRecord(BamFile, SFH, SR[0],
-//SamRecord::SequenceTranslation::NONE);
+// SamRecord::SequenceTranslation::NONE);
 //					//std::cerr<<"\nPassed
-//Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1,
+// Read:"<<(seqs+i)->name<<"\t"<<SR.getCigar()<<"\t"<<SR.getSequence()<<"\t"<<SR.getQuality()<<endl;//<<std::for_each((seqs+i),(seqs+i)+(seqs+i)->len-1,
 //[](bwa_seq_t* s, int j ){return  "ACGTN"[(int) *s+j];})<<endl;
 //				BamIO.writeRecord(BamFile, SFH, SR[1],
-//SamRecord::SequenceTranslation::NONE);
+// SamRecord::SequenceTranslation::NONE);
 //			}
 //		}
 //
 //		fprintf(stderr, "%.2f sec\n", (float)(clock() - t) /
-//CLOCKS_PER_SEC);
+// CLOCKS_PER_SEC);
 //		//cerr<<"In total "<<total_add<<" reads were calculated!"<<endl;
 //		t = clock();
 //
@@ -2352,7 +2378,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const char *fn_fa,
 //			seqs_buff[j] = tmp;
 //		}
 //		fprintf(stderr, "NOTICE - %d sequences are loaded.\n",
-//tot_seqs);
+// tot_seqs);
 //
 //		last_ii = ii;
 //	} //end while
@@ -2621,8 +2647,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
       /*pacseq = */
       pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs[0], seqs,
                              popt, &ii, opt->mode);
-    }
-    else {
+    } else {
       /*pacseq = */
       pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs[0], seqs, popt, &ii,
                              opt->mode);
@@ -2681,24 +2706,33 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
 
         FSC.NumBase += p[0]->full_len;
         FSC.NumBase += p[1]->full_len;
+
         if (p[0]->filtered && p[1]->filtered) {
           // n_filtered++;
-          //					if (strncmp(p[0]->name, "ERR015764.2262", 14) ==
-          //0) 						fprintf(stderr, "\n%s filtered finally,read1:%d\tread2:%d\n",
-          //p[0]->name,p[0]->filtered,p[1]->filtered);
+
           ++total_filtered;
           continue;
         }
         if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
             (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) {
-          //					if (strncmp(p[0]->name, "ERR015764.2262", 14) ==
-          //0)
+          //					if (strncmp(p[0]->name,
+          //"ERR015764.2262", 14)
+          //== 0)
           //					{
-          //						fprintf(stderr, "\n%s appeared finally,",
-          //p[0]->name); 					if(p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH)
-          //						fprintf(stderr,
-          //"read1:1\t"); 					else 						fprintf(stderr, "read1:0\t"); 					if(p[1] == 0 ||
-          //p[1]->type == BWA_TYPE_NO_MATCH) 						fprintf(stderr, "read2:1\n"); 					else
+          //						fprintf(stderr, "\n%s
+          // appeared finally,",
+          // p[0]->name); 					if(p[0] == 0 ||
+          // p[0]->type
+          // == BWA_TYPE_NO_MATCH)
+          // fprintf(stderr,
+          //"read1:1\t"); 					else
+          // fprintf(stderr, "read1:0\t");
+          // if(p[1]
+          // ==
+          // 0
+          //||
+          // p[1]->type == BWA_TYPE_NO_MATCH)
+          // fprintf(stderr, "read2:1\n"); else
           //						fprintf(stderr,
           //"read2:0\n");
           //					}

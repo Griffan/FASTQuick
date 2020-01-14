@@ -475,7 +475,7 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 	}
 	else pacseq = (ubyte_t*)_pacseq;
 	if (!popt->is_sw || ii->avg < 0.0) return pacseq;
-	notice("align unmapped mate...\n");
+	notice("align unmapped mate...");
 	// perform mate alignment
 	n_tot[0] = n_tot[1] = n_mapped[0] = n_mapped[1] = 0;
 	for (i = 0; i != n_seqs; ++i) {
@@ -617,9 +617,9 @@ ubyte_t *bwa_paired_sw(const bntseq_t *bns, const ubyte_t *_pacseq, int n_seqs, 
 			free(cigar[0]); free(cigar[1]);
 		}
 	}
-	notice("%lld out of %lld Q%d singletons are mated.\n",
+	notice("%lld out of %lld Q%d singletons are mated.",
 		   (long long)n_mapped[1], (long long)n_tot[1], SW_MIN_MAPQ);
-	notice("%lld out of %lld Q%d discordant pairs are fixed.\n",
+	notice("%lld out of %lld Q%d discordant pairs are fixed.",
 		   (long long)n_mapped[0], (long long)n_tot[0], SW_MIN_MAPQ);
 	return pacseq;
 }
