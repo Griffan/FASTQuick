@@ -129,7 +129,7 @@ int runIndex(int argc, char **argv) {
   //	std::string WholeGenomeBwtPath = RefPath + ".bwt";
   if (stat(BwtPath.c_str(), &sb) != 0) //|| stat(BwtPathR.c_str(), &sb)!=0)
   {
-    notice("Index file doesn't exist, building...\n");
+    notice("Index file doesn't exist, building...");
     RefBuilder ArtiRef(VcfPath, RefPath, NewRef, DBsnpPath, MaskPath,
                        opt->flank_len, opt->flank_long_len,
                        opt->num_variant_short, opt->num_variant_long);
@@ -141,7 +141,7 @@ int runIndex(int argc, char **argv) {
     Indexer.BuildIndex(ArtiRef, RefPath, NewRef, opt);
   } else // load ref index
   {
-    notice("Index file exists, exit...\n");
+    notice("Index file exists, exit...");
     return 0;
   }
 
@@ -158,9 +158,8 @@ int runIndex(int argc, char **argv) {
   ParamOut << "LONG_FLANK_LENGTH\t" << opt->flank_long_len << endl;
   ParamOut.close();
 
-  notice("Version: %s\n", PACKAGE_VERSION);
-  notice("Real time: %.3f sec; CPU: %.3f sec\n", realtime() - t_real,
-         cputime());
+  notice("Version: %s", PACKAGE_VERSION);
+  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
   return 0;
 }
 
@@ -295,24 +294,24 @@ int runAlign(int argc, char **argv) {
                     "[Double] prior "
                     "of chimeric rate "
                     "(lower bound) ")
-      LONG_PARAM("force_isize", &popt->force_isize,
-                 " [Bool] disable insert size estimate")
+  LONG_PARAM("force_isize", &popt->force_isize,
+             " [Bool] disable insert size estimate")
 
-          LONG_PARAM_GROUP("Parameters for Statistics ",
-                           "Parameters specified for statistics "
-                           "and summary.[Optional]")
-              LONG_PARAM("cal_dup", &opt->cal_dup,
-                         "[Bool] enable the calculation "
-                         "of duplicated reads in depth "
-                         "calculation ")
-                  LONG_DOUBLE_PARAM("frac_samp", &opt->frac,
-                                    "[Double] specify the "
-                                    "downsampling fraction ")
-      // LONG_STRING_PARAM("depth_dist",&DepthDist,"Output file for depth
-      // distribution ") LONG_STRING_PARAM("site_pileup",&SitePileup,"Output
-      // file for Pileup information on specified sites ")
+  LONG_PARAM_GROUP("Parameters for Statistics ",
+                   "Parameters specified for statistics "
+                   "and summary.[Optional]")
+  LONG_PARAM("cal_dup", &opt->cal_dup,
+             "[Bool] enable the calculation "
+             "of duplicated reads in depth "
+             "calculation ")
+  LONG_DOUBLE_PARAM("frac_samp", &opt->frac,
+                    "[Double] specify the "
+                    "downsampling fraction ")
+  // LONG_STRING_PARAM("depth_dist",&DepthDist,"Output file for depth
+  // distribution ") LONG_STRING_PARAM("site_pileup",&SitePileup,"Output
+  // file for Pileup information on specified sites ")
 
-      END_LONG_PARAMS();
+  END_LONG_PARAMS();
 
   pl.Add(new longParams("Available Options", longParameters));
   pl.Read(argc, argv);
@@ -375,15 +374,14 @@ int runAlign(int argc, char **argv) {
   std::string RefPath;
   std::string TargetRegionPath;
 
-  //NewRef.param file parsing begin
+  // NewRef.param file parsing begin
   std::getline(ParamIn, ParaStr); // RefPath
   stringstream ss(ParaStr);
   ss >> TmpStr;
   if (TmpStr == "REFERENCE_PATH") {
     ss >> RefPath;
     Indexer.RefPath = RefPath;
-  }
-  else {
+  } else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
     exit(EXIT_FAILURE);
@@ -457,24 +455,25 @@ int runAlign(int argc, char **argv) {
   std::string WholeBwtPathR = RefPath + ".bwt";
   if (stat(BwtPath.c_str(), &sb) != 0 and
       stat(WholeBwtPathR.c_str(), &sb) != 0) {
-    notice("Index file doesn't exist, please build index file first...\n");
+    notice("Index file doesn't exist, please build index file first...");
     return 0;
   } else // load ref index
   {
     t_tmp = realtime();
     Indexer.LoadIndex(NewRef);
-    notice("[main]Index file exists, loading...%f sec\n", realtime() - t_tmp);
+    notice("Index file exists, loading...%f sec", realtime() - t_tmp);
     t_tmp = realtime();
     if (FaList != "Empty") {
-      BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt, TargetRegionPath);
+      BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt,
+                       TargetRegionPath);
     } else {
-      BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt, TargetRegionPath);
+      BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt,
+                       TargetRegionPath);
     }
-    notice("[main]Mapping...%f sec\n", realtime() - t_tmp);
+    notice("Mapping...%f sec", realtime() - t_tmp);
   }
-  notice("Version: %s\n", PACKAGE_VERSION);
-  notice("[main]Real time: %.3f sec; CPU: %.3f sec\n", realtime() - t_real,
-         cputime());
+  notice("Version: %s", PACKAGE_VERSION);
+  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
   gap_free_opt(opt);
   free(popt);
   // ProfilerStop();
@@ -544,9 +543,8 @@ int runPop(int argc, char **argv) {
                            SVDPrefix + ".bed");
   pop.OptimizeLLK();
 
-  notice("Version: %s\n", PACKAGE_VERSION);
-  notice("Real time: %.3f sec; CPU: %.3f sec\n", realtime() - t_real,
-         cputime());
+  notice("Version: %s", PACKAGE_VERSION);
+  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
   return 0;
 }
 int runCon(int argc, char **argv) {
@@ -613,9 +611,8 @@ int runCon(int argc, char **argv) {
                         PileupPath, SVDPrefix + ".bed", Prefix, ReadGroup);
   }
 
-  notice("Version: %s\n", PACKAGE_VERSION);
-  notice("Real time: %.3f sec; CPU: %.3f sec\n", realtime() - t_real,
-         cputime());
+  notice("Version: %s", PACKAGE_VERSION);
+  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
   return 0;
 }
 

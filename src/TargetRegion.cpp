@@ -9,7 +9,7 @@
 #include <sstream>
 
 TargetRegion::TargetRegion(const std::string &regionListPath) {
-  notice("Read target region list...\n");
+  notice("Read target region list...");
   std::ifstream fin(regionListPath);
   if (!fin.is_open())
     error("Region list bed file:%s open failed!", regionListPath.c_str());
@@ -37,7 +37,7 @@ TargetRegion::TargetRegion(const std::string &regionListPath) {
 }
 
 int TargetRegion::ReadRegionList(const std::string &regionListPath) {
-  notice("Read target region list...\n");
+  notice("Read target region list...");
   std::ifstream fin(regionListPath);
   if (!fin.is_open())
     error("Region list bed file:%s open failed!", regionListPath.c_str());
@@ -81,12 +81,9 @@ bool TargetRegion::IsOverlapped(std::string Chrom, int start) {
     // std::cerr<<"lower_bound:(size:"<<regionWhiteList[Chrom].size()<<")"<<Chrom<<"
     // "<<lower_iter->first<<" "<<lower_iter->second<<"
     // input:"<<start<<std::endl;
-    if (lower_iter->first <= (start ) and
-        lower_iter->second > (start ))
+    if (lower_iter->first <= (start) and lower_iter->second > (start))
       return true;
     else
-      return (++lower_iter)->first <= (start) and
-             lower_iter->second > (start );
+      return (++lower_iter)->first <= (start) and lower_iter->second > (start);
   }
 }
-
