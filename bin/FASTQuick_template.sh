@@ -13,7 +13,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 USAGE_MESSAGE="
-Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|ContaminationAndAncestry] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
+Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
 
 	-l/--candidateVCF:  VCF format candidate variant list to choose from.
 	-r/--reference: reference genome fasta file to use.
@@ -21,10 +21,10 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|ContaminationAndAncestr
 	-o/--output: prefix of output files.
 	-i/--index: prefix of index files.
 	-d/--dbSNP: location of the dbSNP vcf file.
-	-w/--workingdir: directory to place FASTQuick intermediate and temporary files. .FASTQuick.working subdirectories will be created. Defaults to the current directory.
-	-c/--callableRegion: BED file to specify region of interest
-	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators
-	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line,
+	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
+	-c/--callableRegion: BED file to specify callable region. For example: 20141020.strict_mask.whole_genome.bed
+	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
+	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line.
 	"
 
 
@@ -120,7 +120,9 @@ elif [[ "$steps" == *"index"* ]] ; then
 	do_index=true
 elif [[ "$steps" == *"align"* ]] ; then
 	do_align=true
-elif [[ "$steps" == "contaminationandancestry" ]] ; then
+elif [[ "$steps" == *"contamination"* ]] ; then
+	do_cont_anc=true
+elif [[ "$steps" == *"ancestry"* ]] ; then
 	do_cont_anc=true
 fi
 
@@ -196,7 +198,7 @@ fi
 echo "Using $threads worker threads." 1>&2
 if [[ "$callableRegion" == "" ]] ; then
 	callableRegion_arg=""
-	echo "Using no callableRegion bed. The 20141020.strict_mask.whole_genome.bed callableRegion is recommended for hg19." 1>&2
+	echo "Skip input of callableRegion. The callableRegion(ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed) is recommended for hg19." 1>&2
 elif [[ ! -f $callableRegion ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing callableRegion file $callableRegion" 1>&2
@@ -227,7 +229,6 @@ echo "Max file handles: $(ulimit -n)" 1>&2
 
 echo "$(date)	Running FASTQuick. The full log is in $logfile"
 
-#TODO:start from here tomorrow
 FASTQuick_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 FASTQuick_BIN_DIR="${FASTQuick_SRC_DIR}/bin/"
 #FASTQuick_RESOURCE_DIR="${FASTQuick_SRC_DIR}/resource/"
