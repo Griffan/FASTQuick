@@ -442,11 +442,11 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   // DEBUG related variables
   int total_effective_len(0);
   // DEBUG related variables end
-  int threshQual = 0;
+  int threshQual = 20;
   int seqid(0);
   int j(0);
 
-  if (p->type == BWA_TYPE_NO_MATCH or p->mapQ <= threshQual) {
+  if (p->type == BWA_TYPE_NO_MATCH or p->mapQ < threshQual) {
     return false;
   }
 
@@ -1410,28 +1410,18 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   if (p and p->type != BWA_TYPE_NO_MATCH) {
     j = pos_end(p) - p->pos; // length of read
     bns_coor_pac2real(bns, p->pos, j, &seqid);
-    //    if (p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
-    //      p->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
-    //                                   // reference sequences
-    //                                   //          fprintf(stderr, "\n%s
-    //                                   filtered
-    //      //          finally,read1:%d\tread1_match:%d\n",
-    //      //                  p->name, p->filtered, p->type ==
-    //      BWA_TYPE_NO_MATCH);
-    //    }
+        if (p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
+          p->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
+                                       // reference sequences
+        }
   }
   if (q and q->type != BWA_TYPE_NO_MATCH) {
     j2 = pos_end(q) - q->pos; // length of read
     bns_coor_pac2real(bns, q->pos, j2, &seqid2);
-    //    if (q->pos + j2 - bns->anns[seqid2].offset > bns->anns[seqid2].len) {
-    //      q->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
-    //                                   // reference sequences
-    //                                   //          fprintf(stderr, "\n%s
-    //                                   filtered
-    //      //          finally,read2:%d\tread2_match:%d\n",
-    //      //                  q->name, q->filtered, q->type ==
-    //      BWA_TYPE_NO_MATCH);
-    //    }
+        if (q->pos + j2 - bns->anns[seqid2].offset > bns->anns[seqid2].len) {
+          q->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
+                                       // reference sequences
+        }
   }
   /*done checking if reads bridges two reference contigs*/
   if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {

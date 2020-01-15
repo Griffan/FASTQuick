@@ -19,7 +19,16 @@
 ### QUICK START
 To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline
 ```
-bin/FASTQuick.sh [--steps All|AllButIndex|Index|Align|ContaminationAndAncestry] --candidateVCF <variant list> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
+bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry> \
+--candidateVCF <variant list> \
+--reference <reference.fa> \
+--output <output.prefix> \
+--index <index.prefix> \
+--dbSNP <dbSNP.vcf.gz> \
+--fastqList <one_pair_of_fq_or_single_fq_per_line> \
+[--workingdir <directory>] \
+[--callableRegion <callableRegion.bed>] \
+[--targetRegion <targetRegion.bed>]
 ```
 In principal, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter.
 
