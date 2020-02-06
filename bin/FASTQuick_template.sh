@@ -1,15 +1,21 @@
 #
 # FASTQuick: a ultra-fast full-alignment-free quality control toolkit
 #
-# Example ./FASTQuick.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/FASTQuick.full.chr12.1527326.DEL1024.vcf -a out/FASTQuick.full.chr12.1527326.DEL1024.assembly.bam -j ../target/FASTQuick-2.6.2-FASTQuick-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
 last_command=""
 current_command=""
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command completed with exit code $?."' EXIT
+#trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+#trap 'echo "\"${last_command}\" command completed with exit code $?."' EXIT
 ! getopt --test > /dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo '`getopt --test` failed in this environment.'
+    echo 'If you are under Mac OS, please consider to follow these steps:'
+    brew -v > /dev/null
+    if [ "$?" != "0" ];then
+        echo 'Please install brew for Mac OS: ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"'
+    fi
+    echo 'Please install gnu-getopt for Mac OS: brew install gnu-getopt'
+    echo 'Please add `export PATH=$(find /usr/local/Cellar/gnu-getopt/*/bin/ -type d):$PATH` at the begining of FASTQuick.sh'
     exit 1
 fi
 USAGE_MESSAGE="
@@ -62,7 +68,7 @@ while true; do
             shift 2
             ;;
     -s|--steps)
-            steps="${2,,}"
+            steps="$(echo $2 | tr '[:upper:]' '[:lower:]')"
             shift 2
             ;;
     -w|--workingdir)
@@ -223,8 +229,8 @@ mkdir -p $workingdir
 logfile=$workingdir/FASTQuick.full.$timestamp.$HOSTNAME.$$.log
 timinglogfile=$workingdir/FASTQuick.timing.$timestamp.$HOSTNAME.$$.log
 
-ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles
-unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
+#ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles
+#unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 echo "Max file handles: $(ulimit -n)" 1>&2
 
 echo "$(date)	Running FASTQuick. The full log is in $logfile"
@@ -243,17 +249,17 @@ fi
 if [[ $do_index == true ]] ; then
 	  if [[ "$targetRegion" == "" ]] ; then
 		echo "$(date)	Start indexing on whole genome..."| tee -a $timinglogfile
-		{ /usr/bin/time -a -o $timinglogfile \
+		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
 			--mask $callableRegion \
 			--out_prefix $indexPrefix \
-		; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		else
 		echo "$(date)	Start indexing on target region..."| tee -a $timinglogfile
-		{ /usr/bin/time -a -o $timinglogfile \
+		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
@@ -261,7 +267,7 @@ if [[ $do_index == true ]] ; then
 			--mask $callableRegion \
 			--out_prefix $indexPrefix \
 			--regionList $targetRegion \
-		; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		fi
 		echo "$(date)	Finished selecting markers..."| tee -a $timinglogfile
     if [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
@@ -285,11 +291,11 @@ if [[ $do_index == true ]] ; then
 
       if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
         echo "$(date)	Extract subset of genotype matrix finished"| tee -a $timinglogfile
-        { /usr/bin/time -a -o $timinglogfile \
+        { /usr/bin/time \
           $FASTQuick_PROGRAM pop+con \
           --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
           --Reference $reference \
-        ; } 1>&2 2>> $logfile
+        1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
         echo "$(date)	Build SVD files finished" | tee -a $timinglogfile
       else
         echo "$(date)	Extract subset of genotype matrix failed"| tee -a $timinglogfile
@@ -311,13 +317,13 @@ if [[ $do_align == true ]] ; then
 	echo "$(date)	Start analyzing	$fastqList" | tee -a $timinglogfile
 	if [[ -f $fastqList ]] ; then
 	  echo "$(date)	Align fastq file in: $fastqList" | tee -a $timinglogfile
-		{ /usr/bin/time -a -o $timinglogfile \
+		{ /usr/bin/time \
 			$FASTQuick_PROGRAM align \
 			--index_prefix $indexPrefix \
 			--fq_list $fastqList \
 			--out_prefix ${outputPrefix} \
 			--q 15 \
-		; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 	else
 		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
 	fi
@@ -328,13 +334,13 @@ fi
 if [[ $do_cont_anc == true ]] ; then
 	echo "$(date)	Start estimating contamination and genetic ancestry..." | tee -a $timinglogfile
 	if [[ -f "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]] ; then
-		{ /usr/bin/time -a -o $timinglogfile \
+		{ /usr/bin/time \
 			$FASTQuick_PROGRAM pop+con \
 			--PileupFile ${outputPrefix}.Pileup \
 			--Reference $reference \
 			--SVDPrefix ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 			--Output ${outputPrefix} \
-		; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 	else
 		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a $timinglogfile
 	fi
@@ -343,11 +349,11 @@ fi
 
 if [[ -f "${outputPrefix}.Summary" ]] ; then
 echo "$(date)	Summarize basic	QC statistics..." | tee -a $timinglogfile
-{ /usr/bin/time -a -o $timinglogfile \
+{ /usr/bin/time \
 	Rscript ${FASTQuick_BIN_DIR}/RPlotScript.R \
 	${outputPrefix} \
 	${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 	${FASTQuick_SRC_DIR} \
-; } 1>&2 2>> $logfile
+1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."

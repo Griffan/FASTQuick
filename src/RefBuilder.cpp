@@ -1,33 +1,45 @@
 #include "RefBuilder.h"
+
+#include <algorithm>
+#include <cctype>
+#include <sstream>
+
 #include "../libbwa/bwtaln.h"
 #include "Error.h"
 #include "TargetRegion.h"
 #include "Utility.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
-#include <algorithm>
-#include <cctype>
-#include <fstream>
-#include <random>
-#include <sstream>
 
 #define DEBUG 0
 #define MIN_AF 0.01
-#define CALLABLE_RATE 0.95f
+#define CALLABLE_RATE 0.995f
 
-// std::default_random_engine generator;
-// std::uniform_real_distribution<double> distribution(0.0, 1.0);
+static std::string ExtractSeq(const faidx_t *faidx, const std::string &chrom,
+                              int beg, int end) {
+  char region[128], chrRegion[128];
+  int dummy;
+  sprintf(region, "%s:%d-%d", chrom.c_str(), beg, end);
+  char *seq = fai_fetch(faidx, region, &dummy);
+  if (!seq) {
+    sprintf(chrRegion, "chr%s:%d-%d", chrom.c_str(), beg, end);
+    seq = fai_fetch(faidx, chrRegion, &dummy);
+    if (!seq) {
+      error("Cannot find %s from the reference file!\n", region);
+    }
+  }
+  std::string ret(seq);
+  free(seq);
+  return ret;
+}
 
 static void CalculateGC(const int flank_len, const faidx_t *seq,
                         const std::string &Chrom, const int Position,
                         std::ofstream &FGC) { // Calculate GC content
   _GCstruct GCstruct(flank_len * 2 + 1);
-  char region[1024];
-  int dummy;
   for (int i = Position - flank_len, t = 0; i != Position + flank_len + 1;
        ++i, ++t) {
-    sprintf(region, "%s:%d-%d", Chrom.c_str(), i - 50, i + 49);
-    std::string Window(fai_fetch(seq, region, &dummy));
+    std::string Window(ExtractSeq(seq, Chrom.c_str(), i - 50, i + 49));
     int total = 0;
     for (unsigned int j = 0; j != Window.size(); ++j) {
       if (Window[j] == 'G' || Window[j] == 'C' || Window[j] == 'g' ||
@@ -108,11 +120,8 @@ bool RefBuilder::VariantCheck(std::string &chr, int position,
       if (IsInCallableRegion(chr, position - flank_len, position + flank_len))
         return true;
     } else {
-      int dummy_t;
-      char region[1024];
-      sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
-              position + flank_len);
-      std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+      std::string MaskSeq(ExtractSeq(
+          FastaMask, chr.c_str(), position - flank_len, position + flank_len));
       double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
       if (n < CALLABLE_RATE * MaskSeq.size()) {
         return true;
@@ -133,7 +142,6 @@ int RefBuilder::GetFlankLen(int index) {
 
 bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
                       int chrFlag) {
-  int flank_len = 0;
   if (not IsChromInWhiteList(chr)) // strip chr from e.g. chr11
     return true;
 
@@ -152,6 +160,7 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
     return true;
   }
 
+  int flank_len = 0;
   if (chrFlag == 1)
     flank_len = flank_long_len;
   else
@@ -163,42 +172,24 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
       auto low_iter = VcfTable[chr].upper_bound(position);
       if (low_iter != VcfTable[chr].begin()) {
         auto up_iter = low_iter--;
-
         int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
         int adjacentFlankLen = GetFlankLen(low_iter->second);
-
-        //        std::cerr<<"out of "<<VcfTable[chr].size()<<"\tcurrent
-        //        marker:"<<position<<"("<<flank_len<<")"<<"\tleft:"
-        //        <<adjacentPos<<"("<<adjacentFlankLen<<")";
-
         if (abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
-          //          std::cerr<<"\toverlapped"<<std::endl;
           return true; // overlap with left region
         }
-        //        std::cerr<<"\tnon-overlapped"<<std::endl;
         if (up_iter != VcfTable[chr].end()) {
           adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
           adjacentFlankLen = GetFlankLen(up_iter->second);
-
-          //          std::cerr << "out of " << VcfTable[chr].size()
-          //                    << "\tcurrent marker:" << position << "(" <<
-          //                    flank_len
-          //                    << ")"
-          //                    << "\tright:" << adjacentPos << "(" <<
-          //                    adjacentFlankLen
-          //                    << ")";
-
           if (up_iter != VcfTable[chr].end() and
               abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
-            //            std::cerr << "\toverlapped" << std::endl;
             return true; // overlap with right region
           }
-          //          std::cerr << "\tnon-overlapped" << std::endl;
         }
-      } else {
+      } else { // first item
         int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
         int adjacentFlankLen = GetFlankLen(low_iter->second);
-        return abs(position - adjacentPos + 1) < adjacentFlankLen + flank_len;
+        if (abs(position - adjacentPos + 1) < adjacentFlankLen + flank_len)
+          return true;
       }
     }
   }
@@ -213,12 +204,9 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
                   << " is in repetitive region." << std::endl;
         return true;
       }
-    } else {
-      int dummy_t;
-      char region[1024];
-      sprintf(region, "%s:%d-%d", chr.c_str(), position - flank_len,
-              position + flank_len);
-      std::string MaskSeq(fai_fetch(FastaMask, region, &dummy_t));
+    } else { // fasta file
+      std::string MaskSeq(ExtractSeq(
+          FastaMask, chr.c_str(), position - flank_len, position + flank_len));
       double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
       if (n < CALLABLE_RATE * MaskSeq.size()) {
         std::cerr << "[DEBUG]Position:" << chr << "\t" << position
@@ -227,14 +215,11 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
       }
     }
   }
+
   return false;
 }
 
-bool RefBuilder::IsChromInWhiteList(std::string &Chrom) {
-  if (Chrom.find("chr") != std::string::npos or
-      Chrom.find("CHR") != std::string::npos) {
-    Chrom = Chrom.substr(3); // strip chr
-  }
+bool RefBuilder::IsChromInWhiteList(const std::string &Chrom) {
   return (chromWhiteList.find(Chrom) != chromWhiteList.end());
 }
 
@@ -248,26 +233,25 @@ inline static int OverlapLen(int a, int c, int b, int d) {
 }
 
 bool RefBuilder::IsInCallableRegion(std::string Chrom, int start, int end) {
-  if (Chrom.find("chr") != std::string::npos or
-      Chrom.find("CHR") != std::string::npos) {
-    Chrom = Chrom.substr(3); // strip chr
-  }
-  if (repeatRegionList.find(Chrom) == repeatRegionList.end())
+
+  if (callableRegionList.find(Chrom) == callableRegionList.end())
     return false;
   else {
     int length = end - start + 1;
     int overlap = 0;
-    auto lower_iter = repeatRegionList[Chrom].lower_bound(start);
-    if (lower_iter != repeatRegionList[Chrom].begin()) {
+    auto lower_iter = callableRegionList[Chrom].lower_bound(start);
+    if (lower_iter != callableRegionList[Chrom].begin()) {
       lower_iter--;
-      while (lower_iter->first <= end) {
+      while (lower_iter != callableRegionList[Chrom].end() and
+             lower_iter->first <= end) {
         overlap +=
             OverlapLen(start, end, lower_iter->first, lower_iter->second);
         ++lower_iter;
       }
     } else // the first region
     {
-      while (lower_iter->first <= end) {
+      while (lower_iter != callableRegionList[Chrom].end() and
+             lower_iter->first <= end) {
         overlap +=
             OverlapLen(start, end, lower_iter->first, lower_iter->second);
         ++lower_iter;
@@ -309,24 +293,29 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
         if (chr.find("chr") != std::string::npos or
             chr.find("CHR") != std::string::npos)
           chr = chr.substr(3);
-        if (repeatRegionList.find(chr) != repeatRegionList.end()) {
-          if (repeatRegionList[chr].find(start) !=
-              repeatRegionList[chr].end()) {
-            if (repeatRegionList[chr][start] < end)
-              repeatRegionList[chr][start] = end;
+        if (callableRegionList.find(chr) != callableRegionList.end()) {
+          if (callableRegionList[chr].find(start) !=
+              callableRegionList[chr].end()) {
+            if (callableRegionList[chr][start] < end)
+              callableRegionList[chr][start] = end;
           } else {
-            repeatRegionList[chr][start] = end;
+            callableRegionList[chr][start] = end;
           }
         } else {
-          repeatRegionList[chr] = std::map<int, int>();
-          repeatRegionList[chr][start] = end;
+          callableRegionList[chr] = std::map<int, int>();
+          callableRegionList[chr][start] = end;
         }
       }
       fin.close();
       notice("Loading Mask Bed file done!");
     } else if (suffix == ".fa" or suffix == "sta" or suffix == ".gz") {
       FastaMask = fai_load(MaskPath.c_str());
-      notice("Loading Mask fai file done!");
+      if (!FastaMask)
+        notice("Loading Mask fai file done!");
+      else
+        error("Check if %s exists and Mask fai chromosome name is consistent "
+              "with reference fai!",
+              MaskPath.c_str());
     } else {
       warning("Unknow file type for %s, fasta or bed file is required",
               MaskPath.c_str());
@@ -339,8 +328,8 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
 }
 
 bool RefBuilder::IsMaxNumMarker(
-    const std::string &Chrom, int &chrFlag,
-    bool isLong) // use this function after checking whiteList
+    const std::string &Chrom, int &chrFlag, bool isForcedLong,
+    bool isForcedShort) // use this function after checking whiteList
 {
   if (Chrom == "X") { /*0:short;1:long;2:Y;3:X*/
     if (nXMarker >= maxXorYmarker)
@@ -351,23 +340,23 @@ bool RefBuilder::IsMaxNumMarker(
       return true;
     chrFlag = 2;
   } else { // must be from chr1-chr22
-    if (isLong) {
-      chrFlag = 1;
-    } else {
-      //      float ratio =
-      //          num_variant_short / (float)(num_variant_short +
-      //          num_variant_long);
-      //      double sample = distribution(generator);
-      if (/*sample > ratio and*/ nLongMarker < num_variant_long) {
+    if (nLongMarker >= num_variant_long and nShortMarker >= num_variant_short) {
+      return true;
+    }
+    if (isForcedLong) {
+      if (isForcedShort)
+        error("isForcedLong and isForcedShort cannot be set at the same time");
+      else {
         chrFlag = 1;
-      } else if (                                  /*sample <= ratio and*/
-                 nShortMarker < num_variant_short) // must be from chr1-chr22
+      }
+    } else if (isForcedShort) {
+      chrFlag = 0;
+    } else {
+      if (nLongMarker < num_variant_long) {
+        chrFlag = 1;
+      } else if (nShortMarker < num_variant_short) // must be from chr1-chr22
       {
         chrFlag = 0;
-      }
-      if (nLongMarker >= num_variant_long and
-          nShortMarker >= num_variant_short) {
-        return true;
       }
     }
   }
@@ -376,7 +365,6 @@ bool RefBuilder::IsMaxNumMarker(
 
 void RefBuilder::IncreaseNumMarker(int chrFlag) {
   switch (chrFlag) { /*0:short;1:long;2:Y;3:X*/
-    ;
   case 0:
     nShortMarker++;
     break;
@@ -394,66 +382,97 @@ void RefBuilder::IncreaseNumMarker(int chrFlag) {
   }
 }
 
+/*
+ * The marker selection priority is as follows:
+ * 1. markers in target region with long flank region
+ * 2. markers in target region with short flank region
+ * 3. markers not in target region with long flank region
+ * 4. markers not in target region with short flank region
+ */
 int RefBuilder::SelectMarker(const std::string &RegionList) {
-
-  TargetRegion targetRegion;
-  if (RegionList != "Empty")
-    targetRegion.ReadRegionList(RegionList);
-  notice("Start to select marker set...");
+  notice("Start to select markers...");
   std::string SelectedSite = NewRef + ".SelectedSite.vcf";
 
   // read in vcf, hapmap3 sites
   std::string Chrom;
-  int Position;
+  int Position(0);
+  int chrFlag(-1);
+  bool isForcedShort(false);
   VcfHeader header;
   VcfFileReader reader;
   reader.open(VcfPath.c_str(), header);
-  // begin select exome variants
-  while (!reader.isEOF()) {
-    int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
-    VcfRecord *VcfLine = new VcfRecord;
-    reader.readRecord(*VcfLine);
-    Position = VcfLine->get1BasedPosition();
-    Chrom = VcfLine->getChromStr();
+  // begin select variants in target regions
+  if (RegionList != "Empty") {
+    notice("Start to select markers from target regions...");
+    TargetRegion targetRegion;
+    targetRegion.ReadRegionList(RegionList);
+    while (!reader.isEOF()) {
+      chrFlag = -1 /*0:short;1:long;2:Y;3:X*/;
+      isForcedShort = false;
+      VcfRecord *VcfLine = new VcfRecord;
+      reader.readRecord(*VcfLine);
+      Position = VcfLine->get1BasedPosition();
 
-    if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and
-         not targetRegion.IsOverlapped(Chrom, Position - 1))) {
-      delete VcfLine;
-      continue;
+      Chrom = VcfLine->getChromStr();
+      std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
+      if (Chrom.find("chr") != std::string::npos or
+          Chrom.find("CHR") != std::string::npos) {
+        Chrom = Chrom.substr(3); // strip chr
+      }
+      notice("Now test if %s:%d is selected...", Chrom.c_str(), Position);
+
+    RESCUE:
+      if (IsMaxNumMarker(Chrom, chrFlag, false, isForcedShort)) {
+        delete VcfLine;
+        continue;
+      }
+
+      if (not targetRegion.IsOverlapped(Chrom, Position - 1)) {
+        delete VcfLine;
+        continue;
+      }
+
+      if (Skip(Chrom, Position, VcfLine, chrFlag)) {
+        if (not isForcedShort) {
+          isForcedShort = true;
+          goto RESCUE;
+        }
+        delete VcfLine;
+        continue;
+      }
+
+      if (chrFlag == 1)
+        VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E|L").c_str());
+      else
+        VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E").c_str());
+      notice("Now confirm if %s:%d is selected as %s...", Chrom.c_str(),
+             Position, VcfLine->getIDStr());
+
+      VcfTable[Chrom][Position] =
+          nShortMarker + nLongMarker + nXMarker + nYMarker;
+      VcfVec.push_back(VcfLine);
+
+      IncreaseNumMarker(chrFlag);
     }
-
-    if (Skip(Chrom, Position, VcfLine, chrFlag)) {
-      delete VcfLine;
-      continue;
-    }
-
-    if (chrFlag == 1)
-      VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E|L").c_str());
-    else
-      VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E").c_str());
-
-    VcfTable[Chrom][Position] =
-        nShortMarker + nLongMarker + nXMarker + nYMarker;
-    VcfVec.push_back(VcfLine);
-
-    IncreaseNumMarker(chrFlag);
+    reader.close();
+    reader.open(VcfPath.c_str(), header);
   }
-  reader.close();
 
-  reader.open(VcfPath.c_str(), header);
-
-  // begin select
+  // begin select markers outside of target region
   while (!reader.isEOF()) {
-    int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
+    chrFlag = -1 /*0:short;1:long;2:Y;3:X*/;
     VcfRecord *VcfLine = new VcfRecord;
     reader.readRecord(*VcfLine);
     Position = VcfLine->get1BasedPosition();
-    Chrom = VcfLine->getChromStr();
 
-    if (IsMaxNumMarker(Chrom, chrFlag, false) ||
-        (RegionList != "Empty" and
-         targetRegion.IsOverlapped(Chrom, Position - 1))) {
+    Chrom = VcfLine->getChromStr();
+    std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
+    if (Chrom.find("chr") != std::string::npos or
+        Chrom.find("CHR") != std::string::npos) {
+      Chrom = Chrom.substr(3); // strip chr
+    }
+
+    if (IsMaxNumMarker(Chrom, chrFlag, false, false)) {
       delete VcfLine;
       continue;
     }
@@ -549,7 +568,13 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
     Position = VcfLine->get1BasedPosition();
     Chrom = VcfLine->getChromStr();
 
-    if (IsMaxNumMarker(Chrom, chrFlag, isLong)) {
+    std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
+    if (Chrom.find("chr") != std::string::npos or
+        Chrom.find("CHR") != std::string::npos) {
+      Chrom = Chrom.substr(3); // strip chr
+    }
+
+    if (IsMaxNumMarker(Chrom, chrFlag, isLong, false)) {
       delete VcfLine;
       continue;
     }
@@ -623,8 +648,6 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
 void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine,
                            std::ofstream &FGC, std::ofstream &FaOut) {
   int flank_len;
-  int dummy;
-  char region[1024];
   char newChrName[1024];
 
   if (std::string(VcfLine->getIDStr()).find('L') !=
@@ -640,10 +663,10 @@ void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine,
             VcfLine->get1BasedPosition(), VcfLine->getRefStr(),
             VcfLine->getAltStr());
   }
-  sprintf(region, "%s:%d-%d", VcfLine->getChromStr(),
-          VcfLine->get1BasedPosition() - flank_len,
-          VcfLine->get1BasedPosition() + flank_len);
-  std::string FetchedSeq(fai_fetch(seq, region, &dummy));
+
+  std::string FetchedSeq(ExtractSeq(seq, VcfLine->getChromStr(),
+                                    VcfLine->get1BasedPosition() - flank_len,
+                                    VcfLine->get1BasedPosition() + flank_len));
 
   CalculateGC(flank_len, seq, VcfLine->getChromStr(),
               VcfLine->get1BasedPosition(), FGC);
@@ -680,7 +703,4 @@ int RefBuilder::PrepareRefSeq() {
   FGC.close();
   return 0;
 }
-RefBuilder::~RefBuilder() {
-  //    SeqVec.clear();
-  //    RefTableIndex.clear();
-}
+RefBuilder::~RefBuilder() {}

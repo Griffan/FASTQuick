@@ -64,12 +64,12 @@ public:
 
   int PrepareRefSeq();
 
-  bool IsChromInWhiteList(std::string &Chrom);
+  bool IsChromInWhiteList(const std::string &Chrom);
 
   bool IsInCallableRegion(std::string Chrom, int start, int end);
 
-  bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag,
-                      bool isLong = false); // check if reach max number of
+  bool IsMaxNumMarker(const std::string &Chrom, int &chrFlag, bool isForcedLong,
+                      bool isForcedShort); // check if reach max number of
                                             // marker, and also set marker type
 
   void IncreaseNumMarker(int chrFlag);
@@ -92,7 +92,7 @@ private:
 
   std::set<std::string> chromWhiteList;
   std::map<std::string, std::map<int, int>> regionWhiteList;
-  std::map<std::string, std::map<int, int>> repeatRegionList;
+  std::map<std::string, std::map<int, int>> callableRegionList;
 };
 
 #endif /* REFBUILDER_H_ */

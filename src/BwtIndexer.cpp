@@ -730,7 +730,7 @@ bool BwtIndexer::BuildIndex(RefBuilder &ArtiRef, std::string &OldRef,
   // str=NewRef+".pac";
   // std::cerr<<"The bwa seq len is:"<<bwa_seq_len(str.c_str())<<std::endl;
   bns_dump(bns, NewRef.c_str());
-  notice("Building Pac from Bwt...\n");
+  notice("Building Pac from Bwt...");
   bwt_d = Pac2Bwt(pac_buf);
   // cerr<<"Pac2Bwt..."<<bwt_d->bwt_size<<endl;
   rbwt_d = Pac2Bwt(rpac_buf);
@@ -740,7 +740,7 @@ bool BwtIndexer::BuildIndex(RefBuilder &ArtiRef, std::string &OldRef,
   bwt_bwtupdate_core(bwt_d);
   // cerr<<"Bwt update..."<<bwt_d->bwt_size<<endl;
   bwt_bwtupdate_core(rbwt_d);
-  notice("Dumping Bwt...\n");
+  notice("Dumping Bwt...");
   str = NewRef + ".bwt";
   bwt_dump_bwt(str.c_str(), bwt_d);
   str = NewRef + ".rbwt";
@@ -749,7 +749,7 @@ bool BwtIndexer::BuildIndex(RefBuilder &ArtiRef, std::string &OldRef,
 
   // bwt_d=bwt_gen_cnt_table(bwt_d);
   // rbwt_d=bwt_gen_cnt_table(rbwt_d);
-  notice("Calculate SA from Bwt...\n");
+  notice("Calculate SA from Bwt...");
   str = NewRef + ".sa";
   bwt_cal_sa(bwt_d, 32);
   bwt_dump_sa(str.c_str(), bwt_d);
@@ -772,6 +772,9 @@ int BwtIndexer::LoadContigSize() {
   while (getline(fin, line)) {
     stringstream ss(line);
     ss >> chr;
+    if (chr.find("chr") != std::string::npos or
+        chr.find("CHR") != std::string::npos)
+      chr = chr.substr(3);
     ss >> length;
     contigSize.push_back(std::make_pair(chr, atoi(length.c_str())));
     ref_genome_size += atoi(length.c_str());

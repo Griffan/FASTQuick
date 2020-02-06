@@ -65,14 +65,11 @@ int TargetRegion::ReadRegionList(const std::string &regionListPath) {
   return 0;
 }
 
-bool TargetRegion::IsOverlapped(std::string Chrom, int start) {
+bool TargetRegion::IsOverlapped(const std::string & Chrom, int start) {
 
-  std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-  if (Chrom.find("chr") != std::string::npos or
-      Chrom.find("CHR") != std::string::npos) {
-    Chrom = Chrom.substr(3); // strip chr
-  }
-  if (regionWhiteList.find(Chrom) == regionWhiteList.end())
+  if (regionWhiteList.empty())
+    return false;
+  else if (regionWhiteList.find(Chrom) == regionWhiteList.end())
     return false;
   else {
     auto lower_iter = regionWhiteList[Chrom].lower_bound(start);

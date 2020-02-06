@@ -316,6 +316,13 @@ int runAlign(int argc, char **argv) {
   pl.Add(new longParams("Available Options", longParameters));
   pl.Read(argc, argv);
   pl.Status();
+
+  if(opt->fnr >= 1.0)
+  {
+    opt->max_diff = static_cast<int>(opt->fnr);
+    opt->fnr = -1.0;
+  }
+
   if (Prefix == "Empty") {
     error("--out_prefix is required");
     exit(EXIT_FAILURE);

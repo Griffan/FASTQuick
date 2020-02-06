@@ -13,7 +13,7 @@ public:
   TargetRegion() = default;
   TargetRegion(const std::string &bedFile);
   int ReadRegionList(const std::string &regionListPath);
-  bool IsOverlapped(std::string Chrom, int start);
+  bool IsOverlapped(const std::string& Chrom, int start);
 
 private:
   std::map<std::string, std::map<int, int>> regionWhiteList;
