@@ -79,7 +79,6 @@ static void bwa_cal_sa_reg_gap(int tid, bwt_t *const bwt[2], int n_seqs,
   // uint32_t unmapped_num = 0;
   for (i = 0; i != n_seqs; ++i) {
     bwa_seq_t *p = seqs + i;
-    // notice("Read %s",p->name);
     /*decoupling multithread*/
     /*
 #ifdef HAVE_PTHREAD
@@ -100,19 +99,14 @@ continue;
 pthread_mutex_unlock(&g_seq_lock);
 }
 #endif*/
-    // if (strcmp(p->name, "ERR018525.148353") == 0)
-    //{
-    // fprintf(stderr, "ERR018525.148353	is coming\n");
-    //}
+
     p->sa = 0;
     p->type = BWA_TYPE_NO_MATCH;
     p->c1 = p->c2 = 0;
     p->n_aln = 0;
     p->aln = 0;
     if (/* drand48() >opt->frac ||*/ p
-            ->filtered) //|| Indexer->IsReadFiltered(p->seq, p->qual,
-                        // p->len))//here I use BWA_TYPE_UNIQUE as a flag of
-                        // being downsampled
+            ->filtered)
     {
       // unmapped_num++;
       continue;
@@ -2715,27 +2709,6 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
         }
         if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
             (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) {
-          //					if (strncmp(p[0]->name,
-          //"ERR015764.2262", 14)
-          //== 0)
-          //					{
-          //						fprintf(stderr, "\n%s
-          // appeared finally,",
-          // p[0]->name); 					if(p[0] == 0 ||
-          // p[0]->type
-          // == BWA_TYPE_NO_MATCH)
-          // fprintf(stderr,
-          //"read1:1\t"); 					else
-          // fprintf(stderr, "read1:0\t");
-          // if(p[1]
-          // ==
-          // 0
-          //||
-          // p[1]->type == BWA_TYPE_NO_MATCH)
-          // fprintf(stderr, "read2:1\n"); else
-          //						fprintf(stderr,
-          //"read2:0\n");
-          //					}
           ++n_bwaunmap;
           continue;
         }
