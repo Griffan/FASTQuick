@@ -17,7 +17,7 @@
 - [COPYRIGHT](#copyright)
 
 ### QUICK START
-To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline
+To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline([] is optional)
 ```
 bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry> \
 --candidateVCF <variant list> \
@@ -34,7 +34,7 @@ In principal, all the following steps below can be streamlined by this script. Y
 
 ### SYNOPSIS
 
-Below is a simple example to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
+You can also directly run FASTQuick without using wrapping script. Below is a simple example to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
 
 ```
 FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref hg19.fa --out_prefix reduced_ref_index
@@ -72,7 +72,7 @@ For lzma:
 
    Installation complete successfully if pass all  tests finished successfully.
 
-####Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
+#### Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
 
 ### EXAMPLES
 

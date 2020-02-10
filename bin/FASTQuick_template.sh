@@ -324,6 +324,15 @@ if [[ $do_align == true ]] ; then
 			--out_prefix ${outputPrefix} \
 			--q 15 \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+		if [[ -f "${outputPrefix}.bam" ]]; then
+		  echo "$(date)	Start sorting bam file..." | tee -a $timinglogfile
+		  samtools sort -O BAM ${outputPrefix}.bam > ${outputPrefix}.sorted.bam
+		  samtools index ${outputPrefix}.sorted.bam
+		  rm ${outputPrefix}.bam
+		else
+		  echo "$(date)	Analyzing $fastqList failed!" | tee -a $timinglogfile
+		  exit 16
+		fi
 	else
 		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
 	fi
