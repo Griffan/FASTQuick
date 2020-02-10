@@ -152,6 +152,7 @@ int runIndex(int argc, char **argv) {
   }
   ParamOut << "REFERENCE_PATH\t" << RefPath << endl;
   ParamOut << "TARGET_REGION_PATH\t" << TargetRegionPath << endl;
+  ParamOut << "DBSNP_VCF_PATH\t" << DBsnpPath << endl;
   ParamOut << "NUM_VAR_LONG\t" << opt->num_variant_long << endl;
   ParamOut << "NUM_VAR_SHORT\t" << opt->num_variant_short << endl;
   ParamOut << "SHORT_FLANK_LENGTH\t" << opt->flank_len << endl;
@@ -173,10 +174,9 @@ int runAlign(int argc, char **argv) {
   popt = bwa_init_pe_opt();
   opt = gap_init_opt();
 
-  std::string /*RefPath("Empty"), VcfPath("Empty"), MaskPath("Empty"),*/
-      Fastq_1("Empty"),
-      Fastq_2("Empty"), BamIn("Empty"), ReadGroup("@RG\tID:foo\tSM:bar"),
-      DepthDist, SitePileup, FaList("Empty") /*, DBsnpPath("Empty")*/;
+  std::string Fastq_1("Empty"), Fastq_2("Empty"), BamIn("Empty"),
+      ReadGroup("@RG\tID:foo\tSM:bar"), DepthDist, SitePileup, FaList("Empty"),
+      DBsnpPath("Empty");
   std::string Prefix("Empty"), IndexPrefix("Empty");
   bool loggap(0), /*compread(0),*/ nonstop(0), IL13(0), NonBamOut(0);
   int kmer_thresh(3);
@@ -317,8 +317,7 @@ int runAlign(int argc, char **argv) {
   pl.Read(argc, argv);
   pl.Status();
 
-  if(opt->fnr >= 1.0)
-  {
+  if (opt->fnr >= 1.0) {
     opt->max_diff = static_cast<int>(opt->fnr);
     opt->fnr = -1.0;
   }
@@ -401,6 +400,19 @@ int runAlign(int argc, char **argv) {
   ss >> TmpStr;
   if (TmpStr == "TARGET_REGION_PATH")
     ss >> TargetRegionPath;
+  else {
+    std::cerr << NewRef + ".param"
+              << " corrupted!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  std::getline(ParamIn, ParaStr); // DBSNP_VCF_PATH
+  ss.str("");
+  ss.clear();
+  ss << ParaStr;
+  ss >> TmpStr;
+  if (TmpStr == "DBSNP_VCF_PATH")
+    ss >> DBsnpPath;
   else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
