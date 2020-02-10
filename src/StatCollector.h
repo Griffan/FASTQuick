@@ -21,13 +21,7 @@ SOFTWARE.
 
 #include "../libbwa/bntseq.h"
 #include "../libbwa/bwtaln.h"
-#include "../misc/bam/BamInterface.h"
-#include "../misc/bam/SamFile.h"
-#include "../misc/bam/SamRecord.h"
-#include "../misc/bam/SamValidation.h"
-#include "../misc/vcf/VcfFileReader.h"
-#include "../misc/vcf/VcfHeader.h"
-#include "../misc/vcf/VcfRecord.h"
+
 #include "TargetRegion.h"
 #include "Utility.h"
 #include "cmath"
@@ -36,6 +30,9 @@ SOFTWARE.
 #ifndef STATCOLLECTOR_H_
 #define STATCOLLECTOR_H_
 
+class SamRecord;
+class SamFileHeader;
+class VcfRecord;
 // typedef std::string Seq;
 // typedef std::string Qual;
 
@@ -116,27 +113,22 @@ private:
   // target region
   TargetRegion targetRegion;
 
-
 private:
   bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
                           const gap_opt_t *opt);
 
   bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
 
-  void StatVecDistUpdate(const std::string &chrom, int i, const std::string &qual,
-                         const std::string &refSeq, const std::string &seq, int tmpCycle,
-                         int relativeCoordOnRead, int relativeCoordOnRef);
+  void StatVecDistUpdate(const std::string &chrom, int i, int tmpCycle,
+                         char readBase, char readQual, char refBase);
 
-  void AddBaseInfoToNewCoord(const std::string &chrom, int i,
-                             const std::string &qual, const std::string &refSeq,
-                             const std::string &seq, int tmpCycle,
-                             int relativeCoordOnRead, int relativeCoordOnRef);
+  void AddBaseInfoToNewCoord(const std::string &chrom, int i, int tmpCycle,
+                             char readBase, char baseQual, char refBase);
 
   void UpdateInfoVecAtMarker(int tmpCycle, int absoluteSite, int cl,
-                             const char *sign, bool strand,
-                             const std::string &chrom, const std::string &seq,
-                             const std::string &qual, u_char mapQ,
-                             int relativeCoordOnRead);
+                             bool strand, const std::string &chrom,
+                             const std::string &seq, const std::string &qual,
+                             u_char mapQ, int relativeCoordOnRead);
 
 public:
   StatCollector();
@@ -170,39 +162,20 @@ public:
 
   int ProcessCore(const std::string &statPrefix, const gap_opt_t *opt);
   int GetGenoLikelihood(const std::string &statPrefix);
-  inline int IsPartialAlign(const bwa_seq_t *q) {
-    for (int k = 0; k < q->n_cigar; ++k) {
+  inline int IsPartialAlign(const bwa_seq_t *q);
+  inline int IsPartialAlign(SamRecord &q);
 
-      // int cl = __cigar_len(q->cigar[k]);
-      int cop = "MIDS"[__cigar_op(q->cigar[k])];
-      switch (cop) {
-      case 'S':
-        return 1;
-      case 'H':
-        return 1;
-      default:
-        break;
-      }
-    }
-    return 0;
-  }
-  inline int IsPartialAlign(SamRecord &q) {
-    if (std::string(q.getCigar()).find('S') != std::string::npos)
-      return 1;
-    else
-      return 0;
-  }
-
-  std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
-                                        std::string MD,
-                                        const std::string &cigarString);
-  std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
-                                        std::string MD,
-                                        const bwa_cigar_t *cigar, int n_cigar);
+  static std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
+                                               std::string MD,
+                                               const std::string &cigarString);
+  static std::string RecoverRefseqByMDandCigar(const std::string &readSeq,
+                                               std::string MD,
+                                               const bwa_cigar_t *cigar,
+                                               int n_cigar);
 
   int AddFSC(FileStatCollector a);
   int SetGenomeSize(long total_size);
-  int SetTargetRegion(const std::string & targetRegionPath);
+  int SetTargetRegion(const std::string &targetRegionPath);
   int SummaryOutput(const std::string &outputPath);
 
   double Q20AvgDepth();
@@ -216,18 +189,15 @@ public:
   int AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq,
                        const std::string &qual, const std::string &refSeq,
                        const std::string &chr, int readRealStart,
-                       int refRealStart, int refRealEnd, const char *sign,
-                       bool strand, u_char mapQ, int matchLen, int tmpCycle,
+                       int refRealStart, int refRealEnd, bool strand,
+                       u_char mapQ, int matchLen, int tmpCycle,
                        int relativeCoordOnRead, int relativeCoordOnRef);
 
-  int UpdateInfoVecAtRegularSite(const gap_opt_t *opt, const std::string &seq,
-                                 const std::string &qual,
-                                 const std::string &refSeq,
-                                 const std::string &chr, int readRealStart,
-                                 int refRealStart, int refRealEnd,
-                                 const char *sign, bool strand, int matchLen,
-                                 int tmpCycle, int relativeCoordOnRead,
-                                 int relativeCoordOnRef);
+  int UpdateInfoVecAtRegularSite(
+      const gap_opt_t *opt, const std::string &seq, const std::string &qual,
+      const std::string &refSeq, const std::string &chr, int readRealStart,
+      int refRealStart, int refRealEnd, bool strand, int matchLen, int tmpCycle,
+      int relativeCoordOnRead, int relativeCoordOnRef);
 
 private:
   //    std::vector<std::string> DebugSeqVec,DebugQualVec;
