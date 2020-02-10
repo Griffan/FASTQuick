@@ -34,4 +34,5 @@ build
 test
 cmake-build-debug
 .clion.source.upload.marker
+runUnitTests
 

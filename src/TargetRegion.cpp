@@ -75,9 +75,6 @@ bool TargetRegion::IsOverlapped(const std::string & Chrom, int start) {
     auto lower_iter = regionWhiteList[Chrom].lower_bound(start);
     if (lower_iter != regionWhiteList[Chrom].begin())
       lower_iter--;
-    // std::cerr<<"lower_bound:(size:"<<regionWhiteList[Chrom].size()<<")"<<Chrom<<"
-    // "<<lower_iter->first<<" "<<lower_iter->second<<"
-    // input:"<<start<<std::endl;
     if (lower_iter->first <= (start) and lower_iter->second > (start))
       return true;
     else

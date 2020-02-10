@@ -218,7 +218,7 @@ fi
 
 
 # Validate tools exist on path
-for tool in tabix sort bcftools; do
+for tool in sort bcftools; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2
 done

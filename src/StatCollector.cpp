@@ -293,8 +293,9 @@ void StatCollector::StatVecDistUpdate(const string &chrom, int i,
       refSeq[relativeCoordOnRef] != seq[relativeCoordOnRead] and
       refSeq[relativeCoordOnRef] != 'N' and
       dbSNPTable[chrom].find(i) == dbSNPTable[chrom].end()) {
-    //    std::cerr<<"pos:"<<chrom<<":"<<i<<" "<<refSeq[relativeCoordOnRef]<<"
-    //    "<<seq[relativeCoordOnRead]<<std::endl;
+    //    std::cerr << "pos:" << chrom << ":" << i << " "
+    //              << refSeq[relativeCoordOnRef]
+    //              << "\t"<<seq[relativeCoordOnRead]<<std::endl;
     misEmpRepDist[qual[relativeCoordOnRead]]++;
     misEmpCycleDist[tmpCycle]++;
   }
@@ -366,15 +367,20 @@ int StatCollector::AddMatchBaseInfo(const gap_opt_t *opt, const string &seq,
                                     int matchLen, int tmpCycle,
                                     int relativeCoordOnRead,
                                     int relativeCoordOnRef) {
+  std::string Chrom(chr);
+  std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
+  if (Chrom.find("CHR") != std::string::npos) {
+    Chrom = Chrom.substr(3); // strip chr
+  }
 
-  UpdateInfoVecAtMarker(tmpCycle, readRealStart, matchLen, sign, strand, chr,
+  UpdateInfoVecAtMarker(tmpCycle, readRealStart, matchLen, sign, strand, Chrom,
                         seq, qual, mapQ, relativeCoordOnRead);
 
   /*****************************************************************************/
-  return UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, chr, readRealStart,
-                                    refRealStart, refRealEnd, sign, strand,
-                                    matchLen, tmpCycle, relativeCoordOnRead,
-                                    relativeCoordOnRef);
+  return UpdateInfoVecAtRegularSite(opt, seq, qual, refSeq, Chrom,
+                                    readRealStart, refRealStart, refRealEnd,
+                                    sign, strand, matchLen, tmpCycle,
+                                    relativeCoordOnRead, relativeCoordOnRef);
 }
 #define FLANK_EDGE 0.65
 
@@ -1410,18 +1416,18 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   if (p and p->type != BWA_TYPE_NO_MATCH) {
     j = pos_end(p) - p->pos; // length of read
     bns_coor_pac2real(bns, p->pos, j, &seqid);
-        if (p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
-          p->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
-                                       // reference sequences
-        }
+    if (p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len) {
+      p->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
+                                   // reference sequences
+    }
   }
   if (q and q->type != BWA_TYPE_NO_MATCH) {
     j2 = pos_end(q) - q->pos; // length of read
     bns_coor_pac2real(bns, q->pos, j2, &seqid2);
-        if (q->pos + j2 - bns->anns[seqid2].offset > bns->anns[seqid2].len) {
-          q->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
-                                       // reference sequences
-        }
+    if (q->pos + j2 - bns->anns[seqid2].offset > bns->anns[seqid2].len) {
+      q->type = BWA_TYPE_NO_MATCH; // this alignment bridges two adjacent
+                                   // reference sequences
+    }
   }
   /*done checking if reads bridges two reference contigs*/
   if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
@@ -1769,7 +1775,7 @@ int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
   return 0;
 }
 
-int StatCollector::RestoreVcfSites(const string &RefPath,
+int StatCollector::RestoreVcfSites(const std::string &RefPath,
                                    const gap_opt_t *opt) {
 
   VcfHeader header;
@@ -1788,6 +1794,11 @@ int StatCollector::RestoreVcfSites(const string &RefPath,
     VcfRecVec.push_back(VcfLine);
 
     string chr(VcfLine->getChromStr());
+    std::transform(chr.begin(), chr.end(), chr.begin(), ::toupper);
+    if (chr.find("CHR") != std::string::npos) {
+      chr = chr.substr(3); // strip chr
+    }
+
     int pos = VcfLine->get1BasedPosition();
     VcfTable[chr][pos] = VcfRecVec.size() - 1;
     _GCstruct GCstruct;
@@ -1805,28 +1816,35 @@ int StatCollector::RestoreVcfSites(const string &RefPath,
     else
       NumShortMarker++;
 
-    SeqVec.push_back(string(""));
-    QualVec.push_back(string(""));
-    CycleVec.push_back(vector<int>(0));
-    MaqVec.push_back(vector<unsigned char>(0));
-    StrandVec.push_back(vector<bool>(0));
-    // VcfTable[Chrom][i]=vcf_index;
-    // vcf_index++;
+    SeqVec.emplace_back("");
+    QualVec.emplace_back("");
+    CycleVec.emplace_back(0);
+    MaqVec.emplace_back(0);
+    StrandVec.emplace_back(0);
   }
   reader.close();
-  string BedFile = RefPath + ".dbSNP.subset.vcf";
-  if (!reader.open(BedFile.c_str(), header)) {
-    notice("Open %s failed!", BedFile.c_str());
-    exit(1);
+
+
+  std::string dbSNPFile = RefPath + ".dbSNP.subset.vcf";
+
+  if (!reader.open(dbSNPFile.c_str(), header)) {
+    error("Open %s failed!", dbSNPFile.c_str());
   }
   while (!reader.isEOF()) {
     VcfRecord VcfLine;
     reader.readRecord(VcfLine);
     string chr(VcfLine.getChromStr());
+    std::transform(chr.begin(), chr.end(), chr.begin(), ::toupper);
+    if (chr.find("CHR") != std::string::npos) {
+      chr = chr.substr(3); // strip chr
+    }
     int pos = VcfLine.get1BasedPosition();
     dbSNPTable[chr][pos] = 1;
   }
   reader.close();
+  for (auto kv : dbSNPTable)
+    notice("Input dbSNP %d sites on chromosome %s", kv.second.size(),
+           kv.first.c_str());
   // string line, Chrom, PosStr, GCStr;
   //_GCstruct * GCstruct = new _GCstruct
   //[opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];

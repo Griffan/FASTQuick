@@ -415,8 +415,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
 
       Chrom = VcfLine->getChromStr();
       std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-      if (Chrom.find("chr") != std::string::npos or
-          Chrom.find("CHR") != std::string::npos) {
+      if (Chrom.find("CHR") != std::string::npos) {
         Chrom = Chrom.substr(3); // strip chr
       }
       notice("Now test if %s:%d is selected...", Chrom.c_str(), Position);
@@ -467,8 +466,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
 
     Chrom = VcfLine->getChromStr();
     std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-    if (Chrom.find("chr") != std::string::npos or
-        Chrom.find("CHR") != std::string::npos) {
+    if (Chrom.find("CHR") != std::string::npos) {
       Chrom = Chrom.substr(3); // strip chr
     }
 
@@ -569,8 +567,7 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
     Chrom = VcfLine->getChromStr();
 
     std::transform(Chrom.begin(), Chrom.end(), Chrom.begin(), ::toupper);
-    if (Chrom.find("chr") != std::string::npos or
-        Chrom.find("CHR") != std::string::npos) {
+    if (Chrom.find("CHR") != std::string::npos) {
       Chrom = Chrom.substr(3); // strip chr
     }
 
@@ -626,16 +623,16 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
   reader.open(dbSNP.c_str(), header);
   reader.close();
 
-  // create header for dbSNP subset vcf file
-  InputFile FoutdbSNPSelectedSite(
-      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
-  header.write(&FoutdbSNPSelectedSite);
-  FoutdbSNPSelectedSite.ifclose();
+//  // create header for dbSNP subset vcf file
+//  InputFile FoutdbSNPSelectedSite(
+//      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
+//  header.write(&FoutdbSNPSelectedSite);
+//  FoutdbSNPSelectedSite.ifclose();
 
   char cmdline[2048];
   // subset dbsnp
   sprintf(cmdline,
-          "sort -k1,1 -k2,2n %s|tabix  -R  - %s  >> %s.dbSNP.subset.vcf",
+          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > %s.dbSNP.subset.vcf",
           BedPath.c_str(), dbSNP.c_str(), NewRef.c_str());
   int ret = system(cmdline);
   if (ret != 0) {
