@@ -6,7 +6,7 @@
 
 #include "../libbwa/bwtaln.h"
 #include "Error.h"
-#include "TargetRegion.h"
+#include "RegionList.h"
 #include "Utility.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
@@ -290,9 +290,10 @@ RefBuilder::RefBuilder(const std::string &Vcf, const std::string &Ref,
       while (std::getline(fin, line)) {
         std::stringstream ss(line);
         ss >> chr >> start >> end;
-        if (chr.find("chr") != std::string::npos or
-            chr.find("CHR") != std::string::npos)
-          chr = chr.substr(3);
+        std::transform(chr.begin(), chr.end(), chr.begin(), ::toupper);
+        if (chr.find("CHR") != std::string::npos) {
+          chr = chr.substr(3); // strip chr
+        }
         if (callableRegionList.find(chr) != callableRegionList.end()) {
           if (callableRegionList[chr].find(start) !=
               callableRegionList[chr].end()) {
@@ -389,7 +390,7 @@ void RefBuilder::IncreaseNumMarker(int chrFlag) {
  * 3. markers not in target region with long flank region
  * 4. markers not in target region with short flank region
  */
-int RefBuilder::SelectMarker(const std::string &RegionList) {
+int RefBuilder::SelectMarker(const std::string &RegionPath) {
   notice("Start to select markers...");
   std::string SelectedSite = NewRef + ".SelectedSite.vcf";
 
@@ -402,10 +403,10 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
   VcfFileReader reader;
   reader.open(VcfPath.c_str(), header);
   // begin select variants in target regions
-  if (RegionList != "Empty") {
+  if (RegionPath != "Empty") {
     notice("Start to select markers from target regions...");
-    TargetRegion targetRegion;
-    targetRegion.ReadRegionList(RegionList);
+    RegionList targetRegion;
+    targetRegion.ReadRegionList(RegionPath);
     while (!reader.isEOF()) {
       chrFlag = -1 /*0:short;1:long;2:Y;3:X*/;
       isForcedShort = false;
@@ -426,7 +427,7 @@ int RefBuilder::SelectMarker(const std::string &RegionList) {
         continue;
       }
 
-      if (not targetRegion.IsOverlapped(Chrom, Position - 1)) {
+      if (not targetRegion.IsOverlapped(Chrom, Position)) {
         delete VcfLine;
         continue;
       }
