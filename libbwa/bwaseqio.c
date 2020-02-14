@@ -271,6 +271,11 @@ void bwa_clean_read_seq(int n_seqs, bwa_seq_t *seqs)
 		for (j = 0; j < p->n_multi; ++j)
 			if (p->multi[j].cigar) free(p->multi[j].cigar);
 
+			//we don't delete space of original reads
+//          free(p->name);
+//          free(p->seq); free(p->qual);
+//          free(p->rseq);
+
 		if (p->aln)
 		free(p->aln);
 

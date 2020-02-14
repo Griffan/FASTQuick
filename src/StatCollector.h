@@ -22,7 +22,7 @@ SOFTWARE.
 #include "../libbwa/bntseq.h"
 #include "../libbwa/bwtaln.h"
 
-#include "TargetRegion.h"
+#include "RegionList.h"
 #include "Utility.h"
 #include "cmath"
 #include "fstream"
@@ -44,14 +44,20 @@ typedef std::unordered_map<std::string, std::unordered_map<int, bool>>
 // typedef vector<VcfRecord> VcfRecVec;
 class FileStatCollector {
 public:
-  long long NumRead;
-  long long NumBase;
+  long long NumRead = 0;
+  long long NumBase = 0;
+  long long HashFiltered = 0;
+  long long TotalFiltered = 0;
+  long long BwaUnmapped = 0;
+  long long TotalMAPQ = 0;
+  long long TotalRetained = 0;
+  std::string RG = "RG\tID:foo\tLB:bar";
   std::string FileName1, FileName2;
-  FileStatCollector() : NumRead(0), NumBase(0), FileName1(0), FileName2(0) {}
+  FileStatCollector() = default;
   explicit FileStatCollector(const char *filename)
-      : NumRead(0), NumBase(0), FileName1(filename), FileName2("") {}
+      : FileName1(filename), FileName2(filename) {}
   FileStatCollector(const char *filename1, const char *filename2)
-      : NumRead(0), NumBase(0), FileName1(filename1), FileName2(filename2) {}
+      : FileName1(filename1), FileName2(filename2) {}
 };
 class StatCollector {
 private:
@@ -111,7 +117,10 @@ private:
   std::vector<FileStatCollector> FSCVec;
 
   // target region
-  TargetRegion targetRegion;
+  RegionList targetRegion;
+
+  // marker flank region
+  RegionList flankRegion;
 
 private:
   bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
@@ -136,12 +145,13 @@ public:
 
   int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
                    const gap_opt_t *opt, std::ofstream &fout,
-                   long &total_add_failed);
+                   long long &total_add_failed);
   int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
                    const gap_opt_t *opt, int type, std::ofstream &fout);
   // overload functions for direct bam reading
   int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
-                   const gap_opt_t *opt, std::ofstream &fout, long &total_add);
+                   const gap_opt_t *opt, std::ofstream &fout,
+                   long long &total_add);
   int IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
                    const gap_opt_t *opt, int type, std::ofstream &fout);
 
@@ -186,18 +196,19 @@ public:
   double Q30BaseFraction();
   virtual ~StatCollector();
 
-  int AddMatchBaseInfo(const gap_opt_t *opt, const std::string &seq,
-                       const std::string &qual, const std::string &refSeq,
-                       const std::string &chr, int readRealStart,
-                       int refRealStart, int refRealEnd, bool strand,
-                       u_char mapQ, int matchLen, int tmpCycle,
-                       int relativeCoordOnRead, int relativeCoordOnRef);
+  int AddMatchBaseInfo(const std::string &seq, const std::string &qual,
+                       const std::string &refSeq, const std::string &chr,
+                       int readRealStart, bool strand, u_char mapQ,
+                       int matchLen, int tmpCycle, int relativeCoordOnRead,
+                       int relativeCoordOnRef);
 
-  int UpdateInfoVecAtRegularSite(
-      const gap_opt_t *opt, const std::string &seq, const std::string &qual,
-      const std::string &refSeq, const std::string &chr, int readRealStart,
-      int refRealStart, int refRealEnd, bool strand, int matchLen, int tmpCycle,
-      int relativeCoordOnRead, int relativeCoordOnRef);
+  int UpdateInfoVecAtRegularSite(const std::string &seq,
+                                 const std::string &qual,
+                                 const std::string &refSeq,
+                                 const std::string &chr, int readRealStart,
+                                 bool strand, int matchLen, int tmpCycle,
+                                 int relativeCoordOnRead,
+                                 int relativeCoordOnRef);
 
 private:
   //    std::vector<std::string> DebugSeqVec,DebugQualVec;

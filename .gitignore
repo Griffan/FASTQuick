@@ -31,7 +31,6 @@ FASTQuick.dSYM
 config.log
 Makefile
 build
-test
 cmake-build-debug
 .clion.source.upload.marker
 runUnitTests
