@@ -33,7 +33,7 @@ SOFTWARE.
 #ifndef BWAPE_H_
 #include "../libbwa/bwape.h"
 #endif
-#define READ_BUFFER_SIZE 100000//0x40000
+#define READ_BUFFER_SIZE 0x40000 //100000
 class BwtMapper {
   StatCollector collector;
   char *bwa_rg_line;
