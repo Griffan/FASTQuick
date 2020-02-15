@@ -9,6 +9,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <time.h>
+
+#include "ctpl_stl.h"
 //#include <gperftools/profiler.h>
 
 using namespace std;
@@ -829,6 +831,13 @@ static void *worker(void *data) {
   return 0;
 }
 
+void workerAlt(int id, void *data) {
+//  fprintf(stderr,"echo from %d worker thread...\n",id);
+  thread_aux_t *d = (thread_aux_t *)data;
+  bwa_cal_sa_reg_gap(d->tid, d->bwt, d->n_seqs, d->seqs, d->opt,
+                     d->Indexer_Ptr);
+}
+
 typedef struct {
   BwtIndexer *BwtIndex;
   bwa_seq_t *seqAddress;
@@ -850,6 +859,16 @@ static void *IOworker(void *data) {
       d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode,
       d->trim_qual, d->frac, d->round, d->seqAddress, d->read_len);
   return 0;
+}
+
+void IOworkerAlt(int id, void *data) {
+  thread_IO_t *d = (thread_IO_t *)data;
+  // d->seqAddress = bwa_read_seq_with_hash(d->BwtIndex, d->ksAddress,
+  // READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual, d->frac, d->round);
+//  fprintf(stderr,"echo from %d IO thread...\n",id);
+  *(d->ret) = bwa_read_seq_with_hash_dev(
+      d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode,
+      d->trim_qual, d->frac, d->round, d->seqAddress, d->read_len);
 }
 
 #endif
@@ -1518,9 +1537,8 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const gap_opt_t *opt,
   bwt_t *bwt[2];
   bntseq_t *ntbns = 0;
   // initialization
-  // bwase_initialize();
-  for (i = 1; i != 256; ++i)
-    g_log_n[i] = (int)(4.343 * log(i) + 0.5);
+  bwase_initialize();
+
   srand48(BwtIndex.bns->seed);
   ks = bwa_seq_open(FSC.FileName1.c_str());
 
@@ -1670,8 +1688,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   isize_info_t last_ii; // this is for the last batch of reads
   // initialization
   bwase_initialize(); // initialize g_log_n[] in bwase.c
-  for (i = 1; i != 256; ++i)
-    g_log_n[i] = (int)(4.343 * log(i) + 0.5);
+
   srand48(BwtIndex.bns->seed);
   g_hash = kh_init(64);
   last_ii.avg = -1.0;
@@ -1696,6 +1713,23 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   int ReadIsGood = 2;
   uint32_t round = 0;
   int ret(-1);
+#ifdef __ctpl_stl_thread_pool_H__
+  int n_align_thread = opt->n_threads % 2 == 0
+                           ? opt->n_threads
+                           : opt->n_threads + 1; // round thread number up
+//  notice("CTPL is initializing with %d threads...", n_align_thread+2);
+
+  ctpl::thread_pool p(n_align_thread + 2 /* two threads in the pool */);
+  std::vector<std::future<void>> results(n_align_thread + 2);
+
+  int n_first_thread = n_align_thread / 2;
+  int n_second_thread = n_align_thread - n_first_thread;
+  thread_IO_t *IO_param[2];
+  IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+  IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+  /*added for IO end*/
+  thread_aux_t *data = (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+#endif
   while (ReadIsGood) { // opt should be different for two fa files theoretically
     if (ReadIsGood == 2) {
       if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
@@ -1716,7 +1750,58 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
     int cnt_chg;
     isize_info_t ii;
     t = clock();
-#ifdef HAVE_PTHREAD
+#ifdef __ctpl_stl_thread_pool_H__
+    size_t grain_size = n_seqs[0] / n_first_thread;
+    for (int j = 0; j < n_first_thread; ++j) {
+      data[j].tid = j;
+      data[j].bwt[0] = bwt[0];
+      data[j].bwt[1] = bwt[1];
+      if (j == n_first_thread - 1)
+        data[j].n_seqs = n_seqs[0] - grain_size * (n_first_thread - 1);
+      else
+        data[j].n_seqs = grain_size;
+      data[j].seqs = seqs[0] + j * grain_size;
+      data[j].opt = opt;
+      data[j].Indexer_Ptr = &BwtIndex;
+      results[j]=p.push(workerAlt, data + j);
+    }
+    for (int j = n_first_thread; j < n_align_thread; ++j) {
+      data[j].tid = j;
+      data[j].bwt[0] = bwt[0];
+      data[j].bwt[1] = bwt[1];
+      if (j == n_align_thread - 1)
+        data[j].n_seqs = n_seqs[1] - grain_size * (n_second_thread - 1);
+      else
+        data[j].n_seqs = grain_size;
+      data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
+      data[j].opt = opt;
+      data[j].Indexer_Ptr = &BwtIndex;
+      results[j]=p.push(workerAlt, data + j);
+    }
+    int ret_tmp[2] = {-1, -1};
+    for (int j = 0; j < 2; ++j) {
+      IO_param[j]->BwtIndex = &BwtIndex;
+      IO_param[j]->ksAddress = ks[j];
+      IO_param[j]->n_seqs = &n_seqs_buff[j];
+      IO_param[j]->mode = opt->mode;
+      IO_param[j]->trim_qual = opt->trim_qual;
+      IO_param[j]->frac = opt->frac;
+      IO_param[j]->round = round;
+      IO_param[j]->seqAddress = seqs_buff[j];
+      IO_param[j]->ret = &ret_tmp[j];
+      IO_param[j]->read_len = opt->read_len;
+      results[n_align_thread+j]=p.push(IOworkerAlt, IO_param[j]);
+    }
+    for (j = 0; j < n_align_thread + 2; ++j)
+        results[j].get();
+      /*IO thread*/
+      round++;
+
+      if ((ret_tmp[0] | ret_tmp[1]) == 0)
+        ReadIsGood = 0;
+
+
+#elif defined HAVE_PTHREAD
     if (opt->n_threads <= 1) { // no multi-threading at all
       for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
         bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
@@ -1938,6 +2023,11 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
     last_ii = ii;
   } // end while
 
+#ifdef __ctpl_stl_thread_pool_H__
+      free(IO_param[0]);
+      free(IO_param[1]);
+      free(data);
+#endif
   notice("%lld sequences are loaded.", FSC.NumRead);
   // fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n",
   // FSC.HashFiltered);
