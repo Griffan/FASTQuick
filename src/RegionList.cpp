@@ -52,11 +52,13 @@ bool RegionList::IsOverlapped(const std::string & Chrom, int start) {
     auto lower_iter = regionList[Chrom].lower_bound(start);
     if (lower_iter != regionList[Chrom].begin())
       lower_iter--;
-    if (lower_iter->first <= (start) and lower_iter->second > (start))
+    if (lower_iter->first <= start and lower_iter->second > start)
       return true;
-    else
-      return (++lower_iter)->first <= (start) and lower_iter->second > (start);
+    lower_iter++;
+    if (lower_iter->first <= start and lower_iter->second > start)
+      return true;
   }
+  return false;
 }
 
 bool RegionList::AddRegion(const std::string& Chrom, int start, int end)
@@ -101,8 +103,8 @@ bool RegionList::Collapse()//union of internal regions
 
   regionList = tmpList;
   uint64_t len = 0;
-  for (auto & kv : regionList) {
-    for (auto & kv2 : kv.second) {
+  for (const auto & kv : regionList) {
+    for (const auto & kv2 : kv.second) {
       if(kv2.second < kv2.first) error("abnormal region %s:%d-%d",kv.first.c_str(), kv2.first, kv2.second);
       len += (kv2.second - kv2.first)+1;
     }
