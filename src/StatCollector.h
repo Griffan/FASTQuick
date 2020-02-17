@@ -62,7 +62,6 @@ public:
 class StatCollector {
 private:
   /*Expected Info*/
-  uint64_t total_base;
   uint64_t total_region_size;
   uint64_t ref_genome_size;
 

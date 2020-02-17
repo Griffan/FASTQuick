@@ -249,7 +249,6 @@ StatCollector::StatCollector() {
   VariantProxyTable.clear();
   GC.clear();
   index = 0;
-  total_base = 0;
   total_region_size = 0;
   ref_genome_size = 0;
   NumXorYMarker = 0;
@@ -281,7 +280,6 @@ StatCollector::StatCollector(const std::string &OutFile) {
   VariantProxyTable.clear();
   GC.clear();
   index = 0;
-  total_base = 0;
   total_region_size = 0;
   ref_genome_size = 0;
   NumXorYMarker = 0;
@@ -455,7 +453,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   j = static_cast<int>(pos_end(p) - p->pos); // length of read
   bns_coor_pac2real(bns, p->pos, j, &seqid);
 
-  string seq, qual, newSeq, newQual;
+  string seq, qual;
 
   if (p->strand == 0)
     for (j = 0; j != p->full_len; ++j) {
@@ -487,16 +485,15 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
         chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
         10)); // absolute coordinate of variant
     if (chrName[chrName.size() - 1] == 'L') {
-      readRealStart = refCoord - opt->flank_long_len + pos -
-                      1; // absolute coordinate of current reads on reference
-                         //      refRealStart =
-      //          refCoord - opt->flank_long_len; // absolute coordinate of
-      //          refSeq start
-      //      refRealEnd = refCoord + opt->flank_long_len;
+      // absolute coordinate of refSeq start
+      refRealStart = refCoord - opt->flank_long_len;
+      refRealEnd = refCoord + opt->flank_long_len;
+      // absolute coordinate of current reads on reference
+      readRealStart = refRealStart + pos - 1;
     } else {
-      readRealStart = refCoord - opt->flank_len + pos - 1;
-      //      refRealStart = refCoord - opt->flank_len;
-      //      refRealEnd = refCoord + opt->flank_len;
+      refRealStart = refCoord - opt->flank_len;
+      refRealEnd = refCoord + opt->flank_len;
+      readRealStart = refRealStart + pos - 1;
     }
   } else // External alignment
   {
@@ -505,9 +502,8 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
     chrom = chrName;
     int overlap_right(0), overlap_left(0);
     int left_flank_len(0), right_flank_len(0) /*flank length of right element*/;
-    if (VcfTable.find(chrom) !=
-        VcfTable.end()) { // need to locate which artificial ref seq this reads
-                          // aligned to
+    // need to locate which artificial ref seq this reads aligned to
+    if (VcfTable.find(chrom) != VcfTable.end()) {
       auto right = VcfTable[chrom].lower_bound(readRealStart);
       if (right != VcfTable[chrom].begin() and right != VcfTable[chrom].end())
       // meaning both right and left elements are valid
@@ -647,7 +643,7 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
     return false;
   }
 
-  string seq(p.getSequence()), qual(p.getQuality()), newSeq, newQual;
+  string seq(p.getSequence()), qual(p.getQuality());
   std::transform(qual.begin(), qual.end(), qual.begin(),
                  [](unsigned char c) -> unsigned char { return c - 33; });
 
@@ -816,7 +812,7 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
       case 'S':
         tmpCycle += cl * sign[strand];
         relativeCoordOnRead += cl;
-        relativeCoordOnRef += cl;
+//        relativeCoordOnRef += cl;
         break;
       case 'D':
         absoluteSite += cl;
@@ -1856,28 +1852,6 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
   for (auto kv : dbSNPTable)
     notice("Input dbSNP %d sites on chromosome %s", kv.second.size(),
            kv.first.c_str());
-  // string line, Chrom, PosStr, GCStr;
-  //_GCstruct * GCstruct = new _GCstruct
-  //[opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1)];
-  // FGC.read((char*)GCstruct,(opt->num_variant_long*(4*opt->flank_len+1)+opt->num_variant_short*(2*opt->flank_len+1))*sizeof(_GCstruct));
-  //	for(uint32_t i=0;i!=VcfRecVec.size();++i)
-  //	{
-  //	GC[string(GCstruct[i].chrom)][GCstruct[i].pos] = GCstruct[i].GC;
-  // cerr<<GCstruct[i].chrom<<"\t"<<GCstruct[i].pos<<"\t"<<(int)GCstruct[i].GC<<endl;
-  //}
-  // int total=0;
-  // FGC.read((char*) &total, sizeof(int));
-  // cerr<<"the total bytes of gc is :"<<total<<endl;
-  /*
-   while (getline(FGC, line))
-   {
-
-   stringstream ss(line);
-   ss >> Chrom >> PosStr >> GCStr;
-   //cerr<<Chrom<<"\t"<<PosStr<<"\t"<<GCStr<<endl;
-   GC[Chrom][atoi(PosStr.c_str())] = atoi(GCStr.c_str());
-   }*/
-  // delete GCstruct;
   FGC.close();
   return 0;
 }
@@ -1949,7 +1923,7 @@ int StatCollector::GetDepthDist(const string &outputPath,
     total_region_size = flankRegion.Size();
   }
   ofstream fout(outputPath + ".DepthDist");
-  DepthDist[0] = total_region_size - NumPositionCovered;
+  DepthDist[0] = total_region_size > NumPositionCovered ? total_region_size - NumPositionCovered : 0;
   for (uint32_t i = 0; i != DepthDist.size(); ++i) {
     fout << i << "\t" << DepthDist[i] << endl;
   }
@@ -2246,12 +2220,7 @@ int StatCollector::SetGenomeSize(long total_size) {
 
 int StatCollector::SetTargetRegion(const std::string &targetRegionPath) {
   targetRegion.ReadRegionList(targetRegionPath);
-  //    flankRegion.PrintRegion("before_flank_region");
-  //    targetRegion.PrintRegion("target_region");
   flankRegion.InnerJoin(targetRegion);
-  //    flankRegion.PrintRegion("after_flank_region");
-  //  notice("target region:");
-  //  targetRegion.PrintRegion();
   return 0;
 }
 
@@ -2309,27 +2278,43 @@ double StatCollector::Q30BaseFraction() {
 }
 
 int StatCollector::SummaryOutput(const string &outputPath) {
-  ofstream fout(outputPath + ".Summary");
-
-  long total_base(0);
-  long total_reads(0);
-  fout << "Pair-end 1|Pair-end 2|# of Reads|Average Length" << endl;
-  fout << "---|---|---|---" << endl;
+  ofstream fastqOut(outputPath + ".FASTQ.csv");
+  fastqOut << "FileNumber,PairEnd1,PairEnd2" << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
-    fout << FSCVec[i].FileName1 << "|" << FSCVec[i].FileName2 << "|"
-         << FSCVec[i].NumRead << "|";
-    fout << ((FSCVec[i].NumRead == 0) ? 0
-                                      : (FSCVec[i].NumBase / FSCVec[i].NumRead))
+    fastqOut << i+1<<"," <<FSCVec[i].FileName1 << ","<< FSCVec[i].FileName2 << "\n";
+         }
+  fastqOut.close();
+  ofstream fcsv(outputPath + ".Sequence.csv");
+  long long total_base(0);
+  long long total_reads(0);
+  long long total_retained(0);
+  long long total_unmapped(0);
+  long long total_low_mapQ(0);
+  fcsv << "FileNumber,NumOfBase,NumOfReads,NumOfUmappedReads,NumOfLowMAPQReads,NumOfRetainedReads,AverageLength" << endl;
+  for (size_t i = 0; i != FSCVec.size(); ++i) {
+    fcsv << i+1 << ","
+         << FSCVec[i].NumBase << ","
+         << FSCVec[i].NumRead << ","
+         << FSCVec[i].BwaUnmapped << ","
+         << FSCVec[i].TotalMAPQ << ","
+         << FSCVec[i].TotalRetained << ",";
+    fcsv << ((FSCVec[i].NumRead == 0) ? 0 : (FSCVec[i].NumBase / FSCVec[i].NumRead))
          << endl;
     total_base += FSCVec[i].NumBase;
     total_reads += FSCVec[i].NumRead;
+    total_retained += FSCVec[i].TotalRetained;
+    total_unmapped += FSCVec[i].BwaUnmapped;
+    total_low_mapQ += FSCVec[i].TotalMAPQ;
   }
-  fout << "All"
-       << "|-|" << total_reads << "|";
-  fout << ((total_reads == 0) ? 0 : total_base / total_reads) << endl;
-  fout << endl;
+  fcsv << "Total,"<<total_base<<","<<total_reads<<","
+       <<total_unmapped<<","<<total_low_mapQ<<","<<total_retained <<",";
+  fcsv << ((total_reads == 0) ? 0 : (total_base / total_reads)) << endl;
+  fcsv.close();
+
+  ofstream fout(outputPath + ".Summary");
+  fout << "Statistics : " << "Value\n";
   fout << "Expected Read Depth : " << (double)total_base / ref_genome_size
-       << " [" << total_base << "/" << ref_genome_size << "]" << endl;
+       << " [" << total_base << "/" << ref_genome_size << "]\n";
   /*auto AvgDepth =
       [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp +=
@@ -2338,9 +2323,9 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
-       << " [" << NumBaseMapped << "/" << total_region_size << "]" << endl;
+       << " [" << NumBaseMapped << "/" << total_region_size << "]\n";
   fout << "Estimated Percentage of Accessible Genome Covered : "
-       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%" << endl;
+       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure
   /*auto Q20BaseFraction = [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp
@@ -2349,22 +2334,22 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   {	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp
   += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) /
   NumBaseMapped; };*/
-  fout << "Total Accessible Genome Size :" << total_region_size << endl;
+  fout << "Total Accessible Genome Size : " << total_region_size << endl;
   double DP1fraction = NumPositionCovered / (double)total_region_size;
   double DP2fraction = NumPositionCovered2 / (double)total_region_size;
   double DP5fraction = NumPositionCovered5 / (double)total_region_size;
   double DP10fraction = NumPositionCovered10 / (double)total_region_size;
 
-  fout << "Depth 1 or above position fraction :" << DP1fraction << endl;
-  fout << "Depth 2 or above position fraction :" << DP2fraction << endl;
-  fout << "Depth 5 or above position fraction :" << DP5fraction << endl;
-  fout << "Depth 10 or above position fraction :" << DP10fraction << endl;
+  fout << "Depth 1 or above position fraction : " << DP1fraction << endl;
+  fout << "Depth 2 or above position fraction : " << DP2fraction << endl;
+  fout << "Depth 5 or above position fraction : " << DP5fraction << endl;
+  fout << "Depth 10 or above position fraction : " << DP10fraction << endl;
   /*auto Q20AvgDepth =
       [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp
   += Q20DepthVec[i]; return double(tmp) / total_region_size; };*/
-  fout << "Q20 Base Fraction :" << Q20BaseFraction() << endl;
-  fout << "Q30 Base Fraction :" << Q30BaseFraction() << endl;
+  fout << "Q20 Base Fraction : " << Q20BaseFraction() << endl;
+  fout << "Q30 Base Fraction : " << Q30BaseFraction() << endl;
   fout << "Estimated AvgDepth for Q20 bases : " << Q20AvgDepth() << endl;
   /*auto Q30AvgDepth =
       [&]()->double
