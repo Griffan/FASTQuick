@@ -129,7 +129,7 @@ int ContaminationEstimator::OptimizeLLK(const std::string &OutputPrefix) {
     error("Open file %s failed!",fileName.c_str());
     exit(EXIT_FAILURE);
   }
-  fout << "Contamination Level:" << (fn.globalAlpha < 0.5 ? fn.globalAlpha : (1 - fn.globalAlpha)) << std::endl;
+  fout << "Contamination Level : " << (fn.globalAlpha < 0.5 ? fn.globalAlpha : (1 - fn.globalAlpha)) << std::endl;
   fout.close();
   if(!fout)
   {

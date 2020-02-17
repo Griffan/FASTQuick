@@ -169,7 +169,6 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
                      const string &RefPath, const pe_opt_t *popt,
                      gap_opt_t *opt, const std::string &targetRegionPath)
     : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {
-  // std::cerr<<"Open Fastq  ... "<<endl;
   if (bwa_set_rg(opt->RG) == -1)
     warning("Setting @RG tag failed!\n");
   if (opt->in_bam != 0) {
@@ -217,11 +216,12 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
-    ofstream fout(Prefix + ".InsertSizeTable");
     FileStatCollector FSC(Fastq_1.c_str(), Fastq_2.c_str());
+    ofstream fout(Prefix + ".InsertSizeTable");
     PairEndMapper_without_asyncIO(BwtIndex, popt, opt, SFH, BamIO, BamFile,
                                   StatusTracker, fout, FSC);
     fout.close();
+    collector.AddFSC(FSC);
     BamFile->ifclose();
     delete BamFile; // destroy
     notice("Calculate distributions...");
@@ -253,12 +253,12 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     collector.SetTargetRegion(targetRegionPath);
-    ofstream fout(Prefix + ".InsertSizeTable");
-    int total_add = 0;
     FileStatCollector FSC(Fastq_1.c_str());
+    ofstream fout(Prefix + ".InsertSizeTable");
     SingleEndMapper(BwtIndex, opt, SFH, BamIO, BamFile, StatusTracker, fout,
                     FSC);
     fout.close();
+    collector.AddFSC(FSC);
     BamFile->ifclose();
     delete BamFile;
     // destroy
@@ -272,7 +272,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
                      const pe_opt_t *popt, gap_opt_t *opt,
                      const std::string &targetRegionPath)
     : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {
-  bwa_set_rg(opt->RG);
+  if (bwa_set_rg(opt->RG) == -1)
+    warning("Setting @RG tag failed!\n");
   if (opt->in_bam != 0) {
     notice("Input alignments from Bam file...");
     /*
@@ -317,7 +318,6 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     collector.SetTargetRegion(targetRegionPath);
     notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
-    int total_add = 0;
     ifstream fin(FaList);
     if (!fin.is_open())
       error("Open file %s failed", FaList.c_str());
@@ -338,11 +338,13 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         PairEndMapper_without_asyncIO(BwtIndex, popt, opt, SFH, BamIO, BamFile,
                                       StatusTracker, fout, FSC);
         notice("Processed Pair End mapping in %f sec", realtime() - t_tmp);
+        collector.AddFSC(FSC);
       } else {
         notice("Processing Single End mapping\t%d\t%s\n", i, Fastq_1.c_str());
         FileStatCollector FSC(Fastq_1.c_str());
         SingleEndMapper(BwtIndex, opt, SFH, BamIO, BamFile, StatusTracker, fout,
                         FSC);
+        collector.AddFSC(FSC);
       }
     }
     fout.close();
@@ -1661,7 +1663,6 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const gap_opt_t *opt,
     notice("%d sequences are retained for QC.", FSC.TotalRetained);
 
   } // end while
-  collector.AddFSC(FSC);
   // bam_destroy1(b);
   if (pacseq)
     free(pacseq);
@@ -2044,7 +2045,6 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   //	free(seqs[1]);
   //	free(seqs_buff[0]);
   //	free(seqs_buff[1]);
-  collector.AddFSC(FSC);
   if (pacseq)
     free(pacseq);
   // bns_destroy(bns);

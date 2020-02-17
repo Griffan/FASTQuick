@@ -1,20 +1,27 @@
-##################################################
-#####
-require(ggplot2)
-require(scales)
-require(knitr)
+---
+title: "FASTQuick Summary Report"
+output:
+  html_document:
+    toc: true
+    theme: united
+params:
+  input: 
+    value: x
+  SVDPrefix: 
+    value: x
+  FASTQuickInstallDir: 
+    value: x
+---
+
+```{r setup, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libraries}
 library(ggplot2)
-#multiplot function
-# Multiple plot function
-#
-# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
-# - cols:   Number of columns in layout
-# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
-#
-# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
-# then plot 1 will go in the upper left, 2 will go in the upper right, and
-# 3 will go all the way across the bottom.
-#
+library(scales)
+library(knitr)
+
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
 
@@ -50,8 +57,8 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
-findBump<-function(m,x,cntCol,numLimits)
-{
+
+findBump<-function(m,x,cntCol,numLimits){
   cnt=0
   DepthCntMax=max(m[,cntCol])
   pivot=which.max(m[,cntCol])
@@ -93,6 +100,7 @@ findBump<-function(m,x,cntCol,numLimits)
 
   return(list(MAX=max,MIN=min))
 }
+
 create.DenDist=function(InsertTable,positionCol,countCol){
   start_pos=InsertTable[1,positionCol]
   count=InsertTable[1,countCol]
@@ -112,22 +120,26 @@ create.DenDist=function(InsertTable,positionCol,countCol){
   }
   return(NewT)
 }
+```
 
-##################################################
-#usage:
-#Rscript RPlotScript.R <output_prefix> <SVDPrefix> <FASTQuickInstallDir>
+```{r args}
+#args=commandArgs(trailingOnly = TRUE)
+#input=args[1]
+#SVDPrefix=args[2]
+#FASTQuickInstallDir=args[3]
+input="~/Downloads/FASTQuick_test/EmpQualityInvestigation/output/regular_size_output_HG00553_exome"
+SVDPrefix="~/Downloads/FASTQuick_test/EmpQualityInvestigation/index/regular_size.FASTQuick.fa.bed.phase3.vcf.gz"
+FASTQuickInstallDir="/Users/fanzhang/Dropbox/ClionProjects/FASTQuick/"
+#input=params$input
+#SVDPrefix=params$SVDPrefix
+#FASTQuickInstallDir=params$FASTQuickInstallDir
+#print("Arguments:")
+#print(input)
+#print(SVDPrefix)
+#print(FASTQuickInstallDir)
+```
 
-
-print("Usage:Rscript RPlotScript.R <output_prefix> <SVDPrefix> <FASTQuickInstallDir>")
-
-args=commandArgs(trailingOnly = TRUE)
-input=args[1]
-SVDPrefix=args[2]
-FASTQuickInstallDir=args[3]
-#input="output"
-#print(args)
-
-pdf(file=paste(input,".pdf",sep=""))
+```{r analysis, warning=FALSE}
 par(mfrow=c(2,2))
 
 mydata= read.table(paste(input,".DepthDist",sep=""),header=FALSE)
@@ -202,6 +214,7 @@ mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
 fileLen=length(mydata)-1#minus contamination line
 ExpectedDepth=as.numeric(strsplit(mydata[fileLen-13]," ")[[1]][5])
 EstimatedDepth=as.numeric(strsplit(mydata[fileLen-12]," ")[[1]][4])
+
 AccessibleFraction=as.numeric(strsplit(strsplit(mydata[fileLen-11]," ")[[1]][8],"%")[[1]][1])
 EstimatedQ20Depth=as.numeric(strsplit(mydata[fileLen-3],"\\s+|:")[[1]][8])
 EstimatedQ30Depth=as.numeric(strsplit(mydata[fileLen-2],"\\s+|:")[[1]][8])
@@ -231,19 +244,14 @@ q8=ggplot(mydata2,aes(x=mydata2[,1],y=mydata2[,2]))+ggtitle("Summary")+
   geom_bar(stat="identity",fill="#00BFC4",alpha=0.5)+ylab('Fraction')+ 
   theme(axis.text.x = element_text(angle = 310, hjust = 0.3),axis.title.x=element_blank(),plot.title = element_text(hjust = 0.5))
 
+
 #ancestry
-
-
-library(ggplot2)
-library(scales)
 alphaScale=scale_alpha_discrete(range = c(0.9,0.3),guide=FALSE)
 sizeScale=scale_size(range=c(1.5,1),guide=FALSE)
-cat("Background data points:1000g phase3\n")
-
 
 #set 1000g color scale
 colScale = scale_color_manual(values=c('ESN'='#FFCD00','GWD'='#FFB900','LWK'='#CC9933','MSL'='#E1B919','YRI'='#FFB933','ACB'='#FF9900','ASW'='#FF6600',
-                                       'CLM'='#CC3333','MXL'='#E10033','PEL'='#FF0000','PUR'='#CC3300','CDX'='#339900','CHB'='#ADCD00','CHS'='#00FF00',
+                                    'CLM'='#CC3333','MXL'='#E10033','PEL'='#FF0000','PUR'='#CC3300','CDX'='#339900','CHB'='#ADCD00','CHS'='#00FF00',
                                        'JPT'='#008B00','KHV'='#00CC33','CEU'='#0000FF','FIN'='#00C5CD','GBR'='#00EBFF','IBS'='#6495ED','TSI'='#00008B',
                                        'BEB'='#8B008B','GIH'='#9400D3','ITU'='#B03060','PJL'='#E11289','STU'='#FF00FF','AFR'='#FFCD33','AFR/AMR'='#FF9900',
                                        'AMR'='#FF3D3D','EAS'='#ADFF33','EUR'='#64EBFF','SAS'='#FF30FF','UserSample'='#000000'),
@@ -271,13 +279,38 @@ CombinedData=rbind(RefCoord,TargetSample)
 #plot RefCoord as colorful
 q10=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
 colScale+alphaScale+sizeScale
+```
+## FASTQ File List
+```{r FASTQ List}
+fastq.tbl = read.csv(file=paste0(input,".FASTQ.csv"),header=T)
+kable(fastq.tbl, caption="FASTQ List Table")
+```
 
-#output file
+## Data Production by FASTQ file
+```{r DataProduction}
+sequence.tbl = read.csv(file=paste0(input,".Sequence.csv"),header=T)
+kable(sequence.tbl, caption="Data Production Table")
+```
+
+## Depth Distribution
+```{r Depth Distribution, fig.align = "center"}
 multiplot(q1,q2,q3,q4, cols=2)
+```
+
+## Summary Statistics
+```{r summary}
+summary.tbl = read.table(file=paste0(input,".Summary"),header=T, sep=':')
+kable(summary.tbl, caption="Summary Statistics")
+```
+
+## Summary Plot
+```{r Misc, fig.align = "center"}
 multiplot(q5,q7,q6,q8,cols=2)
+```
+
+## Genetic Ancestry Plot
+```{r ancestry plot, fig.align = "center"}
+#output file
 #multiplot(q9,cols=1)
 multiplot(q10,cols=1)
-dev.off()
-
-
-
+```

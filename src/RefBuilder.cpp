@@ -419,7 +419,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
       if (Chrom.find("CHR") != std::string::npos) {
         Chrom = Chrom.substr(3); // strip chr
       }
-      notice("Now test if %s:%d is selected...", Chrom.c_str(), Position);
+//      notice("Now test if %s:%d is selected...", Chrom.c_str(), Position);
 
     RESCUE:
       if (IsMaxNumMarker(Chrom, chrFlag, false, isForcedShort)) {
@@ -445,8 +445,8 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
         VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E|L").c_str());
       else
         VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E").c_str());
-      notice("Now confirm if %s:%d is selected as %s...", Chrom.c_str(),
-             Position, VcfLine->getIDStr());
+//      notice("Now confirm if %s:%d is selected as %s...", Chrom.c_str(),
+//             Position, VcfLine->getIDStr());
 
       VcfTable[Chrom][Position] =
           nShortMarker + nLongMarker + nXMarker + nYMarker;

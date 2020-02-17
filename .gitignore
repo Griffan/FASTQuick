@@ -35,4 +35,5 @@ cmake-build-debug
 .clion.source.upload.marker
 runUnitTests
 bin/runUnitTests.dSYM/
+FinalReport.html
 

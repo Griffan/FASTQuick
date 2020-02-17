@@ -181,6 +181,10 @@ fi
 		exit 9
 	fi
 	#mkdir -p $(dirname $outputPrefix) || echo "Unable to create directory $(dirname $outputPrefix) for output files." 1>&2
+	if [[ "${outputPrefix:0:1}" != "/" && "${outputPrefix:0:2}" != "~[/a-z]" ]] ; then
+    echo "Absolute path is required for --outputPrefix." 1>&2
+    exit 9
+  fi
 	echo "Using output prefix $outputPrefix" 1>&2
 
 ##### --index
@@ -190,6 +194,10 @@ fi
 		exit 10
 	fi
 	#mkdir -p $(dirname $outputPrefix) || echo "Unable to create directory $(dirname $outputPrefix) for output files." 1>&2
+	if [[ "${indexPrefix:0:1}" != "/" && "${indexPrefix:0:2}" != "~[/a-z]" ]] ; then
+    echo "Absolute path is required for --indexPrefix." 1>&2
+    exit 10
+  fi
 	echo "Using index prefix $indexPrefix" 1>&2
 
 ##### --threads
@@ -273,9 +281,20 @@ if [[ $do_index == true ]] ; then
     if [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
       echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a $timinglogfile
       #TODO:consider hg19 and hg38
+      genoPrefix=""
+      genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+      ebiPrefix="ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
+      ucscPrefix="http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/"
+      if curl --head --fail --silent "$ebiPrefix$genoTestFile" >/dev/null; then
+          genoPrefix=$ebiPrefix
+      elif curl --head --fail --silent "$ucscPrefix$genoTestFile" >/dev/null; then
+          genoPrefix=$ucscPrefix
+      fi
+      echo "Extracting genotype matrices from ${genoPrefix}..."
       for chr in {1..22};do
-        bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
+        bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf "${genoPrefix}ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
         pids[${chr}]=$!
+        sleep 1s
       done
 
       for pid in ${pids[*]}; do
@@ -364,5 +383,10 @@ echo "$(date)	Summarize basic	QC statistics..." | tee -a $timinglogfile
 	${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 	${FASTQuick_SRC_DIR} \
 1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+  outputDir=$(dirname ${outputPrefix})
+{ /usr/bin/time \
+	Rscript -e "rmarkdown::render('${FASTQuick_BIN_DIR}/FinalReport.rmd', params=list(input = '${outputPrefix}', SVDPrefix = '${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz', FASTQuickInstallDir = '${FASTQuick_SRC_DIR}'), output_dir = '$outputDir')"
+	1>&2 2>> $logfile;} 1>&2 2>>$timinglogfile
+
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
