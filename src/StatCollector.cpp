@@ -1923,7 +1923,7 @@ int StatCollector::GetDepthDist(const string &outputPath,
     total_region_size = flankRegion.Size();
   }
   ofstream fout(outputPath + ".DepthDist");
-  DepthDist[0] = total_region_size > NumPositionCovered ? total_region_size - NumPositionCovered : 0;
+  DepthDist[0] = total_region_size - NumPositionCovered;
   for (uint32_t i = 0; i != DepthDist.size(); ++i) {
     fout << i << "\t" << DepthDist[i] << endl;
   }
@@ -2323,7 +2323,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
-       << " [" << NumBaseMapped << "/" << total_region_size << "]\n";
+       << " [" << NumBaseMapped << "/" << total_region_size <<"]\n";
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure
