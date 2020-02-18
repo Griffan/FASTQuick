@@ -24,12 +24,8 @@ SOFTWARE.
 #include "../misc/params.h"
 #include "BwtIndexer.h"
 #include "BwtMapper.h"
-#include "ContaminationEstimator2.h"
-#include "PopulationIdentifier.h"
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <unistd.h>
 #include <vector>
 //#include <gperftools/profiler.h>
 using namespace std;
@@ -498,142 +494,145 @@ int runAlign(int argc, char **argv) {
   // ProfilerStop();
   return 0;
 }
-int runPop(int argc, char **argv) {
-
-  double t_real;
-  t_real = realtime();
-  std::string SVDPrefix("Empty"), UDPath("Empty"), PCPath("Empty"),
-      muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty"),
-      pileup("Empty");
-
-  paramList pl;
-
-  BEGIN_LONG_PARAMS(longParameters)
-  LONG_PARAM_GROUP(
-      "Input/Output Files",
-      "Input/Output files for the program[Complete Path Recommended]")
-  //		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD
-  // matrix file in resource directory[Required]")
-  // LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in resource
-  // directory[Required]") 		LONG_STRING_PARAM("mu", &muPath,
-  // "[String] Input mu matrix file in resource directory[Required]")
-  LONG_STRING_PARAM("SVDPrefix", &SVDPrefix,
-                    "[String] Specify the prefix used by SVD matrices. If "
-                    "you are using FASTQuick default marker set, you may "
-                    "find them in resource directory.[Required]")
-  LONG_STRING_PARAM("GL", &glPath,
-                    "[String] Input genotype likelihood file generated "
-                    "from align step[Required if no pileup file]")
-  LONG_STRING_PARAM("Pileup", &pileup,
-                    "[String] Input pileup file generated from "
-                    "align[Required if no gl file]")
-  // LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED
-  // format file that contains marker information. If you are using FASTQuick
-  // default marker set, you may find choose.bed file in resource
-  // directory[Required]") LONG_STRING_PARAM("out", &output, "[String]
-  // Specify output file[Required]")
-  END_LONG_PARAMS();
-
-  pl.Add(new longParams("Available Options", longParameters));
-  pl.Read(argc, argv);
-  pl.Status();
-  if (SVDPrefix == "Empty") {
-    error("--SVDPrefix is required, if you are using FASTQuick default marker "
-          "set, you may find SVD matrices in resource directory.");
-    exit(EXIT_FAILURE);
-  }
-  /*if (PCPath == "Empty")
-  {
-          error("--PC is required");
-          exit(EXIT_FAILURE);
-  }
-  if (muPath == "Empty")
-  {
-          error("--mu is required");
-          exit(EXIT_FAILURE);
-  }*/
-  if (pileup == "Empty" && glPath == "Empty") {
-    error("either --Pileup or --GL is required");
-    exit(EXIT_FAILURE);
-  }
-
-  PopulationIdentifier pop(SVDPrefix + ".UD", SVDPrefix + ".V",
-                           SVDPrefix + ".mu", pileup, glPath,
-                           SVDPrefix + ".bed");
-  pop.OptimizeLLK();
-
-  notice("Version: %s", PACKAGE_VERSION);
-  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
-  return 0;
-}
-int runCon(int argc, char **argv) {
-
-  double t_real;
-  t_real = realtime();
-  /*
-   * Parameters
-   *
-   */
-  ContaminationEstimator2 CE;
-  std::string ReadGroup("default"), Prefix("Empty"), SVDPrefix("Empty");
-  std::string VcfSiteAFFile("Empty"), PileupPath("Empty"), BEDpath("Empty");
-  paramList pl;
-
-  BEGIN_LONG_PARAMS(longParameters)
-  LONG_PARAM_GROUP(
-      "Input/Output Files",
-      "Input/Output files for the program[Complete Path Recommended]")
-
-  LONG_STRING_PARAM("SVDPrefix", &SVDPrefix,
-                    "[String] Specify the prefix used by SVD matrices. If "
-                    "you are using FASTQuick default marker set, you may "
-                    "find them in resource directory.[Required if VCF file "
-                    "doesn't provide site allele frequency]")
-  LONG_STRING_PARAM("VCF", &VcfSiteAFFile,
-                    "[String] Specify VCF file that contains site allele "
-                    "frequency.[Required if SVD matrices don't exist]")
-  LONG_STRING_PARAM(
-      "Pileup", &PileupPath,
-      "[String] Specify pileup file for current individual, could "
-      "be the one generated from align step.[Required]")
-  // LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED
-  // format file that contains marker information, which should match markers
-  // in SVD matrices.[Required]")
-  LONG_STRING_PARAM("Out", &Prefix,
-                    "[String] Specify the output prefix.[Required]")
-  LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
-
-  END_LONG_PARAMS();
-
-  pl.Add(new longParams("Available Options", longParameters));
-  pl.Read(argc, argv);
-  pl.Status();
-  if (Prefix == "Empty") {
-    error("--Out is required");
-    exit(EXIT_FAILURE);
-  }
-
-  if (PileupPath == "Empty") {
-    error("--Pileup is required");
-    exit(EXIT_FAILURE);
-  }
-
-  if (SVDPrefix == "Empty" && VcfSiteAFFile == "Empty") {
-    error("Either --SVDPrefix or --VCF should be specified, If you are using "
-          "FASTQuick default marker set, you may find SVD matrices in resource "
-          "directory.");
-  }
-  if (VcfSiteAFFile != "Empty") {
-    CE.RunFromVCF(VcfSiteAFFile, PileupPath, ReadGroup, Prefix);
-  } else {
-    CE.RunFromSVDMatrix(SVDPrefix + ".UD", SVDPrefix + ".V", SVDPrefix + ".mu",
-                        PileupPath, SVDPrefix + ".bed", Prefix, ReadGroup);
-  }
-
-  notice("Version: %s", PACKAGE_VERSION);
-  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real, cputime());
-  return 0;
-}
+// int runPop(int argc, char **argv) {
+//
+//  double t_real;
+//  t_real = realtime();
+//  std::string SVDPrefix("Empty"), UDPath("Empty"), PCPath("Empty"),
+//      muPath("Empty"), glPath("Empty"), bedPath("Empty"), output("Empty"),
+//      pileup("Empty");
+//
+//  paramList pl;
+//
+//  BEGIN_LONG_PARAMS(longParameters)
+//  LONG_PARAM_GROUP(
+//      "Input/Output Files",
+//      "Input/Output files for the program[Complete Path Recommended]")
+//  //		LONG_STRING_PARAM("UD", &UDPath, "[String] Input UD
+//  // matrix file in resource directory[Required]")
+//  // LONG_STRING_PARAM("PC", &PCPath, "[String] Input PC matrix file in
+//  resource
+//  // directory[Required]") 		LONG_STRING_PARAM("mu", &muPath,
+//  // "[String] Input mu matrix file in resource directory[Required]")
+//  LONG_STRING_PARAM("SVDPrefix", &SVDPrefix,
+//                    "[String] Specify the prefix used by SVD matrices. If "
+//                    "you are using FASTQuick default marker set, you may "
+//                    "find them in resource directory.[Required]")
+//  LONG_STRING_PARAM("GL", &glPath,
+//                    "[String] Input genotype likelihood file generated "
+//                    "from align step[Required if no pileup file]")
+//  LONG_STRING_PARAM("Pileup", &pileup,
+//                    "[String] Input pileup file generated from "
+//                    "align[Required if no gl file]")
+//  // LONG_STRING_PARAM("BED", &bedPath, "[String] Specify the matching BED
+//  // format file that contains marker information. If you are using FASTQuick
+//  // default marker set, you may find choose.bed file in resource
+//  // directory[Required]") LONG_STRING_PARAM("out", &output, "[String]
+//  // Specify output file[Required]")
+//  END_LONG_PARAMS();
+//
+//  pl.Add(new longParams("Available Options", longParameters));
+//  pl.Read(argc, argv);
+//  pl.Status();
+//  if (SVDPrefix == "Empty") {
+//    error("--SVDPrefix is required, if you are using FASTQuick default marker
+//    "
+//          "set, you may find SVD matrices in resource directory.");
+//    exit(EXIT_FAILURE);
+//  }
+//  /*if (PCPath == "Empty")
+//  {
+//          error("--PC is required");
+//          exit(EXIT_FAILURE);
+//  }
+//  if (muPath == "Empty")
+//  {
+//          error("--mu is required");
+//          exit(EXIT_FAILURE);
+//  }*/
+//  if (pileup == "Empty" && glPath == "Empty") {
+//    error("either --Pileup or --GL is required");
+//    exit(EXIT_FAILURE);
+//  }
+//
+//  PopulationIdentifier pop(SVDPrefix + ".UD", SVDPrefix + ".V",
+//                           SVDPrefix + ".mu", pileup, glPath,
+//                           SVDPrefix + ".bed");
+//  pop.OptimizeLLK();
+//
+//  notice("Version: %s", PACKAGE_VERSION);
+//  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real,
+//  cputime()); return 0;
+//}
+// int runCon(int argc, char **argv) {
+//
+//  double t_real;
+//  t_real = realtime();
+//  /*
+//   * Parameters
+//   *
+//   */
+//  ContaminationEstimator2 CE;
+//  std::string ReadGroup("default"), Prefix("Empty"), SVDPrefix("Empty");
+//  std::string VcfSiteAFFile("Empty"), PileupPath("Empty"), BEDpath("Empty");
+//  paramList pl;
+//
+//  BEGIN_LONG_PARAMS(longParameters)
+//  LONG_PARAM_GROUP(
+//      "Input/Output Files",
+//      "Input/Output files for the program[Complete Path Recommended]")
+//
+//  LONG_STRING_PARAM("SVDPrefix", &SVDPrefix,
+//                    "[String] Specify the prefix used by SVD matrices. If "
+//                    "you are using FASTQuick default marker set, you may "
+//                    "find them in resource directory.[Required if VCF file "
+//                    "doesn't provide site allele frequency]")
+//  LONG_STRING_PARAM("VCF", &VcfSiteAFFile,
+//                    "[String] Specify VCF file that contains site allele "
+//                    "frequency.[Required if SVD matrices don't exist]")
+//  LONG_STRING_PARAM(
+//      "Pileup", &PileupPath,
+//      "[String] Specify pileup file for current individual, could "
+//      "be the one generated from align step.[Required]")
+//  // LONG_STRING_PARAM("BED", &BEDpath, "[String] Specify the matching BED
+//  // format file that contains marker information, which should match markers
+//  // in SVD matrices.[Required]")
+//  LONG_STRING_PARAM("Out", &Prefix,
+//                    "[String] Specify the output prefix.[Required]")
+//  LONG_STRING_PARAM("RG", &ReadGroup, "[String] set ReadGroup name")
+//
+//  END_LONG_PARAMS();
+//
+//  pl.Add(new longParams("Available Options", longParameters));
+//  pl.Read(argc, argv);
+//  pl.Status();
+//  if (Prefix == "Empty") {
+//    error("--Out is required");
+//    exit(EXIT_FAILURE);
+//  }
+//
+//  if (PileupPath == "Empty") {
+//    error("--Pileup is required");
+//    exit(EXIT_FAILURE);
+//  }
+//
+//  if (SVDPrefix == "Empty" && VcfSiteAFFile == "Empty") {
+//    error("Either --SVDPrefix or --VCF should be specified, If you are using "
+//          "FASTQuick default marker set, you may find SVD matrices in resource
+//          " "directory.");
+//  }
+//  if (VcfSiteAFFile != "Empty") {
+//    CE.RunFromVCF(VcfSiteAFFile, PileupPath, ReadGroup, Prefix);
+//  } else {
+//    CE.RunFromSVDMatrix(SVDPrefix + ".UD", SVDPrefix + ".V", SVDPrefix +
+//    ".mu",
+//                        PileupPath, SVDPrefix + ".bed", Prefix, ReadGroup);
+//  }
+//
+//  notice("Version: %s", PACKAGE_VERSION);
+//  notice("Real time: %.3f sec; CPU: %.3f sec", realtime() - t_real,
+//  cputime()); return 0;
+//}
 
 static int usage() {
   fprintf(stderr, "\n");
@@ -666,10 +665,10 @@ int main(int argc, char *argv[]) {
     return runAlign(argc - 1, argv + 1);
   else if (strcmp(argv[1], "pop+con") == 0)
     return runVB2(argc - 1, argv + 1);
-  else if (strcmp(argv[1], "pop") == 0)
-    return runPop(argc - 1, argv + 1);
-  else if (strcmp(argv[1], "con") == 0)
-    return runCon(argc - 1, argv + 1);
+  //  else if (strcmp(argv[1], "pop") == 0)
+  //    return runPop(argc - 1, argv + 1);
+  //  else if (strcmp(argv[1], "con") == 0)
+  //    return runCon(argc - 1, argv + 1);
   else {
     warning("unrecognized command '%s'\n", argv[1]);
     return 1;

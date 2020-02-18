@@ -520,19 +520,19 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   BedFile.close();
   FoutHapMapSelectedSite.ifclose();
 
-  reader.open(dbSNP.c_str(), header);
-  reader.close();
+//  reader.open(dbSNP.c_str(), header);
+//  reader.close();
 
-  // create header for dbSNP subset vcf file
-  InputFile FoutdbSNPSelectedSite(
-      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
-  header.write(&FoutdbSNPSelectedSite);
-  FoutdbSNPSelectedSite.ifclose();
+//  // create header for dbSNP subset vcf file
+//  InputFile FoutdbSNPSelectedSite(
+//      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
+//  header.write(&FoutdbSNPSelectedSite);
+//  FoutdbSNPSelectedSite.ifclose();
 
   char cmdline[2048];
   // subset dbsnp
   sprintf(cmdline,
-          "sort -k1,1 -k2,2n %s|tabix  -R  - %s  >> %s.dbSNP.subset.vcf",
+          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > %s.dbSNP.subset.vcf",
           BedPath.c_str(), dbSNP.c_str(), NewRef.c_str());
   int ret = system(cmdline);
   if (ret != 0) {
@@ -621,8 +621,8 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
   BedFile.close();
   FoutHapMapSelectedSite.ifclose();
 
-  reader.open(dbSNP.c_str(), header);
-  reader.close();
+//  reader.open(dbSNP.c_str(), header);
+//  reader.close();
 
 //  // create header for dbSNP subset vcf file
 //  InputFile FoutdbSNPSelectedSite(

@@ -11,4 +11,4 @@ include_directories(../misc/vcf/ ${STATGEN_INCLUDE_DIR} ../misc/)
 #add_library(FASTQuick STATIC ${CXX_SOURCE_FILES})
 add_executable(FASTQuick ${CXX_SOURCE_FILES})
 
-target_link_libraries(FASTQuick bwa mpu bam tabix vcf_statgen statgen misc VerifyBamID)
+target_link_libraries(FASTQuick bwa bam vcf statgen misc VerifyBamID)

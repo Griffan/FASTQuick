@@ -3,7 +3,7 @@
 #include "../libbwa/bwase.h"
 #include "../libbwa/bwtgap.h"
 #include "../libbwa/khash.h"
-#include "../libmpu/Random.h"
+#include "../VerifyBamID/Random.h"
 #include "Error.h"
 #include <algorithm>
 #include <iostream>
@@ -834,7 +834,7 @@ static void *worker(void *data) {
 }
 
 void workerAlt(int id, void *data) {
-//  fprintf(stderr,"echo from %d worker thread...\n",id);
+  //  fprintf(stderr,"echo from %d worker thread...\n",id);
   thread_aux_t *d = (thread_aux_t *)data;
   bwa_cal_sa_reg_gap(d->tid, d->bwt, d->n_seqs, d->seqs, d->opt,
                      d->Indexer_Ptr);
@@ -867,7 +867,7 @@ void IOworkerAlt(int id, void *data) {
   thread_IO_t *d = (thread_IO_t *)data;
   // d->seqAddress = bwa_read_seq_with_hash(d->BwtIndex, d->ksAddress,
   // READ_BUFFER_SIZE, d->n_seqs, d->mode, d->trim_qual, d->frac, d->round);
-//  fprintf(stderr,"echo from %d IO thread...\n",id);
+  //  fprintf(stderr,"echo from %d IO thread...\n",id);
   *(d->ret) = bwa_read_seq_with_hash_dev(
       d->BwtIndex, d->ksAddress, READ_BUFFER_SIZE, d->n_seqs, d->mode,
       d->trim_qual, d->frac, d->round, d->seqAddress, d->read_len);
@@ -1718,7 +1718,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   int n_align_thread = opt->n_threads % 2 == 0
                            ? opt->n_threads
                            : opt->n_threads + 1; // round thread number up
-//  notice("CTPL is initializing with %d threads...", n_align_thread+2);
+  //  notice("CTPL is initializing with %d threads...", n_align_thread+2);
 
   ctpl::thread_pool p(n_align_thread + 2 /* two threads in the pool */);
   std::vector<std::future<void>> results(n_align_thread + 2);
@@ -1729,7 +1729,8 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
   IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
   /*added for IO end*/
-  thread_aux_t *data = (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+  thread_aux_t *data =
+      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
 #endif
   while (ReadIsGood) { // opt should be different for two fa files theoretically
     if (ReadIsGood == 2) {
@@ -1764,7 +1765,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
       data[j].seqs = seqs[0] + j * grain_size;
       data[j].opt = opt;
       data[j].Indexer_Ptr = &BwtIndex;
-      results[j]=p.push(workerAlt, data + j);
+      results[j] = p.push(workerAlt, data + j);
     }
     for (int j = n_first_thread; j < n_align_thread; ++j) {
       data[j].tid = j;
@@ -1777,7 +1778,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
       data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
       data[j].opt = opt;
       data[j].Indexer_Ptr = &BwtIndex;
-      results[j]=p.push(workerAlt, data + j);
+      results[j] = p.push(workerAlt, data + j);
     }
     int ret_tmp[2] = {-1, -1};
     for (int j = 0; j < 2; ++j) {
@@ -1791,16 +1792,14 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
       IO_param[j]->seqAddress = seqs_buff[j];
       IO_param[j]->ret = &ret_tmp[j];
       IO_param[j]->read_len = opt->read_len;
-      results[n_align_thread+j]=p.push(IOworkerAlt, IO_param[j]);
+      results[n_align_thread + j] = p.push(IOworkerAlt, IO_param[j]);
     }
     for (j = 0; j < n_align_thread + 2; ++j)
-        results[j].get();
-      /*IO thread*/
-      round++;
-
-      if ((ret_tmp[0] | ret_tmp[1]) == 0)
-        ReadIsGood = 0;
-
+      results[j].get();
+    /*IO thread*/
+    round++;
+    if ((ret_tmp[0] | ret_tmp[1]) == 0)
+      ReadIsGood = 0;
 
 #elif defined HAVE_PTHREAD
     if (opt->n_threads <= 1) { // no multi-threading at all
@@ -1844,6 +1843,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
       /*decopling of the multithread*/
       int n_first_thread = n_align_thread / 2;
       int n_second_thread = n_align_thread - n_first_thread;
+
       size_t grain_size = n_seqs[0] / n_first_thread;
       for (int j = 0; j < n_first_thread; ++j) {
         data[j].tid = j;
@@ -2025,9 +2025,400 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   } // end while
 
 #ifdef __ctpl_stl_thread_pool_H__
-      free(IO_param[0]);
+  free(IO_param[0]);
+  free(IO_param[1]);
+  free(data);
+#endif
+  notice("%lld sequences are loaded.", FSC.NumRead);
+  // fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n",
+  // FSC.HashFiltered);
+  notice("%ld sequences are filtered.", FSC.TotalFiltered * 2);
+  notice("%ld sequences are unmapped.", FSC.BwaUnmapped * 2);
+  notice("%ld sequences are discarded of low mapQ.", FSC.TotalMAPQ);
+  notice("%ld sequences are retained for QC.", FSC.TotalRetained);
+
+  for (j = 0; j < 2; ++j) {
+    bwa_free_read_seq(READ_BUFFER_SIZE, seqs[j]);
+    bwa_free_read_seq(READ_BUFFER_SIZE, seqs_buff[j]);
+  }
+  //	free(seqs[0]);
+  //	free(seqs[1]);
+  //	free(seqs_buff[0]);
+  //	free(seqs_buff[1]);
+  if (pacseq)
+    free(pacseq);
+  // bns_destroy(bns);
+  if (ntbns)
+    bns_destroy(ntbns);
+
+  for (i = 0; i < 2; ++i) {
+    bwa_seq_close(ks[i]);
+  }
+  for (iter = kh_begin(g_hash); iter != kh_end(g_hash); ++iter)
+    if (kh_exist(g_hash, iter))
+      free(kh_val(g_hash, iter).a);
+  kh_destroy(64, g_hash);
+  return 0;
+}
+/*
+ * Experiment area
+ */
+bool BwtMapper::PairEndMapper(
+    BwtIndexer &BwtIndex, const pe_opt_t *popt, gap_opt_t *opt,
+    SamFileHeader &SFH, BamInterface &BamIO, IFILE BamFile,
+    StatGenStatus &StatusTracker, std::ofstream &fout, FileStatCollector &FSC) {
+
+  int i, j, n_seqs[2] = {0, 0}, n_seqs_buff[2] = {0, 0};
+
+  bwa_seq_t *seqs[2];
+  bwa_seq_t *seqs_buff[2];
+  bwa_seqio_t *ks[2];
+  clock_t t;
+  bwt_t *bwt[2];
+  bntseq_t *ntbns = 0;
+  khint_t iter;
+  isize_info_t last_ii; // this is for the last batch of reads
+  // initialization
+  bwase_initialize(); // initialize g_log_n[] in bwase.c
+
+  srand48(BwtIndex.bns->seed);
+  g_hash = kh_init(64);
+  last_ii.avg = -1.0;
+  ks[0] = bwa_seq_open(FSC.FileName1.c_str());
+  ks[1] = bwa_seq_open(FSC.FileName2.c_str());
+
+  bwt[0] = BwtIndex.bwt_d;
+  bwt[1] = BwtIndex.rbwt_d;
+
+  ubyte_t *pacseq = 0;
+
+  //	opt->read_len = kseq_get_seq_len_fpc(ks[0]->ks);
+  seqs[0] = (bwa_seq_t *)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+  seqs[1] = (bwa_seq_t *)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+  seqs_buff[0] = (bwa_seq_t *)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+  seqs_buff[1] = (bwa_seq_t *)calloc(READ_BUFFER_SIZE, sizeof(bwa_seq_t));
+  bwa_init_read_seq(READ_BUFFER_SIZE, seqs[0], opt);
+  bwa_init_read_seq(READ_BUFFER_SIZE, seqs[1], opt);
+  bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[0], opt);
+  bwa_init_read_seq(READ_BUFFER_SIZE, seqs_buff[1], opt);
+
+  int ReadIsGood = 2;
+  uint32_t round = 0;
+  int ret(-1);
+#ifdef __ctpl_stl_thread_pool_H__
+  int n_align_thread = opt->n_threads % 2 == 0
+                       ? opt->n_threads
+                       : opt->n_threads + 1; // round thread number up
+  //  notice("CTPL is initializing with %d threads...", n_align_thread+2);
+
+  ctpl::thread_pool p(n_align_thread + 2 /* two threads in the pool */);
+  std::vector<std::future<void>> results(n_align_thread + 2);
+
+  int n_first_thread = n_align_thread / 2;
+  int n_second_thread = n_align_thread - n_first_thread;
+  thread_IO_t *IO_param[2];
+  IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+  IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+  /*added for IO end*/
+  thread_aux_t *data =
+      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+#endif
+  while (ReadIsGood) { // opt should be different for two fa files theoretically
+    if (ReadIsGood == 2) {
+      if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
+                                            &n_seqs[0], opt->mode,
+                                            opt->trim_qual, opt->frac, round,
+                                            seqs[0], opt->read_len)) != 0) {
+        ReadIsGood = 1;
+      } else
+        ReadIsGood = 0;
+
+      if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE,
+                                            &n_seqs[1], opt->mode,
+                                            opt->trim_qual, opt->frac, round,
+                                            seqs[1], opt->read_len)) != 0) {
+      } else
+        ReadIsGood = 0;
+    }
+    int cnt_chg;
+    isize_info_t ii;
+    t = clock();
+#ifdef __ctpl_stl_thread_pool_H__
+    size_t grain_size = n_seqs[0] / n_first_thread;
+    for (int j = 0; j < n_first_thread; ++j) {
+      data[j].tid = j;
+      data[j].bwt[0] = bwt[0];
+      data[j].bwt[1] = bwt[1];
+      if (j == n_first_thread - 1)
+        data[j].n_seqs = n_seqs[0] - grain_size * (n_first_thread - 1);
+      else
+        data[j].n_seqs = grain_size;
+      data[j].seqs = seqs[0] + j * grain_size;
+      data[j].opt = opt;
+      data[j].Indexer_Ptr = &BwtIndex;
+      results[j] = p.push(workerAlt, data + j);
+    }
+    for (int j = n_first_thread; j < n_align_thread; ++j) {
+      data[j].tid = j;
+      data[j].bwt[0] = bwt[0];
+      data[j].bwt[1] = bwt[1];
+      if (j == n_align_thread - 1)
+        data[j].n_seqs = n_seqs[1] - grain_size * (n_second_thread - 1);
+      else
+        data[j].n_seqs = grain_size;
+      data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
+      data[j].opt = opt;
+      data[j].Indexer_Ptr = &BwtIndex;
+      results[j] = p.push(workerAlt, data + j);
+    }
+    int ret_tmp[2] = {-1, -1};
+    for (int j = 0; j < 2; ++j) {
+      IO_param[j]->BwtIndex = &BwtIndex;
+      IO_param[j]->ksAddress = ks[j];
+      IO_param[j]->n_seqs = &n_seqs_buff[j];
+      IO_param[j]->mode = opt->mode;
+      IO_param[j]->trim_qual = opt->trim_qual;
+      IO_param[j]->frac = opt->frac;
+      IO_param[j]->round = round;
+      IO_param[j]->seqAddress = seqs_buff[j];
+      IO_param[j]->ret = &ret_tmp[j];
+      IO_param[j]->read_len = opt->read_len;
+      results[n_align_thread + j] = p.push(IOworkerAlt, IO_param[j]);
+    }
+    for (j = 0; j < n_align_thread + 2; ++j)
+      results[j].get();
+    /*IO thread*/
+    round++;
+    if ((ret_tmp[0] | ret_tmp[1]) == 0)
+      ReadIsGood = 0;
+
+#elif defined HAVE_PTHREAD
+    if (opt->n_threads <= 1) { // no multi-threading at all
+      for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
+        bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
+                           &BwtIndex);
+      }
+      round++;
+      if ((ret = bwa_read_seq_with_hash_dev(
+               &BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff[0], opt->mode,
+               opt->trim_qual, opt->frac, round, seqs_buff[0],
+               opt->read_len)) != 0) {
+        // ReadIsGood = 1;
+        // FSC.NumRead += n_seqs_buff[0];
+      } else
+        ReadIsGood = 0;
+      if ((ret = bwa_read_seq_with_hash_dev(
+               &BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1], opt->mode,
+               opt->trim_qual, opt->frac, round, seqs_buff[1],
+               opt->read_len)) != 0) {
+        // ReadIsGood = 1;
+        // FSC.NumRead += n_seqs_buff[1];
+      } else
+        ReadIsGood = 0;
+    } else {
+      pthread_t *tid;
+      pthread_attr_t attr;
+      thread_aux_t *data;
+      /*added for IO begin*/
+      int n_align_thread = opt->n_threads % 2 == 0
+                               ? opt->n_threads
+                               : opt->n_threads + 1; // round thread number up
+      thread_IO_t *IO_param[2];
+      IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+      IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+      /*added for IO end*/
+      pthread_attr_init(&attr);
+      pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+      data = (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+      tid = (pthread_t *)calloc(n_align_thread + 2, sizeof(pthread_t));
+      /*decopling of the multithread*/
+      int n_first_thread = n_align_thread / 2;
+      int n_second_thread = n_align_thread - n_first_thread;
+
+      size_t grain_size = n_seqs[0] / n_first_thread;
+      for (int j = 0; j < n_first_thread; ++j) {
+        data[j].tid = j;
+        data[j].bwt[0] = bwt[0];
+        data[j].bwt[1] = bwt[1];
+        if (j == n_first_thread - 1)
+          data[j].n_seqs = n_seqs[0] - grain_size * (n_first_thread - 1);
+        else
+          data[j].n_seqs = grain_size;
+        data[j].seqs = seqs[0] + j * grain_size;
+        data[j].opt = opt;
+        data[j].Indexer_Ptr = &BwtIndex;
+        pthread_create(&tid[j], &attr, worker, data + j);
+      }
+      for (int j = n_first_thread; j < n_align_thread; ++j) {
+        data[j].tid = j;
+        data[j].bwt[0] = bwt[0];
+        data[j].bwt[1] = bwt[1];
+        if (j == n_align_thread - 1)
+          data[j].n_seqs = n_seqs[1] - grain_size * (n_second_thread - 1);
+        else
+          data[j].n_seqs = grain_size;
+        data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
+        data[j].opt = opt;
+        data[j].Indexer_Ptr = &BwtIndex;
+        pthread_create(&tid[j], &attr, worker, data + j);
+      }
+      int ret_tmp[2] = {-1, -1};
+      for (int j = 0; j < 2; ++j) {
+        IO_param[j]->BwtIndex = &BwtIndex;
+        IO_param[j]->ksAddress = ks[j];
+        IO_param[j]->n_seqs = &n_seqs_buff[j];
+        IO_param[j]->mode = opt->mode;
+        IO_param[j]->trim_qual = opt->trim_qual;
+        IO_param[j]->frac = opt->frac;
+        IO_param[j]->round = round;
+        IO_param[j]->seqAddress = seqs_buff[j];
+        IO_param[j]->ret = &ret_tmp[j];
+        IO_param[j]->read_len = opt->read_len;
+        pthread_create(&tid[n_align_thread + j], &attr, IOworker, IO_param[j]);
+      }
+
+      for (j = 0; j < n_align_thread + 2; ++j)
+        pthread_join(tid[j], 0);
+
+      /*IO thread*/
+      round++;
+
+      if ((ret_tmp[0] | ret_tmp[1]) == 0)
+        ReadIsGood = 0;
+      else
+        free(IO_param[0]);
       free(IO_param[1]);
       free(data);
+      free(tid);
+    }
+#else
+
+    for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
+      bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
+                         &BwtIndex);
+    }
+    round++;
+    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
+                                          &n_seqs_buff[0], opt->mode,
+                                          opt->trim_qual, opt->frac, round,
+                                          seqs_buff[0], opt->read_len)) != 0) {
+      // ReadIsGood = 1;
+      // FSC.NumRead += n_seqs_buff[0];
+    } else
+      ReadIsGood = 0;
+    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE,
+                                          &n_seqs_buff[1], opt->mode,
+                                          opt->trim_qual, opt->frac, round,
+                                          seqs_buff[1], opt->read_len)) != 0) {
+      // ReadIsGood = 1;
+      // FSC.NumRead += n_seqs_buff[1];
+    } else
+      ReadIsGood = 0;
+#endif
+    cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii,
+                                 FSC.HashFiltered);
+
+    if (pacseq == 0) // indexing path
+    {
+      /*pacseq = */
+      pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs[0], seqs,
+                             popt, &ii, opt->mode);
+    } else {
+      /*pacseq = */
+      pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs[0], seqs, popt, &ii,
+                             opt->mode);
+    }
+
+    for (j = 0; j < 2; ++j)
+      bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
+
+    // if (pacseq!= 0) free(pacseq);
+
+    if (!opt->out_bam) {
+      for (i = 0; i < n_seqs[0]; ++i) {
+        bwa_seq_t *p[2];
+        p[0] = seqs[0] + i;
+        p[1] = seqs[1] + i;
+
+        FSC.NumBase += p[0]->full_len;
+        FSC.NumBase += p[1]->full_len;
+        if (p[0]->filtered && p[1]->filtered) {
+          ++FSC.TotalFiltered;
+          continue;
+        }
+        if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
+            (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) {
+          FSC.BwaUnmapped++;
+          continue;
+        }
+        if (p[0]->bc[0] || p[1]->bc[0]) {
+          strcat(p[0]->bc, p[1]->bc);
+          strcpy(p[1]->bc, p[0]->bc);
+        }
+
+        FSC.TotalRetained += collector.AddAlignment(
+            BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt, fout, FSC.TotalMAPQ);
+        bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
+        bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode, opt->max_top2);
+      }
+    } else {
+      for (i = 0; i < n_seqs[0]; ++i) {
+        bwa_seq_t *p[2];
+        p[0] = seqs[0] + i;
+        p[1] = seqs[1] + i;
+
+        FSC.NumBase += p[0]->full_len;
+        FSC.NumBase += p[1]->full_len;
+
+        if (p[0]->filtered && p[1]->filtered) {
+          ++FSC.TotalFiltered;
+          continue;
+        }
+        if ((p[0] == 0 || p[0]->type == BWA_TYPE_NO_MATCH) &&
+            (p[1] == 0 || p[1]->type == BWA_TYPE_NO_MATCH)) {
+          ++FSC.BwaUnmapped;
+          continue;
+        }
+        if (p[0]->bc[0] || p[1]->bc[0]) {
+          strcat(p[0]->bc, p[1]->bc);
+          strcpy(p[1]->bc, p[0]->bc);
+        }
+        FSC.TotalRetained += collector.AddAlignment(
+            BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt, fout, FSC.TotalMAPQ);
+        SamRecord SR[2];
+        SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt->mode,
+                     opt->max_top2, SFH, SR[0]);
+        SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, opt->mode,
+                     opt->max_top2, SFH, SR[1]);
+
+        BamIO.writeRecord(BamFile, SFH, SR[0],
+                          SamRecord::SequenceTranslation::NONE);
+        BamIO.writeRecord(BamFile, SFH, SR[1],
+                          SamRecord::SequenceTranslation::NONE);
+      }
+    }
+
+    FSC.NumRead += (n_seqs[0] + n_seqs[1]);
+    for (j = 0; j < 2; ++j) {
+      // bwa_free_read_seq(n_seqs, seqs[j]);
+      // delete[] seqs[j];
+      bwa_clean_read_seq(n_seqs[j], seqs[j]);
+      n_seqs[j] = n_seqs_buff[j];
+      bwa_seq_t *tmp = seqs[j];
+      seqs[j] = seqs_buff[j];
+      seqs_buff[j] = tmp;
+      bwa_clean_read_seq(n_seqs_buff[j], seqs_buff[j]);
+    }
+    if (FSC.NumRead % 5000000 == 0)
+      fprintf(stderr, "NOTICE - %lld sequences are processed.\n", FSC.NumRead);
+
+    last_ii = ii;
+  } // end while
+
+#ifdef __ctpl_stl_thread_pool_H__
+  free(IO_param[0]);
+  free(IO_param[1]);
+  free(data);
 #endif
   notice("%lld sequences are loaded.", FSC.NumRead);
   // fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n",

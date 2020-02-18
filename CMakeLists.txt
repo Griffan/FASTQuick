@@ -36,7 +36,6 @@ add_subdirectory(VerifyBamID)
 set(STATGEN_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/VerifyBamID/statgen/")
 
 add_subdirectory(libbwa)
-add_subdirectory(libmpu)
 add_subdirectory(misc)
 add_subdirectory(src)
 #add_subdirectory(test)
