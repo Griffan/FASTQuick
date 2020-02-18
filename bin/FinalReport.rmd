@@ -212,8 +212,8 @@ q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_lin
 
 mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
 fileLen=length(mydata)-1#minus contamination line
-ExpectedDepth=as.numeric(strsplit(mydata[fileLen-13]," ")[[1]][5])
-EstimatedDepth=as.numeric(strsplit(mydata[fileLen-12]," ")[[1]][4])
+ExpectedDepth=as.numeric(strsplit(strsplit(mydata[fileLen-13]," ")[[1]][5], "\\[")[[1]][1])
+EstimatedDepth=as.numeric(strsplit(strsplit(mydata[fileLen-12]," ")[[1]][4], "\\[")[[1]][1])
 
 AccessibleFraction=as.numeric(strsplit(strsplit(mydata[fileLen-11]," ")[[1]][8],"%")[[1]][1])
 EstimatedQ20Depth=as.numeric(strsplit(mydata[fileLen-3],"\\s+|:")[[1]][8])

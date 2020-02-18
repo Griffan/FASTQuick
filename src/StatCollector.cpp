@@ -2314,7 +2314,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   ofstream fout(outputPath + ".Summary");
   fout << "Statistics : " << "Value\n";
   fout << "Expected Read Depth : " << (double)total_base / ref_genome_size
-       << " [" << total_base << "/" << ref_genome_size << "]\n";
+       << "[" << total_base << "/" << ref_genome_size << "]\n";
   /*auto AvgDepth =
       [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp +=
@@ -2323,7 +2323,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
-       << " [" << NumBaseMapped << "/" << total_region_size <<"]\n";
+       << "[" << NumBaseMapped << "/" << total_region_size <<"]\n";
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure

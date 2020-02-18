@@ -19,7 +19,7 @@
 ### QUICK START
 To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline([] is optional)
 ```
-bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry> \
+bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize> \
 --candidateVCF <variant list> \
 --reference <reference.fa> \
 --output <output.prefix> \

@@ -19,7 +19,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 USAGE_MESSAGE="
-Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
+Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
 
 	-l/--candidateVCF:  VCF format candidate variant list to choose from.
 	-r/--reference: reference genome fasta file to use.
@@ -113,6 +113,7 @@ done
 do_index=false
 do_align=false
 do_cont_anc=false
+do_viz=false
 #echo "--steps:$steps"
 if [[ "$steps" == *"allbutindex"* ]] ; then
 	do_align=true
@@ -122,14 +123,20 @@ elif [[ "$steps" == *"all"* ]] ; then
 	do_index=true
 	do_align=true
 	do_cont_anc=true
+	do_viz=true
 elif [[ "$steps" == *"index"* ]] ; then
 	do_index=true
 elif [[ "$steps" == *"align"* ]] ; then
 	do_align=true
+	do_viz=true
 elif [[ "$steps" == *"contamination"* ]] ; then
 	do_cont_anc=true
+	do_viz=true
 elif [[ "$steps" == *"ancestry"* ]] ; then
 	do_cont_anc=true
+	do_viz=true
+elif [[ "$steps" == *"visualize"* ]] ; then
+	do_viz=true
 fi
 
 
@@ -226,8 +233,9 @@ fi
 
 
 # Validate tools exist on path
-for tool in sort bcftools; do
-	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
+for tool in sort bcftools pandoc; do
+	if ! which $tool >/dev/null; then
+	  echo "Error: unable to find $tool on \$PATH, please install before continue" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2
 done
 
@@ -373,10 +381,12 @@ if [[ $do_cont_anc == true ]] ; then
 		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a $timinglogfile
 	fi
 	echo "$(date)	Complete estimating contamination and genetic ancestry" | tee -a $timinglogfile
+else
+	echo "$(date)	Skipping estimating contamination and genetic ancestry..."| tee -a $timinglogfile
 fi
 
-if [[ -f "${outputPrefix}.Summary" ]] ; then
-echo "$(date)	Summarize basic	QC statistics..." | tee -a $timinglogfile
+if [[ $do_viz == true ]] ; then
+echo "$(date)	Visualize QC statistics..." | tee -a $timinglogfile
 { /usr/bin/time \
 	Rscript ${FASTQuick_BIN_DIR}/RPlotScript.R \
 	${outputPrefix} \
