@@ -1,6 +1,7 @@
 #
 # FASTQuick: a ultra-fast full-alignment-free quality control toolkit
 #
+
 set -o errexit -o pipefail -o noclobber -o nounset
 last_command=""
 current_command=""
@@ -217,9 +218,11 @@ if [[ "$threads" -gt 4 ]] ; then
 	echo "WARNING: FASTQuick scales sub-linearly at high thread count. Up to 4 threads is the recommended level of parallelism." 1>&2
 fi
 echo "Using $threads worker threads." 1>&2
+
 if [[ "$callableRegion" == "" ]] ; then
-	callableRegion_arg=""
-	echo "Skip input of callableRegion. The callableRegion(ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed) is recommended for hg19." 1>&2
+	echo "--callableRegion not specified. Use default hg19 callableRegion from ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed" 1>&2
+	wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingdir/20141020.strict_mask.whole_genome.bed
+  callableRegion="$workingdir/20141020.strict_mask.whole_genome.bed"
 elif [[ ! -f $callableRegion ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing callableRegion file $callableRegion" 1>&2
@@ -349,6 +352,7 @@ if [[ $do_align == true ]] ; then
 			--index_prefix $indexPrefix \
 			--fq_list $fastqList \
 			--out_prefix ${outputPrefix} \
+			--t ${threads} \
 			--q 15 \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		if [[ -f "${outputPrefix}.bam" ]]; then
