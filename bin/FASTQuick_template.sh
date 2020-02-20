@@ -119,6 +119,7 @@ do_viz=false
 if [[ "$steps" == *"allbutindex"* ]] ; then
 	do_align=true
 	do_cont_anc=true
+	do_viz=true
 elif [[ "$steps" == *"all"* ]] ; then
   echo "Running All steps at once is not suggested because indices can be reused!"
 	do_index=true
@@ -376,7 +377,7 @@ if [[ $do_cont_anc == true ]] ; then
 	if [[ -f "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]] ; then
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM pop+con \
-			--PileupFile ${outputPrefix}.Pileup \
+			--BamFile ${outputPrefix}.sorted.bam \
 			--Reference $reference \
 			--SVDPrefix ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 			--Output ${outputPrefix} \

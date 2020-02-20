@@ -38,7 +38,7 @@ int runVB2(int argc, char **argv) {
     std::string fixPC("Empty");
     double fixAlpha(-1.),epsilon(1e-8);
     bool withinAncestry(false),outputPileup(false),verbose(false),disableSanityCheck(false);
-    int nfiles(0),seed(12345),nPC(2),nthread(4);
+    int nfiles(0),seed(12345),nPC(4),nthread(4);
     paramList pl;
     BEGIN_LONG_PARAMS(longParameters)
                     LONG_PARAM_GROUP("Input/Output Files",

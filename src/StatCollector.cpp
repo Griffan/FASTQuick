@@ -2052,10 +2052,10 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
   for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end();
        ++i) // each chr
   {
-    for (std::map<int, unsigned int>::iterator j = i->second.begin();
+    for (auto j = i->second.begin();
          j != i->second.end(); ++j) // each site
     {
-      if (SeqVec[j->second].size() == 0)
+      if (SeqVec[j->second].empty())
         continue;
       fout << i->first << "\t" << j->first << "\t.\t"
            << StrandVec[j->second].size() << "\t";
@@ -2313,13 +2313,16 @@ int StatCollector::SummaryOutput(const string &outputPath) {
 
   ofstream fout(outputPath + ".Summary");
   fout << "Statistics : " << "Value\n";
-  fout << "Expected Read Depth : " << (double)total_base / ref_genome_size
+  fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
+  auto report_genome_size = targetRegion.IsEmpty()?ref_genome_size:targetRegion.Size();
+  fout << "Expected Read Depth : " << (double)total_base / report_genome_size
+       << "[" << total_base << "/" << report_genome_size << "]\n";
   /*auto AvgDepth =
       [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != DepthDist.size(); ++i) tmp +=
   i*DepthDist[i]; return double(tmp) / total_region_size; };*/
-  fout << "Estimated AvgDepth : ";
+  fout << "Estimated Read Depth : ";
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
