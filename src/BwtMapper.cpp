@@ -1,9 +1,9 @@
 #include "BwtMapper.h"
+#include "../VerifyBamID/Random.h"
 #include "../libbwa/bwape.h"
 #include "../libbwa/bwase.h"
 #include "../libbwa/bwtgap.h"
 #include "../libbwa/khash.h"
-#include "../VerifyBamID/Random.h"
 #include "Error.h"
 #include <algorithm>
 #include <iostream>
@@ -179,7 +179,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    collector.SetTargetRegion(targetRegionPath);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
     ofstream fout(Prefix + ".InsertSizeTable");
     int total_add = 0;
     collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout,
@@ -215,7 +216,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    collector.SetTargetRegion(targetRegionPath);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
     FileStatCollector FSC(Fastq_1.c_str(), Fastq_2.c_str());
     ofstream fout(Prefix + ".InsertSizeTable");
     PairEndMapper_without_asyncIO(BwtIndex, popt, opt, SFH, BamIO, BamFile,
@@ -252,7 +254,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    collector.SetTargetRegion(targetRegionPath);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
     FileStatCollector FSC(Fastq_1.c_str());
     ofstream fout(Prefix + ".InsertSizeTable");
     SingleEndMapper(BwtIndex, opt, SFH, BamIO, BamFile, StatusTracker, fout,
@@ -282,7 +285,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    collector.SetTargetRegion(targetRegionPath);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
     ofstream fout(Prefix + ".InsertSizeTable");
     int total_add = 0;
     collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout,
@@ -315,7 +319,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     double t_tmp = realtime();
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    collector.SetTargetRegion(targetRegionPath);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
     notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
     ifstream fin(FaList);
@@ -2063,10 +2068,11 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
 /*
  * Experiment area
  */
-bool BwtMapper::PairEndMapper(
-    BwtIndexer &BwtIndex, const pe_opt_t *popt, gap_opt_t *opt,
-    SamFileHeader &SFH, BamInterface &BamIO, IFILE BamFile,
-    StatGenStatus &StatusTracker, std::ofstream &fout, FileStatCollector &FSC) {
+bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
+                              gap_opt_t *opt, SamFileHeader &SFH,
+                              BamInterface &BamIO, IFILE BamFile,
+                              StatGenStatus &StatusTracker, std::ofstream &fout,
+                              FileStatCollector &FSC) {
 
   int i, j, n_seqs[2] = {0, 0}, n_seqs_buff[2] = {0, 0};
 
@@ -2107,8 +2113,8 @@ bool BwtMapper::PairEndMapper(
   int ret(-1);
 #ifdef __ctpl_stl_thread_pool_H__
   int n_align_thread = opt->n_threads % 2 == 0
-                       ? opt->n_threads
-                       : opt->n_threads + 1; // round thread number up
+                           ? opt->n_threads
+                           : opt->n_threads + 1; // round thread number up
   //  notice("CTPL is initializing with %d threads...", n_align_thread+2);
 
   ctpl::thread_pool p(n_align_thread + 2 /* two threads in the pool */);
