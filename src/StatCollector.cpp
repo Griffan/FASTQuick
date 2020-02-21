@@ -812,7 +812,7 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
       case 'S':
         tmpCycle += cl * sign[strand];
         relativeCoordOnRead += cl;
-//        relativeCoordOnRef += cl;
+        //        relativeCoordOnRef += cl;
         break;
       case 'D':
         absoluteSite += cl;
@@ -2052,8 +2052,7 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
   for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end();
        ++i) // each chr
   {
-    for (auto j = i->second.begin();
-         j != i->second.end(); ++j) // each site
+    for (auto j = i->second.begin(); j != i->second.end(); ++j) // each site
     {
       if (SeqVec[j->second].empty())
         continue;
@@ -2281,8 +2280,19 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   ofstream fastqOut(outputPath + ".FASTQ.csv");
   fastqOut << "FileNumber,PairEnd1,PairEnd2" << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
-    fastqOut << i+1<<"," <<FSCVec[i].FileName1 << ","<< FSCVec[i].FileName2 << "\n";
-         }
+    size_t last_slash_idx = FSCVec[i].FileName1.find_last_of("\\/");
+    if (std::string::npos != last_slash_idx) {
+      FSCVec[i].FileName1.erase(0, last_slash_idx + 1);
+    }
+
+    last_slash_idx = FSCVec[i].FileName2.find_last_of("\\/");
+    if (std::string::npos != last_slash_idx) {
+      FSCVec[i].FileName2.erase(0, last_slash_idx + 1);
+    }
+
+    fastqOut << i + 1 << "," << FSCVec[i].FileName1 << ","
+             << FSCVec[i].FileName2 << "\n";
+  }
   fastqOut.close();
   ofstream fcsv(outputPath + ".Sequence.csv");
   long long total_base(0);
@@ -2290,15 +2300,15 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   long long total_retained(0);
   long long total_unmapped(0);
   long long total_low_mapQ(0);
-  fcsv << "FileNumber,NumOfBase,NumOfReads,NumOfUmappedReads,NumOfLowMAPQReads,NumOfRetainedReads,AverageLength" << endl;
+  fcsv << "FileNumber,NumOfBase,NumOfReads,NumOfUmappedReads,NumOfLowMAPQReads,"
+          "NumOfRetainedReads,AverageLength"
+       << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
-    fcsv << i+1 << ","
-         << FSCVec[i].NumBase << ","
-         << FSCVec[i].NumRead << ","
-         << FSCVec[i].BwaUnmapped << ","
-         << FSCVec[i].TotalMAPQ << ","
+    fcsv << i + 1 << "," << FSCVec[i].NumBase << "," << FSCVec[i].NumRead << ","
+         << FSCVec[i].BwaUnmapped << "," << FSCVec[i].TotalMAPQ << ","
          << FSCVec[i].TotalRetained << ",";
-    fcsv << ((FSCVec[i].NumRead == 0) ? 0 : (FSCVec[i].NumBase / FSCVec[i].NumRead))
+    fcsv << ((FSCVec[i].NumRead == 0) ? 0
+                                      : (FSCVec[i].NumBase / FSCVec[i].NumRead))
          << endl;
     total_base += FSCVec[i].NumBase;
     total_reads += FSCVec[i].NumRead;
@@ -2306,16 +2316,18 @@ int StatCollector::SummaryOutput(const string &outputPath) {
     total_unmapped += FSCVec[i].BwaUnmapped;
     total_low_mapQ += FSCVec[i].TotalMAPQ;
   }
-  fcsv << "Total,"<<total_base<<","<<total_reads<<","
-       <<total_unmapped<<","<<total_low_mapQ<<","<<total_retained <<",";
+  fcsv << "Total," << total_base << "," << total_reads << "," << total_unmapped
+       << "," << total_low_mapQ << "," << total_retained << ",";
   fcsv << ((total_reads == 0) ? 0 : (total_base / total_reads)) << endl;
   fcsv.close();
 
   ofstream fout(outputPath + ".Summary");
-  fout << "Statistics : " << "Value\n";
+  fout << "Statistics : "
+       << "Value\n";
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
-  auto report_genome_size = targetRegion.IsEmpty()?ref_genome_size:targetRegion.Size();
+  auto report_genome_size =
+      targetRegion.IsEmpty() ? ref_genome_size : targetRegion.Size();
   fout << "Expected Read Depth : " << (double)total_base / report_genome_size
        << "[" << total_base << "/" << report_genome_size << "]\n";
   /*auto AvgDepth =
@@ -2326,7 +2338,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << ((NumPositionCovered == 0)
                ? 0
                : NumBaseMapped / (double)total_region_size)
-       << "[" << NumBaseMapped << "/" << total_region_size <<"]\n";
+       << "[" << NumBaseMapped << "/" << total_region_size << "]\n";
   fout << "Estimated Percentage of Accessible Genome Covered : "
        << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure
