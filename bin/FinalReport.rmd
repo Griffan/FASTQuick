@@ -219,8 +219,8 @@ AccessibleFraction=as.numeric(strsplit(strsplit(mydata[fileLen-11]," ")[[1]][8],
 EstimatedQ20Depth=as.numeric(strsplit(mydata[fileLen-3],"\\s+|:")[[1]][8])
 EstimatedQ30Depth=as.numeric(strsplit(mydata[fileLen-2],"\\s+|:")[[1]][8])
 
-Q20BaseFraction=as.numeric(strsplit(mydata[fileLen-6],":")[[1]][2])
-Q30BaseFraction=as.numeric(strsplit(mydata[fileLen-5],":")[[1]][2])
+Q20BaseFraction=as.numeric(strsplit(mydata[fileLen-5],":")[[1]][2])
+Q30BaseFraction=as.numeric(strsplit(mydata[fileLen-4],":")[[1]][2])
 Depth1=as.numeric(strsplit(mydata[fileLen-9],":")[[1]][2])
 Depth2=as.numeric(strsplit(mydata[fileLen-8],":")[[1]][2])
 Depth5=as.numeric(strsplit(mydata[fileLen-7],":")[[1]][2])
