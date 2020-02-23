@@ -8,7 +8,7 @@
 - [QUICK START](#quick-start)
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
-- [DOWNLOAD AND INSTALL](#download-and-install)
+- [INSTALL](#download-and-install)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
 - [USEFUL TIPS](#useful-tips)
@@ -30,11 +30,20 @@ bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Vis
 [--callableRegion <callableRegion.bed>] \
 [--targetRegion <targetRegion.bed>]
 ```
-In principal, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter.
+In principal, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter. 
+Example of --fastqList:
+```
+read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
+read.group.A.single.end.fq.gz
+read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
+read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
+read.group.C.single.end.fq.gz
+```
+Once the process finished, you will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in you output directory.
 
 ### SYNOPSIS
 
-You can also directly run FASTQuick without using wrapping script. Below is a simple example to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
+You can also directly run FASTQuick without using wrapping script. Below are simple examples to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
 
 ```
 FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref hg19.fa --out_prefix reduced_ref_index
@@ -45,7 +54,7 @@ FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat 
 ```
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your data set. 
-### DOWNLOAD AND INSTALL
+### INSTALL
    git clone https://github.com/Griffan/FASTQuick.git
    
    mkdir build
@@ -76,7 +85,7 @@ For lzma:
 
 ### EXAMPLES
 
-You can find various example scripts in example directory as templates for your own usage.
+You can also find example scripts for each single step in example directory as templates for customized usage.
 
 For example:
  * the script **example.sh** is the template for one-stop analysis.
@@ -110,7 +119,7 @@ OPTIONS
 
 In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
 
-To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/ directory(site-only vcf files).
+To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/
 
 A example for repeat_mask file: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks//20141020.strict_mask.whole_genome.bed
 
@@ -194,28 +203,14 @@ Example:
 ```
 Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R regular_size_predefine_b37_10k_NWD315195 1000g.phase3.10k.b37.vcf.gz.dat ~/Downloads/FASTQuick/resource/
 ```
-
-### More Details on Generating PC plot
-
-The final report generated above will include the PC plot to indicate sample ancestry.
-
-If you want to visualize customized background population information, the PC coordinates files(ending with .V) in ``$(FASTQUICK_HOME)/resource/`` might help you which
-provides background PC points of 1000 Genomes Project samples(e.g. 1000g.100k.b38.vcf.gz.dat.V) or of Human Genome Diversity Project samples(e.g. hgdp.100k.b38.vcf.gz.dat.V)
-
-You can use this script to generate PC plot with customized dataset as background points, for example:
-```
-sh $(FASTQUICK_HOME)/bin/run.plot.sh -i ./resource/hapmap_3.3.b37.dat.V -o ./resource/hapmap.test -r 1000g -g grey
-```
-You may run ``sh $(FASTQUICK_HOME)/bin/run.plot.sh -h`` for further help.
-
-   
    
 ### USEFUL TIPS
 
 #### Wiki page
    For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
-#### Workflow
-   The recommended flow is first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
+   
+#### Recommended Workflow
+   The FASTQuick.sh script demonstrated the recommended flow to first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
  
    
 ### BUGS
