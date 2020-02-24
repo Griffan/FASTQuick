@@ -1,1 +1,1 @@
-bin/FASTQuick index --siteVCF hapmap_3.3.b37.sites.PASS.vcf.gz.shuffled.all.vcf.gz  --dbsnpVCF dbSNP.b137.00-All.vcf.gz --ref hs37d5.fa --mask 20141007.all.strict_mask.fasta --out_prefix regular_size_10k --var_long 9000 --var_short 1000 2>index.log
+../bin/FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref ref.test.fa --out_prefix test_out_ref &>test_out.e.log

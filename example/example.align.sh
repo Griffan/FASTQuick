@@ -1,1 +1,1 @@
-bin/FASTQuick align --index_prefix regular_size_10k --fq_list fq.list --out_prefix regular_size_output 2>regular_size_output.log
+../bin/FASTQuick align --fq_list fq.test.list --index_prefix test_out_ref --out_prefix test_out &>test_out.e.log

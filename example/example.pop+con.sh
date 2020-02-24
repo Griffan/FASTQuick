@@ -1,3 +1,3 @@
-samtools sort -O BAM regular_size_predefine_b37_10k_output.bam >regular_size_predefine_b37_10k_output.bam.sort.bam
-samtools index regular_size_predefine_b37_10k_output.bam.sort.bam
-bin/FASTQuick pop+con --Reference hs37d5.fa --BamFile regular_size_predefine_b37_10k_output.bam.sort.bam --SVDPrefix ./resource/1000g.phase3.10k.b37.vcf.gz.dat --DisableSanityCheck --Output regular_size_predefine_b37_10k_output
+samtools sort test_out.bam >test_out.sorted.bam
+samtools index test_out.sorted.bam
+../bin/FASTQuick pop+con --DisableSanityCheck --BamFile test_out.sorted.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference ref.test.fa --Output test_out&>test_out.e.log
