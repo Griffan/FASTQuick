@@ -18,9 +18,9 @@
 - [COPYRIGHT](#copyright)
 
 ### QUICK START
-To start using FASTQuick, clone the repository and refer to [INSTALL](#download-and-install) to install FASTQuick first.
+First, to start using FASTQuick, **clone the repository(( and refer to [INSTALL](#download-and-install) to install FASTQuick first.
 
-To run FASTQuick with a very small-sized example to understand how to run the software tool, see [EXAMPLES](#examples).
+To perform a **test run** FASTQuick with a very small-sized example to understand how the software tool works, see [EXAMPLES](#examples).
 
 To run FASTQuick with your own FASTQuick files, you need to download the [RESOURCE](#resource) first. 
 
@@ -63,13 +63,16 @@ FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat 
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your data set. 
    
 ### INSTALL
-   git clone https://github.com/Griffan/FASTQuick.git
-   
-   mkdir build
-   
-   cd build
-   
-   cmake ..
+
+To install FASTQuick, run the following serires of commands.
+
+```
+git clone https://github.com/Griffan/FASTQuick.git   
+mkdir build
+cd build
+cmake ..
+```
+
 ```
 In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
 
