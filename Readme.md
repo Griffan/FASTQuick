@@ -11,6 +11,7 @@
 - [INSTALL](#install)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
+- [RESOURCE](#resource)
 - [USEFUL TIPS](#useful-tips)
 - [BUGS](#bugs)
 - [AUTHOR](#author)
@@ -21,7 +22,7 @@ To start using FASTQuick, clone the repository and refer to [INSTALL](#download-
 
 To run FASTQuick with a very small-sized example to understand how to run the software tool, see [EXAMPLES](#examples).
 
-To run FASTQuick with your own FASTQuick files, you need to download the [EXAMPLES](#examples) first. 
+To run FASTQuick with your own FASTQuick files, you need to download the [RESOURCE](#resource) first. 
 
 To simplify the whole procedure, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline([] is optional)
 ```
