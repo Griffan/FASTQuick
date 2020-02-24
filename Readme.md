@@ -64,7 +64,7 @@ FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat 
    
 ### INSTALL
 
-To install FASTQuick, run the following serires of commands.
+To install FASTQuick, run the following series of commands.
 
 ```
 git clone https://github.com/Griffan/FASTQuick.git   
