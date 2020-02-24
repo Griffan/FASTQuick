@@ -116,7 +116,7 @@ Here are links to commonly used resource files:
 
 ### WIKI PAGE
 
-You can always refer to our wiki page for more detailed introduction of the design and usage of FASTQuick. [https://github.com/Griffan/FASTQuick/wiki]
+You can always refer to our wiki page for more detailed introduction about the design and usage of FASTQuick. [https://github.com/Griffan/FASTQuick/wiki]
 
 ### COMMANDS AND OPTIONS
 
@@ -140,12 +140,9 @@ OPTIONS
 --out_prefix     [String] Prefix of all the output index files
 ```
 
-In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker slelection stage. 
+In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker selection stage. 
 
 To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/
-
-A example for repeat_mask file: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks//20141020.strict_mask.whole_genome.bed
-
 
 **align**
 
@@ -186,7 +183,7 @@ OPTIONS
 ```
 This step utilize a optimized version of BWA to rapidly screen unmap reads without losing sensitivity to potential mismatches on reads.
 
-Each line of fq_list contains full path of each fastq file. Pair-end fastq files are in the same line and delimated by tab; single-end fastq file occpies whole line.
+Each line of fq_list contains full path of each fastq file. Pair-end fastq files are in the same line and delimited by tab; single-end fastq file occupies the whole line.
 
 
 **pop+con**
@@ -213,8 +210,6 @@ OPTIONS
 --RefVCF         [String] Reference panel VCF with genotype information, for generation of .UD .mu .bed files[Optional]
 ``` 
 
-This step is a described in of our other tool VerifyBAMID2[https://github.com/Griffan/VerifyBamID].
-
 ### Generate Final Report
 
 Usage:
@@ -233,8 +228,10 @@ Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R  FASTQuick_align_out_prefix $(FASTQU
    
 ### BUGS
    List known bugs.
+   
 ### AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
+
 ### COPYRIGHT
    The full FASTQuick package is distributed under MIT License.
 
