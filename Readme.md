@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
 [![GitHub Downloads](https://img.shields.io/github/downloads/Griffan/FASTQuick/total.svg?style=flat)](https://github.com/Griffan/FASTQuick/releases)
-### NAME
+### OVERVIEW
    FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC statistics, including **ancestry estimation** and **contamination estimation**, at 50x faster turnaround time.
    
 ### CONTENTS
@@ -8,7 +8,7 @@
 - [QUICK START](#quick-start)
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
-- [INSTALL](#download-and-install)
+- [INSTALL](#install)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
 - [USEFUL TIPS](#useful-tips)
@@ -17,7 +17,13 @@
 - [COPYRIGHT](#copyright)
 
 ### QUICK START
-To simplify the whole process, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline([] is optional)
+To start using FASTQuick, clone the repository and refer to [INSTALL](#download-and-install) to install FASTQuick first.
+
+To run FASTQuick with a very small-sized example to understand how to run the software tool, see [EXAMPLES](#examples).
+
+To run FASTQuick with your own FASTQuick files, you need to download the [EXAMPLES](#examples) first. 
+
+To simplify the whole procedure, we prepared a one-stop script to process the whole pipeline or choose start point of the pipeline([] is optional)
 ```
 bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize> \
 --candidateVCF <variant list> \
@@ -30,7 +36,7 @@ bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Vis
 [--callableRegion <callableRegion.bed>] \
 [--targetRegion <targetRegion.bed>]
 ```
-In principal, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter. 
+In principle, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter. 
 Example of --fastqList:
 ```
 read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
@@ -54,6 +60,7 @@ FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat 
 ```
 ### DESCRIPTION
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your data set. 
+   
 ### INSTALL
    git clone https://github.com/Griffan/FASTQuick.git
    
