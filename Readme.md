@@ -9,10 +9,11 @@
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
 - [INSTALL](#install)
-- [COMMANDS AND OPTIONS](#commands-and-options)
 - [EXAMPLES](#examples)
 - [RESOURCE](#resource)
-- [USEFUL TIPS](#useful-tips)
+- [WIKI PAGE](#wiki-page)
+- [COMMANDS AND OPTIONS](#commands-and-options)
+- [RECOMMENDED WORKFLOW](#recommended-workflow)
 - [BUGS](#bugs)
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
@@ -27,14 +28,13 @@ To run FASTQuick **with your own FASTQ files**, you need to **download** the [RE
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose start point of the pipeline([] is optional) in one command line.
 ```
 bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize> \
+--output <output.prefix> \
 --candidateVCF <variant list> \
 --reference <reference.fa> \
---output <output.prefix> \
---index <index.prefix> \
 --dbSNP <dbSNP.vcf.gz> \
+--callableRegion <callableRegion.bed> \
 --fastqList <one_pair_of_fq_or_single_fq_per_line> \
 [--workingdir <directory>] \
-[--callableRegion <callableRegion.bed>] \
 [--targetRegion <targetRegion.bed>]
 ```
 In principle, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter. 
@@ -75,7 +75,7 @@ make
 make test
 ```
 
-Installation is complete if pass all tests finish successfully.
+Installation is complete if all tests finish successfully.
 
 ```
 In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
@@ -89,7 +89,6 @@ For bzip2:
 For lzma:
   - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
 ```
-   
 
 
 #### Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
@@ -105,6 +104,19 @@ For example:
  * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
  * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
    
+### RESOURCE
+
+Here are links to commonly used resource files:
+
+[1000 genome hg19 reference] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
+
+[dbSNP Variant Sites] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
+
+[1000 strict masked callable region] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
+
+### WIKI PAGE
+
+You can always refer to our wiki page for more detailed introduction of the design and usage of FASTQuick. [https://github.com/Griffan/FASTQuick/wiki]
 
 ### COMMANDS AND OPTIONS
 
@@ -201,7 +213,7 @@ OPTIONS
 --RefVCF         [String] Reference panel VCF with genotype information, for generation of .UD .mu .bed files[Optional]
 ``` 
 
-This step is a wrapper of our previous tool VerifyBAMID2[https://github.com/Griffan/VerifyBamID].
+This step is a described in of our other tool VerifyBAMID2[https://github.com/Griffan/VerifyBamID].
 
 ### Generate Final Report
 
@@ -212,15 +224,10 @@ Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R <FASTQuick align out_prefix>  <SVDPr
 
 Example:
 ```
-Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R regular_size_predefine_b37_10k_NWD315195 1000g.phase3.10k.b37.vcf.gz.dat ~/Downloads/FASTQuick/resource/
+Rscript $(FASTQUICK_HOME)/bin/RPlotScript.R  FASTQuick_align_out_prefix $(FASTQUICK_HOME)/resource/1000g.phase3.10k.b37.vcf.gz.dat $(FASTQUICK_HOME)
 ```
    
-### USEFUL TIPS
-
-#### Wiki page
-   For more detailed tutorial information please refer to wiki page:[https://github.com/Griffan/FASTQuick/wiki]
-   
-#### Recommended Workflow
+### Recommended Workflow
    The FASTQuick.sh script demonstrated the recommended flow to first indexing your reference and then align your fastq file to this reference, and then infer the population identity and the contamination level.
  
    

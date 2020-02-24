@@ -26,7 +26,6 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-r/--reference: reference genome fasta file to use.
 	-t/--targetRegion: target region to focus on.
 	-o/--output: prefix of output files.
-	-i/--index: prefix of index files.
 	-d/--dbSNP: location of the dbSNP vcf file.
 	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	-c/--callableRegion: BED file to specify callable region. For example: 20141020.strict_mask.whole_genome.bed
@@ -49,7 +48,7 @@ workingdir="."
 candidateVCF=""
 reference=""
 outputPrefix="default.output"
-indexPrefix="default.index"
+indexPrefix="${outputPrefix}.index"
 dbSNP=""
 threads=$(nproc)
 callableRegion=""
@@ -78,12 +77,13 @@ while true; do
             ;;
     -o|--output)
             outputPrefix="$2"
+            indexPrefix="${outputPrefix}.index"
             shift 2
             ;;
-    -i|--index)
-            indexPrefix="$2"
-            shift 2
-            ;;
+#    -i|--index)
+#            indexPrefix="$2"
+#            shift 2
+#            ;;
     -d|--dbSNP)
             dbSNP="$2"
             shift 2
