@@ -71,7 +71,11 @@ git clone https://github.com/Griffan/FASTQuick.git
 mkdir build
 cd build
 cmake ..
+make   
+make test
 ```
+
+Installation is complete if pass all tests finish successfully.
 
 ```
 In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
@@ -86,11 +90,7 @@ For lzma:
   - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
 ```
    
-   make
-   
-   make test
 
-   Installation complete successfully if pass all  tests finished successfully.
 
 #### Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
 
