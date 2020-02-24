@@ -18,7 +18,7 @@
 - [COPYRIGHT](#copyright)
 
 ### QUICK START
-First, to start using FASTQuick, **clone the repository(( and refer to [INSTALL](#download-and-install) to install FASTQuick first.
+First, to start using FASTQuick, **clone the repository** and refer to [INSTALL](#download-and-install) to install FASTQuick first.
 
 To perform a **test run** FASTQuick with a very small-sized example to understand how the software tool works, see [EXAMPLES](#examples).
 
