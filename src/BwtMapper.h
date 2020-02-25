@@ -33,7 +33,7 @@ SOFTWARE.
 #ifndef BWAPE_H_
 #include "../libbwa/bwape.h"
 #endif
-#define READ_BUFFER_SIZE 0x40000 //100000
+#define READ_BUFFER_SIZE 1000000
 class BwtMapper {
   StatCollector collector;
   char *bwa_rg_line;
@@ -51,10 +51,10 @@ public:
             const std::string &targetRegionPath);
   int bwa_cal_pac_pos(BwtIndexer &BwtIndex, int n_seqs, bwa_seq_t *seqs,
                       int max_mm, float fnr);
-  int bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], int n_seqs, bwa_seq_t *seqs[2],
-                         isize_info_t *ii, const pe_opt_t *opt,
-                         const gap_opt_t *gopt, const isize_info_t *last_ii,
-                         long long &n_filtered);
+  static int bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
+                                bwa_seq_t *seqs[2], isize_info_t *ii,
+                                const pe_opt_t *opt, const gap_opt_t *gopt,
+                                const isize_info_t *last_ii);
   // bwa_seq_t* bwa_read_seq_with_hash(BwtIndexer* BwtIndex, bwa_seqio_t *bs,
   // int n_needed, int *n, int mode, int trim_qual, double frac, uint32_t seed);
   // int bwa_read_seq_pair_with_hash(BwtIndexer& BwtIndex, bwa_seqio_t *bs,

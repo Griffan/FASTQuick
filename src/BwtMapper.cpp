@@ -18,6 +18,10 @@ using namespace std;
 KHASH_MAP_INIT_INT64(64, poslist_t)
 
 kh_64_t *g_hash;
+
+std::mutex myMutex;
+std::condition_variable myCV;
+
 //#define DEBUG 0
 #ifdef DEBUG
 #define DBG(CODE) CODE
@@ -340,8 +344,8 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
                Fastq_2.c_str());
         t_tmp = realtime();
         FileStatCollector FSC(Fastq_1.c_str(), Fastq_2.c_str());
-        PairEndMapper_without_asyncIO(BwtIndex, popt, opt, SFH, BamIO, BamFile,
-                                      StatusTracker, fout, FSC);
+        PairEndMapper(BwtIndex, popt, opt, SFH, BamIO, BamFile, StatusTracker,
+                      fout, FSC);
         notice("Processed Pair End mapping in %f sec", realtime() - t_tmp);
         collector.AddFSC(FSC);
       } else {
@@ -846,6 +850,47 @@ void workerAlt(int id, void *data) {
 }
 
 typedef struct {
+  thread_aux_t *aux1;
+  thread_aux_t *aux2;
+  const pe_opt_t *popt;
+  isize_info_t last_ii;
+  ubyte_t *pacseq;
+  bntseq_t *ntbns;
+} thread_PE_t;
+
+void PEworker(int id, void *data) {
+  thread_PE_t *d = (thread_PE_t *)data;
+
+  bwa_seq_t *seqs[2];
+  seqs[0] = d->aux1->seqs;
+  seqs[1] = d->aux2->seqs;
+
+  isize_info_t ii;
+
+  BwtMapper::bwa_cal_pac_pos_pe(d->aux1->bwt, d->aux1->n_seqs, seqs, &ii,
+                                d->popt, d->aux1->opt, &d->last_ii);
+
+  if (d->pacseq == 0) // indexing path
+  {
+    /*pacseq = */
+    d->pacseq =
+        bwa_paired_sw(d->aux1->Indexer_Ptr->bns, d->aux1->Indexer_Ptr->pac_buf,
+                      d->aux1->n_seqs, seqs, d->popt, &ii, d->aux1->opt->mode);
+  } else {
+    /*pacseq = */
+    d->pacseq =
+        bwa_paired_sw(d->aux1->Indexer_Ptr->bns, d->pacseq, d->aux1->n_seqs,
+                      seqs, d->popt, &ii, d->aux1->opt->mode);
+  }
+
+  for (int j = 0; j < 2; ++j)
+    bwa_refine_gapped(d->aux1->Indexer_Ptr->bns, d->aux1->n_seqs, seqs[j],
+                      d->pacseq, d->ntbns);
+
+  d->last_ii = ii;
+}
+
+typedef struct {
   BwtIndexer *BwtIndex;
   bwa_seq_t *seqAddress;
   bwa_seqio_t *ksAddress;
@@ -883,8 +928,7 @@ void IOworkerAlt(int id, void *data) {
 int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
                                   bwa_seq_t *seqs[2], isize_info_t *ii,
                                   const pe_opt_t *opt, const gap_opt_t *gopt,
-                                  const isize_info_t *last_ii,
-                                  long long &n_filtered) {
+                                  const isize_info_t *last_ii) {
   int i, j, cnt_chg = 0;
   // char str[1024];
   bwt_t *bwt[2];
@@ -914,7 +958,6 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
       p[j]->extra_flag |= SAM_FPD | (j == 0 ? SAM_FR1 : SAM_FR2);
       // if ((seqs[0] + i)->filtered && (seqs[1] + i)->filtered) continue;
       if (p[j]->filtered) {
-        n_filtered++;
         continue;
       }
       // read(&n_aln, 4, 1, fp_sa[j]);// read in total number of aln
@@ -981,7 +1024,13 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
             uint64_t key = (uint64_t)r->k << 32 |
                            r->l; // key is formed by lower and upper bound
             int ret;
+
+            std::unique_lock<std::mutex> lock(myMutex);
+            //            myCV.wait(lock);
             khint_t iter = kh_put(64, g_hash, key, &ret);
+            myMutex.unlock();
+            //            myCV.notify_one();
+
             if (ret) { // if this key is not in the hash table; ret must equal 1
                        // as we never remove elements
               poslist_t *z = &kh_val(
@@ -1929,8 +1978,8 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
     } else
       ReadIsGood = 0;
 #endif
-    cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii,
-                                 FSC.HashFiltered);
+    cnt_chg =
+        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
 
     if (pacseq == 0) // indexing path
     {
@@ -2074,7 +2123,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
                               StatGenStatus &StatusTracker, std::ofstream &fout,
                               FileStatCollector &FSC) {
 
-  int i, j, n_seqs[2] = {0, 0}, n_seqs_buff[2] = {0, 0};
+  int n_seqs[2] = {0, 0}, n_seqs_buff[2] = {0, 0};
 
   bwa_seq_t *seqs[2];
   bwa_seq_t *seqs_buff[2];
@@ -2084,12 +2133,13 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   bntseq_t *ntbns = 0;
   khint_t iter;
   isize_info_t last_ii; // this is for the last batch of reads
+  last_ii.avg = -1.0;
+
   // initialization
   bwase_initialize(); // initialize g_log_n[] in bwase.c
 
   srand48(BwtIndex.bns->seed);
   g_hash = kh_init(64);
-  last_ii.avg = -1.0;
   ks[0] = bwa_seq_open(FSC.FileName1.c_str());
   ks[1] = bwa_seq_open(FSC.FileName2.c_str());
 
@@ -2111,24 +2161,40 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   int ReadIsGood = 2;
   uint32_t round = 0;
   int ret(-1);
-#ifdef __ctpl_stl_thread_pool_H__
-  int n_align_thread = opt->n_threads % 2 == 0
+  // round thread number up
+  unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+  int n_align_thread = opt->n_threads <= concurentThreadsSupported
                            ? opt->n_threads
-                           : opt->n_threads + 1; // round thread number up
-  //  notice("CTPL is initializing with %d threads...", n_align_thread+2);
+                           : concurentThreadsSupported;
+  if (n_align_thread < 2)
+    n_align_thread = 2;
 
-  ctpl::thread_pool p(n_align_thread + 2 /* two threads in the pool */);
-  std::vector<std::future<void>> results(n_align_thread + 2);
+#if defined HAVE_PTHREAD
+  pthread_t *tid = (pthread_t *)calloc(n_align_thread, sizeof(pthread_t));
+  thread_aux_t *data =
+      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
   int n_first_thread = n_align_thread / 2;
   int n_second_thread = n_align_thread - n_first_thread;
+
+  thread_PE_t *pe_data =
+      (thread_PE_t *)calloc(n_first_thread, sizeof(thread_PE_t));
+  for (int k = 0; k < n_first_thread; ++k) {
+    pe_data[k].last_ii.avg = -1.0;
+  }
+
   thread_IO_t *IO_param[2];
   IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
   IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
-  /*added for IO end*/
-  thread_aux_t *data =
-      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+#ifdef __ctpl_stl_thread_pool_H__
+  ctpl::thread_pool p(n_align_thread);
+  std::vector<std::future<void>> results(n_align_thread);
 #endif
+#endif
+
   while (ReadIsGood) { // opt should be different for two fa files theoretically
     if (ReadIsGood == 2) {
       if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
@@ -2148,57 +2214,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     }
     int cnt_chg;
     isize_info_t ii;
-    t = clock();
-#ifdef __ctpl_stl_thread_pool_H__
-    size_t grain_size = n_seqs[0] / n_first_thread;
-    for (int j = 0; j < n_first_thread; ++j) {
-      data[j].tid = j;
-      data[j].bwt[0] = bwt[0];
-      data[j].bwt[1] = bwt[1];
-      if (j == n_first_thread - 1)
-        data[j].n_seqs = n_seqs[0] - grain_size * (n_first_thread - 1);
-      else
-        data[j].n_seqs = grain_size;
-      data[j].seqs = seqs[0] + j * grain_size;
-      data[j].opt = opt;
-      data[j].Indexer_Ptr = &BwtIndex;
-      results[j] = p.push(workerAlt, data + j);
-    }
-    for (int j = n_first_thread; j < n_align_thread; ++j) {
-      data[j].tid = j;
-      data[j].bwt[0] = bwt[0];
-      data[j].bwt[1] = bwt[1];
-      if (j == n_align_thread - 1)
-        data[j].n_seqs = n_seqs[1] - grain_size * (n_second_thread - 1);
-      else
-        data[j].n_seqs = grain_size;
-      data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
-      data[j].opt = opt;
-      data[j].Indexer_Ptr = &BwtIndex;
-      results[j] = p.push(workerAlt, data + j);
-    }
-    int ret_tmp[2] = {-1, -1};
-    for (int j = 0; j < 2; ++j) {
-      IO_param[j]->BwtIndex = &BwtIndex;
-      IO_param[j]->ksAddress = ks[j];
-      IO_param[j]->n_seqs = &n_seqs_buff[j];
-      IO_param[j]->mode = opt->mode;
-      IO_param[j]->trim_qual = opt->trim_qual;
-      IO_param[j]->frac = opt->frac;
-      IO_param[j]->round = round;
-      IO_param[j]->seqAddress = seqs_buff[j];
-      IO_param[j]->ret = &ret_tmp[j];
-      IO_param[j]->read_len = opt->read_len;
-      results[n_align_thread + j] = p.push(IOworkerAlt, IO_param[j]);
-    }
-    for (j = 0; j < n_align_thread + 2; ++j)
-      results[j].get();
-    /*IO thread*/
-    round++;
-    if ((ret_tmp[0] | ret_tmp[1]) == 0)
-      ReadIsGood = 0;
 
-#elif defined HAVE_PTHREAD
+#if defined HAVE_PTHREAD
     if (opt->n_threads <= 1) { // no multi-threading at all
       for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
         bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
@@ -2209,38 +2226,15 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
                &BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff[0], opt->mode,
                opt->trim_qual, opt->frac, round, seqs_buff[0],
                opt->read_len)) != 0) {
-        // ReadIsGood = 1;
-        // FSC.NumRead += n_seqs_buff[0];
       } else
         ReadIsGood = 0;
       if ((ret = bwa_read_seq_with_hash_dev(
                &BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1], opt->mode,
                opt->trim_qual, opt->frac, round, seqs_buff[1],
                opt->read_len)) != 0) {
-        // ReadIsGood = 1;
-        // FSC.NumRead += n_seqs_buff[1];
       } else
         ReadIsGood = 0;
     } else {
-      pthread_t *tid;
-      pthread_attr_t attr;
-      thread_aux_t *data;
-      /*added for IO begin*/
-      int n_align_thread = opt->n_threads % 2 == 0
-                               ? opt->n_threads
-                               : opt->n_threads + 1; // round thread number up
-      thread_IO_t *IO_param[2];
-      IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
-      IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
-      /*added for IO end*/
-      pthread_attr_init(&attr);
-      pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-      data = (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
-      tid = (pthread_t *)calloc(n_align_thread + 2, sizeof(pthread_t));
-      /*decopling of the multithread*/
-      int n_first_thread = n_align_thread / 2;
-      int n_second_thread = n_align_thread - n_first_thread;
-
       size_t grain_size = n_seqs[0] / n_first_thread;
       for (int j = 0; j < n_first_thread; ++j) {
         data[j].tid = j;
@@ -2253,7 +2247,11 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         data[j].seqs = seqs[0] + j * grain_size;
         data[j].opt = opt;
         data[j].Indexer_Ptr = &BwtIndex;
+#ifdef __ctpl_stl_thread_pool_H__
+        results[j] = p.push(workerAlt, data + j);
+#elif defined HAVE_PTHREAD
         pthread_create(&tid[j], &attr, worker, data + j);
+#endif
       }
       for (int j = n_first_thread; j < n_align_thread; ++j) {
         data[j].tid = j;
@@ -2266,8 +2264,52 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
         data[j].opt = opt;
         data[j].Indexer_Ptr = &BwtIndex;
+#ifdef __ctpl_stl_thread_pool_H__
+        results[j] = p.push(workerAlt, data + j);
+#elif defined HAVE_PTHREAD
         pthread_create(&tid[j], &attr, worker, data + j);
+#endif
       }
+
+      for (int j = 0; j < n_align_thread; ++j)
+#ifdef __ctpl_stl_thread_pool_H__
+        results[j].get();
+#elif defined HAVE_PTHREAD
+        pthread_join(tid[j], 0);
+#endif
+
+#else
+    for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
+      bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
+                         &BwtIndex);
+    }
+    round++;
+    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
+                                          &n_seqs_buff[0], opt->mode,
+                                          opt->trim_qual, opt->frac, round,
+                                          seqs_buff[0], opt->read_len)) != 0) {
+    } else
+      ReadIsGood = 0;
+    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE,
+                                          &n_seqs_buff[1], opt->mode,
+                                          opt->trim_qual, opt->frac, round,
+                                          seqs_buff[1], opt->read_len)) != 0) {
+    } else
+      ReadIsGood = 0;
+#endif
+
+#ifdef __ctpl_stl_thread_pool_H__
+      p.clear_queue();
+
+      for (int j = 0; j < n_first_thread; ++j) {
+        pe_data[j].aux1 = &(data[j]);
+        pe_data[j].aux2 = &(data[n_first_thread + j]);
+        pe_data[j].ntbns = ntbns;
+        pe_data[j].pacseq = pacseq;
+        pe_data[j].popt = popt;
+        results[j] = p.push(PEworker, pe_data + j);
+      }
+
       int ret_tmp[2] = {-1, -1};
       for (int j = 0; j < 2; ++j) {
         IO_param[j]->BwtIndex = &BwtIndex;
@@ -2280,49 +2322,23 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         IO_param[j]->seqAddress = seqs_buff[j];
         IO_param[j]->ret = &ret_tmp[j];
         IO_param[j]->read_len = opt->read_len;
-        pthread_create(&tid[n_align_thread + j], &attr, IOworker, IO_param[j]);
+#ifdef __ctpl_stl_thread_pool_H__
+        results[n_first_thread + j] = p.push(IOworkerAlt, IO_param[j]);
+#elif defined HAVE_PTHREAD
+        pthread_create(&tid[n_first_thread + j], &attr, IOworker, IO_param[j]);
+#endif
       }
-
-      for (j = 0; j < n_align_thread + 2; ++j)
-        pthread_join(tid[j], 0);
+      for (int j = 0; j < n_first_thread + 2; ++j)
+        results[j].get();
 
       /*IO thread*/
       round++;
-
       if ((ret_tmp[0] | ret_tmp[1]) == 0)
         ReadIsGood = 0;
-      else
-        free(IO_param[0]);
-      free(IO_param[1]);
-      free(data);
-      free(tid);
     }
 #else
-
-    for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
-      bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
-                         &BwtIndex);
-    }
-    round++;
-    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[0], READ_BUFFER_SIZE,
-                                          &n_seqs_buff[0], opt->mode,
-                                          opt->trim_qual, opt->frac, round,
-                                          seqs_buff[0], opt->read_len)) != 0) {
-      // ReadIsGood = 1;
-      // FSC.NumRead += n_seqs_buff[0];
-    } else
-      ReadIsGood = 0;
-    if ((ret = bwa_read_seq_with_hash_dev(&BwtIndex, ks[1], READ_BUFFER_SIZE,
-                                          &n_seqs_buff[1], opt->mode,
-                                          opt->trim_qual, opt->frac, round,
-                                          seqs_buff[1], opt->read_len)) != 0) {
-      // ReadIsGood = 1;
-      // FSC.NumRead += n_seqs_buff[1];
-    } else
-      ReadIsGood = 0;
-#endif
-    cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii,
-                                 FSC.HashFiltered);
+    cnt_chg =
+        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
 
     if (pacseq == 0) // indexing path
     {
@@ -2335,13 +2351,12 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
                              opt->mode);
     }
 
-    for (j = 0; j < 2; ++j)
+    for (int j = 0; j < 2; ++j)
       bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
-
-    // if (pacseq!= 0) free(pacseq);
+#endif
 
     if (!opt->out_bam) {
-      for (i = 0; i < n_seqs[0]; ++i) {
+      for (int i = 0; i < n_seqs[0]; ++i) {
         bwa_seq_t *p[2];
         p[0] = seqs[0] + i;
         p[1] = seqs[1] + i;
@@ -2368,7 +2383,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode, opt->max_top2);
       }
     } else {
-      for (i = 0; i < n_seqs[0]; ++i) {
+      for (int i = 0; i < n_seqs[0]; ++i) {
         bwa_seq_t *p[2];
         p[0] = seqs[0] + i;
         p[1] = seqs[1] + i;
@@ -2405,7 +2420,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     }
 
     FSC.NumRead += (n_seqs[0] + n_seqs[1]);
-    for (j = 0; j < 2; ++j) {
+    for (int j = 0; j < 2; ++j) {
       // bwa_free_read_seq(n_seqs, seqs[j]);
       // delete[] seqs[j];
       bwa_clean_read_seq(n_seqs[j], seqs[j]);
@@ -2421,11 +2436,13 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     last_ii = ii;
   } // end while
 
-#ifdef __ctpl_stl_thread_pool_H__
+#ifdef HAVE_PTHREAD
   free(IO_param[0]);
   free(IO_param[1]);
   free(data);
+  free(pe_data);
 #endif
+
   notice("%lld sequences are loaded.", FSC.NumRead);
   // fprintf(stderr, "NOTICE - %ld sequences are filtered by hash.\n",
   // FSC.HashFiltered);
@@ -2434,21 +2451,18 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   notice("%ld sequences are discarded of low mapQ.", FSC.TotalMAPQ);
   notice("%ld sequences are retained for QC.", FSC.TotalRetained);
 
-  for (j = 0; j < 2; ++j) {
+  for (int j = 0; j < 2; ++j) {
     bwa_free_read_seq(READ_BUFFER_SIZE, seqs[j]);
     bwa_free_read_seq(READ_BUFFER_SIZE, seqs_buff[j]);
   }
-  //	free(seqs[0]);
-  //	free(seqs[1]);
-  //	free(seqs_buff[0]);
-  //	free(seqs_buff[1]);
+
   if (pacseq)
     free(pacseq);
   // bns_destroy(bns);
   if (ntbns)
     bns_destroy(ntbns);
 
-  for (i = 0; i < 2; ++i) {
+  for (int i = 0; i < 2; ++i) {
     bwa_seq_close(ks[i]);
   }
   for (iter = kh_begin(g_hash); iter != kh_end(g_hash); ++iter)
