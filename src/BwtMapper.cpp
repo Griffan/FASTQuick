@@ -224,7 +224,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
       collector.SetTargetRegion(targetRegionPath);
     FileStatCollector FSC(Fastq_1.c_str(), Fastq_2.c_str());
     ofstream fout(Prefix + ".InsertSizeTable");
-    PairEndMapper_without_asyncIO(BwtIndex, popt, opt, SFH, BamIO, BamFile,
+    PairEndMapper(BwtIndex, popt, opt, SFH, BamIO, BamFile,
                                   StatusTracker, fout, FSC);
     fout.close();
     collector.AddFSC(FSC);
