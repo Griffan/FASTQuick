@@ -200,14 +200,15 @@ q6=ggplot(Combined.Table,aes(x=InsertSize,y=Frequency,colour=Category))+geom_lin
 
 mydata <- scan(paste(input,".Summary",sep=""), what="", sep="\n")
 fileLen=length(mydata)-1#minus contamination line
-ExpectedDepth=as.numeric(strsplit(mydata[fileLen-13]," ")[[1]][5])
-EstimatedDepth=as.numeric(strsplit(mydata[fileLen-12]," ")[[1]][4])
+ExpectedDepth=as.numeric(strsplit(strsplit(mydata[fileLen-13]," ")[[1]][5], "\\[")[[1]][1])
+EstimatedDepth=as.numeric(strsplit(strsplit(mydata[fileLen-12]," ")[[1]][5], "\\[")[[1]][1])
+
 AccessibleFraction=as.numeric(strsplit(strsplit(mydata[fileLen-11]," ")[[1]][8],"%")[[1]][1])
 EstimatedQ20Depth=as.numeric(strsplit(mydata[fileLen-3],"\\s+|:")[[1]][8])
 EstimatedQ30Depth=as.numeric(strsplit(mydata[fileLen-2],"\\s+|:")[[1]][8])
 
-Q20BaseFraction=as.numeric(strsplit(mydata[fileLen-6],":")[[1]][2])
-Q30BaseFraction=as.numeric(strsplit(mydata[fileLen-5],":")[[1]][2])
+Q20BaseFraction=as.numeric(strsplit(mydata[fileLen-5],":")[[1]][2])
+Q30BaseFraction=as.numeric(strsplit(mydata[fileLen-4],":")[[1]][2])
 Depth1=as.numeric(strsplit(mydata[fileLen-9],":")[[1]][2])
 Depth2=as.numeric(strsplit(mydata[fileLen-8],":")[[1]][2])
 Depth5=as.numeric(strsplit(mydata[fileLen-7],":")[[1]][2])
@@ -252,16 +253,17 @@ colScale = scale_color_manual(values=c('ESN'='#FFCD00','GWD'='#FFB900','LWK'='#C
 #set 1000g coordinates
 POP=read.table(paste0(FASTQuickInstallDir,"/resource/1000g.pop"),header = F)
 RefCoord.1kg=read.table(paste0(SVDPrefix,".V"),header = F)
-RefCoord.1kg=RefCoord.1kg[,1:3]
+RefCoord.1kg=RefCoord.1kg[,1:5]
 RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
-colnames(RefCoord.1kg)=c("ID","PC1","PC2","POP")
+RefCoord.1kg['Size'] <- rep(0.5,length(RefCoord.1kg$POP))
+colnames(RefCoord.1kg)=c("ID","PC1","PC2","PC3","PC4","POP","DotSize")
 RefCoord=RefCoord.1kg
 
 
-#assuming the input target sample has format ID PC1 PC2
+#assuming the input target sample has format ID PC1 PC2 PC3 PC4
 TargetSample=read.table(file=paste0(input,".Ancestry"),header=T)
-TargetSample=data.frame(ID=c("IntendedSample"),PC1=c(TargetSample[1,3]), PC2=c(TargetSample[2,3]), POP=c("UserSample"))
-colnames(TargetSample)=c("ID","PC1","PC2","POP")
+TargetSample=data.frame(ID=c("IntendedSample"),PC1=c(TargetSample[1,3]), PC2=c(TargetSample[2,3]), PC3=c(TargetSample[3,3]), PC4=c(TargetSample[4,3]), POP=c("UserSample"), DotSize=c(1))
+colnames(TargetSample)=c("ID","PC1","PC2","PC3","PC4","POP","DotSize")
 #plot RefCoord as grey
 #CombinedData=TargetSample
 #q9=ggplot(data=RefCoord,aes(PC1,PC2))+geom_point(color="grey")+geom_point(data=CombinedData,aes(PC1,PC2,color=POP))+
@@ -269,14 +271,18 @@ colnames(TargetSample)=c("ID","PC1","PC2","POP")
 #prepare dataset for plot
 CombinedData=rbind(RefCoord,TargetSample)
 #plot RefCoord as colorful
-q10=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
-colScale+alphaScale+sizeScale
+q10=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP, size=DotSize), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
+  colScale+alphaScale+scale_size(guide = 'none')#+sizeScale
+
+
+q11=ggplot()+geom_point(data=CombinedData,aes(PC3,PC4,color=POP, size=DotSize), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
+  colScale+alphaScale+scale_size(guide = 'none')#+sizeScale
 
 #output file
 multiplot(q1,q2,q3,q4, cols=2)
 multiplot(q5,q7,q6,q8,cols=2)
-#multiplot(q9,cols=1)
 multiplot(q10,cols=1)
+multiplot(q11,cols=1)
 dev.off()
 
 
