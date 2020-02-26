@@ -13,5 +13,7 @@ samtools index test_out.sorted.bam
 ../bin/FASTQuick pop+con --DisableSanityCheck --BamFile test_out.sorted.bam --SVDPrefix ../resource/hapmap_3.3.b37.dat --Reference ref.test.fa --Output test_out&>test_out.e.log
 if [ $? -ne 0 ]
 then exit $?;
-else echo "Test on pop+con finished successfully.\nAll tests finished successfully.";
+else
+  echo "Test on pop+con finished successfully.";
+  echo "All tests finished successfully.";
 fi
