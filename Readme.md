@@ -10,7 +10,7 @@
 - [DESCRIPTION](#description)
 - [INSTALL](#install)
 - [EXAMPLES](#examples)
-- [RESOURCE](#resource)
+- [RESOURCE FILES](#resource-files)
 - [WIKI PAGE](#wiki-page)
 - [COMMANDS AND OPTIONS](#commands-and-options)
 - [RECOMMENDED WORKFLOW](#recommended-workflow)
@@ -23,22 +23,32 @@ First, to start using FASTQuick, **clone the repository** and refer to [INSTALL]
 
 To perform a **test run** FASTQuick with a very small-sized example to understand how the software tool works, see [EXAMPLES](#examples).
 
-To run FASTQuick **with your own FASTQ files**, you need to **download** the [RESOURCE](#resource) first. 
+To run FASTQuick **with your own FASTQ files**, you need to **download** the [RESOURCE FILES](#resource-files) first. 
 
-For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose start point of the pipeline([] is optional) in one command line.
+For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize) in one command line.
 ```
-bin/FASTQuick.sh --steps <All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize> \
+bin/FASTQuick.sh --steps All \
 --output <output.prefix> \
---candidateVCF <variant list> \
---reference <reference.fa> \
---dbSNP <dbSNP.vcf.gz> \
---callableRegion <callableRegion.bed> \
---fastqList <one_pair_of_fq_or_single_fq_per_line> \
-[--workingdir <directory>] \
+--candidateVCF <candidate.variant.vcf.gz> \
+--fastqList <input.fq.list> \
+--reference <hs37d5.fa> \
+--dbSNP <dbsnp132_20101103.vcf.gz> \
+--callableRegion <20141020.strict_mask.whole_genome.bed> \
 [--targetRegion <targetRegion.bed>]
 ```
-In principle, all the following steps below can be streamlined by this script. You can choose to skip certain steps by specifying corresponding --steps parameter. 
-Example of --fastqList:
+##### RESOURCE FILES
+Here are links to commonly used resource files:
+
+**reference genome** for **--reference** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
+
+**dbSNP VCF** for **--dbSNP** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
+
+**1000 strict masked region** for **--callableRegion** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
+
+All these resource files are in build37/hg19 which should be sufficient for the purpose of QC. 
+
+**_INPUT FILES_**
+The input format for **--fastqList**:
 ```
 read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
 read.group.A.single.end.fq.gz
@@ -46,7 +56,13 @@ read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
 read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
 read.group.C.single.end.fq.gz
 ```
-Once the process finished, you will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in you output directory.
+The input format for **--candidateVCF** is VCF. You can provide your own candidate variant list or even simply use dbsnp vcf listed in resource files.
+
+It is also **optional** to specify a bed format file with **--targetRegion** to run pipeline in **_target region_** mode.
+
+**_OUTPUT FILES_**
+
+Once the process finished, you will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of --output). You'll also find various summary statistics starting with --output prefix.
 
 ### SYNOPSIS
 
@@ -103,16 +119,6 @@ For example:
  * the script **example.align.sh** is the template for primary analysis.
  * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
  * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
-   
-### RESOURCE
-
-Here are links to commonly used resource files:
-
-[1000 genome hg19 reference] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
-
-[dbSNP Variant Sites] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
-
-[1000 strict masked callable region] (ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
 
 ### WIKI PAGE
 
