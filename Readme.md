@@ -44,11 +44,11 @@ bin/FASTQuick.sh --steps All \
 
 You can download commonly used resource files from:
 
-**reference genome**(**--reference**) [hs37d5.fa.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
+**reference genome**(**--reference**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz](http://tinyurl.com/jvflzg3)
 
-**dbSNP VCF**(**--dbSNP**) [dbsnp132_20101103.vcf.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
+**dbSNP VCF**(**--dbSNP**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz](http://tinyurl.com/sl2kgof)
 
-**1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
+**1000 strict masked region**(**--callableRegion**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
 
 All these resource files are in the version of build37/hg19, which should be sufficient for the purpose of QC. 
