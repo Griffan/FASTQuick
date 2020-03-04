@@ -26,29 +26,39 @@ To perform a **test run** FASTQuick with a very small-sized example to understan
 To run FASTQuick **with your own FASTQ files**, you need to **download** the [RESOURCE FILES](#resource-files) first. 
 
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize) in one command line.
+
 ```
 bin/FASTQuick.sh --steps All \
 --output <output.prefix> \
---candidateVCF <candidate.variant.vcf.gz> \
 --fastqList <input.fq.list> \
+--candidateVCF <candidate.variant.vcf.gz> \
 --reference <hs37d5.fa> \
 --dbSNP <dbsnp132_20101103.vcf.gz> \
 --callableRegion <20141020.strict_mask.whole_genome.bed> \
 [--targetRegion <targetRegion.bed>]
 ```
+
+**Notice** that you only need to build indices once, hence "--steps AllButIndex" should be the preferred option once indices are ready.
+
 ##### RESOURCE FILES
-Here are links to commonly used resource files:
 
-**reference genome** for **--reference** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
+You can download commonly used resource files from:
 
-**dbSNP VCF** for **--dbSNP** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
+**reference genome**(**--reference**) [hs37d5.fa.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
 
-**1000 strict masked region** for **--callableRegion** [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
+**dbSNP VCF**(**--dbSNP**) [dbsnp132_20101103.vcf.gz](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz)
 
-All these resource files are in build37/hg19 which should be sufficient for the purpose of QC. 
+**1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed)
+
+
+All these resource files are in the version of build37/hg19, which should be sufficient for the purpose of QC. 
+
+**Notice** that if other reference genomes are needed, input of **--dbSNP** and **--callableRegion** are also required to be the same build version with the reference genome.
+
 
 **_INPUT FILES_**
-The input format for **--fastqList**:
+
+**--fastqList** expects tab-delimited format as follows:
 ```
 read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
 read.group.A.single.end.fq.gz
@@ -56,26 +66,33 @@ read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
 read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
 read.group.C.single.end.fq.gz
 ```
-The input format for **--candidateVCF** is VCF. You can provide your own candidate variant list or even simply use dbsnp vcf listed in resource files.
 
-It is also **optional** to specify a bed format file with **--targetRegion** to run pipeline in **_target region_** mode.
+**--candidateVCF** expects a list of variants with VCF format. You can provide your own candidate variant list or simply use dbsnp132_20101103.vcf.gz listed in resource files.
+
+It is also **optional** to specify a bed format file with **--targetRegion** to run pipeline in **_target region_** mode(which should be the same build version as reference genome)
+
 
 **_OUTPUT FILES_**
 
-Once the process finished, you will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of --output). You'll also find various summary statistics starting with --output prefix.
+Once the process finished, you'll find summary statistics in various files starting with the same prefix(provided by --output). You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of prefix provided by --output). 
+
 
 ### SYNOPSIS
+
+
+```
+FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref ref.test.fa --out_prefix test_out_ref
+
+FASTQuick align --fq_list fq.test.list --index_prefix test_out_ref --out_prefix test_out 
+
+FASTQuick pop+con pop+con --DisableSanityCheck --BamFile test_out.sorted.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference ref.test.fa --Output test_out
 
 You can also directly run FASTQuick without using wrapping script. Below are simple examples to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
 
 ```
-FASTQuick index --siteVCF hapmap.test.vcf.gz --dbsnpVCF dbsnp.test.vcf.gz --ref hg19.fa --out_prefix reduced_ref_index
 
-FASTQuick align  --index_prefix reduced_ref_index --fq_list NA12878.fq.list --out_prefix NA12878 
-
-FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
-```
 ### DESCRIPTION
+
    FASTQuick is designed for fast quality control analysis of fastq files. It rapidly map reads to selected region and generate a variety of quality control statistics. In principal, you can choose any common genetic variants list for your data set. 
    
 ### INSTALL
@@ -107,11 +124,11 @@ For lzma:
 ```
 
 
-#### Notice that if you use docker to deploy, the minimal memory requirement is 4GB.
+**Notice** that if you use docker to deploy, the minimal memory requirement is 4GB.
 
 ### EXAMPLES
 
-You can also find example scripts for each single step in example directory as templates for customized usage.
+You can find example scripts for each single step in example directory as template for customized usage.
 
 For example:
  * the script **example.sh** is the template for one-stop analysis.
@@ -128,9 +145,10 @@ You can always refer to our wiki page for more detailed introduction about the d
 
 **index**
 
-    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --mask [repeat_mask.fasta] --out_prefix [reduced_ref_index]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --callable [repeat_mask.fasta] --out_prefix [reduced_ref_index]
 
 Index database sequences, using known variant sites to anchor informative region.
+
 ```
 OPTIONS
 --siteVCF        [String] VCF file with candidate variant sites(if predefinedVCF not specified)
@@ -138,7 +156,7 @@ OPTIONS
 --regionList     [String] Bed file with target region list
 --dbsnpVCF       [String] VCF file with dbsnp site 
 --ref            [String] Fasta file with reference genome
---mask           [String] Fasta file with repetitive region mask 
+--callable       [String] Masked fasta or bed file to specify callable regions 
 --flank_len      [Int] Flanking region length of short-flanking-region variant
 --var_short      [Int] Number of short-flanking-region variant
 --flank_long_len [Int] Flanking region length of long-flanking-region variant
@@ -195,7 +213,8 @@ Each line of fq_list contains full path of each fastq file. Pair-end fastq files
 **pop+con**
 
     FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
-Jointly estimate sample genetic ancestry and contamination rate(VerifyBAMID2)
+
+Jointly estimate sample genetic ancestry and contamination rate(same method as in VerifyBAMID2)
 
 ```
 OPTIONS

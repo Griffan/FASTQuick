@@ -274,7 +274,7 @@ if [[ $do_index == true ]] ; then
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
-			--mask $callableRegion \
+			--callable $callableRegion \
 			--out_prefix $indexPrefix \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		else
@@ -284,7 +284,7 @@ if [[ $do_index == true ]] ; then
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
-			--mask $callableRegion \
+			--callable $callableRegion \
 			--out_prefix $indexPrefix \
 			--regionList $targetRegion \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
