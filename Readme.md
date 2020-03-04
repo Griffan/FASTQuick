@@ -25,10 +25,10 @@ To perform a **test run** FASTQuick with a very small-sized example to understan
 
 To run FASTQuick **with your own FASTQ files**, you need to **download** the [RESOURCE FILES](#resource-files) first. 
 
-For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize) in one command line.
+For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) in one command line.
 
 ```
-bin/FASTQuick.sh --steps All \
+${FASTQuick_HOME}/bin/FASTQuick.sh --steps All \
 --output <output.prefix> \
 --fastqList <input.fq.list> \
 --candidateVCF <candidate.variant.vcf.gz> \
@@ -44,11 +44,14 @@ bin/FASTQuick.sh --steps All \
 
 You can download commonly used resource files from:
 
-**reference genome**(**--reference**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz](http://tinyurl.com/jvflzg3)
+**reference genome**(**--reference**) 
+[ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz](http://tinyurl.com/jvflzg3)
 
-**dbSNP VCF**(**--dbSNP**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz](http://tinyurl.com/sl2kgof)
+**dbSNP VCF**(**--dbSNP**) 
+[ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp//technical/reference/dbsnp132_20101103.vcf.gz](http://tinyurl.com/sl2kgof)
 
-**1000 strict masked region**(**--callableRegion**) [ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
+**1000 strict masked region**(**--callableRegion**) 
+[ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
 
 All these resource files are in the version of build37/hg19, which should be sufficient for the purpose of QC. 
@@ -59,6 +62,7 @@ All these resource files are in the version of build37/hg19, which should be suf
 **_INPUT FILES_**
 
 **--fastqList** expects tab-delimited format as follows:
+
 ```
 read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
 read.group.A.single.end.fq.gz
@@ -69,8 +73,7 @@ read.group.C.single.end.fq.gz
 
 **--candidateVCF** expects a list of variants with VCF format. You can provide your own candidate variant list or simply use dbsnp132_20101103.vcf.gz listed in resource files.
 
-It is also **optional** to specify a bed format file with **--targetRegion** to run pipeline in **_target region_** mode(which should be the same build version as reference genome)
-
+**Optionally**, we can enable **_target region_** mode by specifying **--targetRegion** with a bed format file(which should be the same build version as reference genome)
 
 **_OUTPUT FILES_**
 
