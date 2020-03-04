@@ -74,7 +74,7 @@ read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
 read.group.C.single.end.fq.gz
 ```
 
-**--candidateVCF** expects a list of variants with VCF format. You can provide your own candidate variant list or simply use dbsnp132_20101103.vcf.gz listed in resource files.
+**--candidateVCF** expects a list of variants with VCF format. It's recommended to provide your own "shuffled" candidate variant list, but you can also simply use dbsnp132_20101103.vcf.gz listed in resource files.
 
 **Optionally**, we can enable **_target region_** mode by specifying **--targetRegion** with a bed format file(which should be the same build version as reference genome)
 
