@@ -22,15 +22,15 @@ fi
 USAGE_MESSAGE="
 Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
 
+	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
+	-o/--output: prefix of output files.
+	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line.
 	-l/--candidateVCF:  VCF format candidate variant list to choose from.
 	-r/--reference: reference genome fasta file to use.
-	-t/--targetRegion: target region to focus on.
-	-o/--output: prefix of output files.
 	-d/--dbSNP: location of the dbSNP vcf file.
-	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	-c/--callableRegion: BED file to specify callable region. For example: 20141020.strict_mask.whole_genome.bed
-	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
-	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line.
+	-t/--targetRegion: target region to focus on.
+	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	"
 
 
@@ -274,7 +274,7 @@ if [[ $do_index == true ]] ; then
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
-			--callable $callableRegion \
+			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		else
@@ -284,7 +284,7 @@ if [[ $do_index == true ]] ; then
 			--siteVCF $candidateVCF \
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
-			--callable $callableRegion \
+			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
 			--regionList $targetRegion \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile

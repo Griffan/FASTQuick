@@ -87,9 +87,9 @@ FASTQuick align --fq_list fq.test.list --index_prefix test_out_ref --out_prefix 
 
 FASTQuick pop+con pop+con --DisableSanityCheck --BamFile test_out.sorted.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference ref.test.fa --Output test_out
 
+```
 You can also directly run FASTQuick without using wrapping script. Below are simple examples to demonstrate its usage, the reference version and dbSNP version are not limited to hg19.
 
-```
 
 ### DESCRIPTION
 
@@ -145,7 +145,7 @@ You can always refer to our wiki page for more detailed introduction about the d
 
 **index**
 
-    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --callable [repeat_mask.fasta] --out_prefix [reduced_ref_index]
+    FASTQuick index --siteVCF [hapmap site vcf] --dbsnpVCF [dbsnp site vcf]  --ref [reference fasta]  --flank_len [250] --var_short [9000] --flank_long_len [1000] --var_long [1000] --callableRegion [repeat_mask.fasta] --out_prefix [reduced_ref_index]
 
 Index database sequences, using known variant sites to anchor informative region.
 
@@ -156,7 +156,7 @@ OPTIONS
 --regionList     [String] Bed file with target region list
 --dbsnpVCF       [String] VCF file with dbsnp site 
 --ref            [String] Fasta file with reference genome
---callable       [String] Masked fasta or bed file to specify callable regions 
+--callableRegion [String] Masked fasta or bed file to specify callable regions 
 --flank_len      [Int] Flanking region length of short-flanking-region variant
 --var_short      [Int] Number of short-flanking-region variant
 --flank_long_len [Int] Flanking region length of long-flanking-region variant
