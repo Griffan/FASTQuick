@@ -215,7 +215,7 @@ Each line of fq_list contains full path of each fastq file. Pair-end fastq files
 
 **pop+con**
 
-    FASTQuick pop+con --BamFile NA12878.bam --SVDPrefix resource/hapmap_3.3.b37.dat --Reference hg19.fa
+    FASTQuick pop+con --BamFile [sample bam file] --SVDPrefix [SVD resource files prefix] --Reference [reference genome fasta file]
 
 Jointly estimate sample genetic ancestry and contamination rate(same method as in VerifyBAMID2)
 
