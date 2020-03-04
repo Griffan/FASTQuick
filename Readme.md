@@ -80,7 +80,7 @@ read.group.C.single.end.fq.gz
 
 **_OUTPUT FILES_**
 
-Once the process finished, you'll find summary statistics in various files starting with the same prefix(provided by --output). You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of prefix provided by --output). 
+Once the process finished, you'll find summary statistics in various files starting with the same prefix(provided by **--output**). You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of prefix provided by **--output**). 
 
 
 ### SYNOPSIS
