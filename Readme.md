@@ -28,7 +28,7 @@ To run FASTQuick **with your own FASTQ files**, you need to **download** the [RE
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) in one command line.
 
 ```
-${FASTQuick_HOME}/bin/FASTQuick.sh 
+${FASTQUICK_HOME}/bin/FASTQuick.sh 
 --steps All \
 --reference <hs37d5.fa> \
 --dbSNP <dbsnp132_20101103.vcf.gz> \
@@ -172,7 +172,7 @@ OPTIONS
 
 In principal, you can choose any common genetic variants database for --siteVCF; or if you have a specific list of variants, you can specify --predefinedVCF to skip marker selection stage. 
 
-To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in $(FASTQUICK_HOME)/resource/
+To further simplify this step, we also provided a bundle of resource files with pre-defined genetic variant list in ${FASTQUICK_HOME}/resource/
 
 **align**
 
@@ -213,7 +213,7 @@ OPTIONS
 ```
 This step utilize a optimized version of BWA to rapidly screen unmap reads without losing sensitivity to potential mismatches on reads.
 
-Each line of fq_list contains full path of each fastq file. Pair-end fastq files are in the same line and delimited by tab; single-end fastq file occupies the whole line.
+Each line of fq_list contains full path of each fastq file. Pair-End fastq files are in the same line and delimited by tab; single-end fastq file occupies the whole line.
 
 
 **pop+con**
