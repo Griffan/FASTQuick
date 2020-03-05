@@ -74,7 +74,8 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh
 --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
 --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
 --output <output.prefix> \
---fastqList <input.fq.list> \
+--fastq1 <input.R1.fastq.gz> \
+--fastq2 <input.R2.fastq.gz> \
 --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
 [--targetRegion <targetRegion.bed>] 
 ```
