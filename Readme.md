@@ -1,11 +1,12 @@
 [![Build Status](https://travis-ci.org/Griffan/FASTQuick.png?branch=master)](https://travis-ci.org/Griffan/FASTQuick)
 [![GitHub Downloads](https://img.shields.io/github/downloads/Griffan/FASTQuick/total.svg?style=flat)](https://github.com/Griffan/FASTQuick/releases)
+
 ### OVERVIEW
-   FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC statistics, including **ancestry estimation** and **contamination estimation**, at 50x faster turnaround time.
+   FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC statistics, including **ancestry** and **contamination estimation**, at ~50x faster turnaround time than alignment-based QC tools.
    
 ### CONTENTS
 
-- [QUICK START](#quick-start)
+- [GETTING STARTED](#getting-started)
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
 - [INSTALL](#install)
@@ -18,28 +19,68 @@
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
 
-### QUICK START
-First, to start using FASTQuick, **clone the repository** and refer to [INSTALL](#download-and-install) to install FASTQuick first.
+### GETTING STARTED
 
-To perform a **test run** FASTQuick with a very small-sized example to understand how the software tool works, see [EXAMPLES](#examples).
+Follow the procedures below to quickly get started using FASTQuick.
 
-To run FASTQuick **with your own FASTQ files**, you need to **download** the [RESOURCE FILES](#resource-files) first. 
+#### Clone and Install FASTQuick
+
+First, to start using FASTQuick, clone and install the repository.
+
+```
+git clone https://github.com/Griffan/FASTQuick.git   
+mkdir build
+cd build
+cmake ..
+make   
+make test
+```
+
+Please refer to [INSTALL](#install) for more comprehensive guide on how to download and install FASTQuick.
+
+#### Perform a Test Run
+
+To perform a test run to make sure that FASTQuick runs as expected with a very small-sized example, run
+
+```
+bash example.sh
+```
+
+for more example scripts to test whether the software tool works as expected or not, see [EXAMPLES](#examples).
+
+#### Download Resource Files
+
+To run FASTQuick on real human sequence data, you need to download resource files using the following commands. 
+
+```
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
+gzip -d hs37d5.fa.gz
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/dbsnp132_20101103.vcf.gz
+wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
+```
+
+Please refer to [RESOURCE FILES](#resource-files) for more details. Note that you do not need to run FASTQuick on GRCh38 reference because the alignment of FASTQuick will be used only for internal purpose and will provide very similar results regardless of which reference will be used.
+
+
+#### Run FASTQuick for Your Own FASTQ files
 
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) in one command line.
 
 ```
 ${FASTQUICK_HOME}/bin/FASTQuick.sh 
 --steps All \
---reference <hs37d5.fa> \
---dbSNP <dbsnp132_20101103.vcf.gz> \
---callableRegion <20141020.strict_mask.whole_genome.bed> \
+--reference /path/to/hs37d5.fa \
+--dbSNP /path/to/dbsnp132_20101103.vcf.gz \
+--callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
 --output <output.prefix> \
 --fastqList <input.fq.list> \
---candidateVCF <candidate.variant.vcf.gz> \
+--candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
 [--targetRegion <targetRegion.bed>] 
 ```
 
-**Note** that you only need to build indices once, hence "--steps AllButIndex" should be the preferred option once indices are ready.
+Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
+
+**Note** that you only need to build indices once, hence `--steps AllButIndex` should be the preferred option once indices are ready.
 
 ##### RESOURCE FILES
 
