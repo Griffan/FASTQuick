@@ -57,6 +57,7 @@ wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_referen
 gzip -d hs37d5.fa.gz
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/dbsnp132_20101103.vcf.gz
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
+wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/hapmap_3.3.b37.vcf.gz
 ```
 
 Please refer to [RESOURCE FILES](#resource-files) for more details. Note that you do not need to run FASTQuick on GRCh38 reference because the alignment of FASTQuick will be used only for internal purpose and will provide very similar results regardless of which reference will be used.
