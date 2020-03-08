@@ -24,6 +24,8 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 
 	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
 	-o/--output: prefix of output files.
+	-1/--fastq_1: path of pair_end_1 fastq file or single_end fastq file.
+	-2/--fastq_2: path of pair_end_2 fastq file.
 	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line.
 	-l/--candidateVCF:  VCF format candidate variant list to choose from.
 	-r/--reference: reference genome fasta file to use.
@@ -31,11 +33,12 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-c/--callableRegion: BED file to specify callable region. For example: 20141020.strict_mask.whole_genome.bed
 	-t/--targetRegion: target region to focus on.
 	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
+	-n/--nThread: number of threads.
 	"
 
 
-OPTIONS=l:r:o:i:d:t:w:c:s:f:
-LONGOPTS=candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:
+OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:
+LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -48,12 +51,14 @@ workingdir="."
 candidateVCF=""
 reference=""
 outputPrefix="default.output"
-indexPrefix="${outputPrefix}.index"
+indexPrefix=""
 dbSNP=""
 threads=$(nproc)
 callableRegion=""
 targetRegion=""
 fastqList=""
+fastq_1=""
+fastq_2=""
 metricsrecords=10000000
 steps="AllButIndex"
 
@@ -61,6 +66,10 @@ while true; do
   case "$1" in
     -l|--candidateVCF)
             candidateVCF="$2"
+            shift 2
+            ;;
+    -n|--nThread)
+            threads="$2"
             shift 2
             ;;
     -r|--reference)
@@ -77,13 +86,12 @@ while true; do
             ;;
     -o|--output)
             outputPrefix="$2"
-            indexPrefix="${outputPrefix}.index"
             shift 2
             ;;
-#    -i|--index)
-#            indexPrefix="$2"
-#            shift 2
-#            ;;
+    -i|--index)
+            indexPrefix="$2"
+            shift 2
+            ;;
     -d|--dbSNP)
             dbSNP="$2"
             shift 2
@@ -96,6 +104,14 @@ while true; do
             fastqList="$2"
             shift 2
             ;;
+    -1|--fastq_1)
+            fastq_1="$2"
+            shift 2
+            ;;
+    -2|--fastq_2)
+            fastq_2="$2"
+            shift 2
+            ;;
     -t|--targetRegion)
             targetRegion="$2"
             shift 2
@@ -105,11 +121,15 @@ while true; do
             break
             ;;
         *)
-            echo "Programming error"
+            echo "Unrecognized argument $2"
             exit 3
             ;;
     esac
 done
+
+if [[ "$indexPrefix" == "" ]] ; then
+  indexPrefix="${outputPrefix}.index"
+fi
 
 do_index=false
 do_align=false
@@ -149,7 +169,7 @@ if [[ "$workingdir" == "" ]] ; then
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 4
 fi
-if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
+if [[ "$(tr -d ' 	\n' <<< $workingdir)" != "$workingdir" ]] ; then
 		echo "workingdir cannot contain whitespace" 1>&2
 		exit 4
 	fi
@@ -215,9 +235,7 @@ if [[ "$threads" -lt 1 ]] ; then
 	echo "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument" 1>&2
 	exit 11
 fi
-if [[ "$threads" -gt 4 ]] ; then
-	echo "WARNING: FASTQuick scales sub-linearly at high thread count. Up to 4 threads is the recommended level of parallelism." 1>&2
-fi
+
 echo "Using $threads worker threads." 1>&2
 
 if [[ "$callableRegion" == "" ]] ; then
@@ -230,14 +248,20 @@ elif [[ ! -f $callableRegion ]] ; then
 	exit 12
 fi
 
-if [[ ! -f $fastqList ]] ; then
-	echo "Input file $f does not exist"  1>&2
+
+if [[ "$fastqList" == "" ]] && [[ "$fastq_1" == "" ]]; then
+	echo "Input file \$fastqList and \$fastq_1 are both empty!"  1>&2
+	exit 13
+fi
+
+if [[ ! -f $fastqList ]] && [[ ! -f $fastq_1 ]]; then
+	echo "Input file \$fastqList and \$fastq_1 do not exist!"  1>&2
 	exit 13
 fi
 
 
 # Validate tools exist on path
-for tool in sort bcftools pandoc; do
+for tool in bcftools pandoc; do
 	if ! which $tool >/dev/null; then
 	  echo "Error: unable to find $tool on \$PATH, please install before continue" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2
@@ -346,8 +370,8 @@ if [[ $do_align == true ]] ; then
     exit 16
   fi
 	echo "$(date)	Start analyzing	$fastqList" | tee -a $timinglogfile
-	if [[ -f $fastqList ]] ; then
-	  echo "$(date)	Align fastq file in: $fastqList" | tee -a $timinglogfile
+	if [[ "$fastqList" != "" ]] && [[ -f $fastqList ]] ; then
+	  echo "$(date)	Align fastq files in list: $fastqList" | tee -a $timinglogfile
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM align \
 			--index_prefix $indexPrefix \
@@ -356,22 +380,36 @@ if [[ $do_align == true ]] ; then
 			--t ${threads} \
 			--q 15 \
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
-		if [[ -f "${outputPrefix}.bam" ]]; then
+	  echo "$(date)	Complete analyzing	$fastqList" | tee -a $timinglogfile
+	elif [[ "$fastq_1" != "" ]] && [[ -f $fastq_1 ]] ; then
+		  echo "$(date)	Align fastq file: $fastq_1 and $fastq_2" | tee -a $timinglogfile
+		{ /usr/bin/time \
+			$FASTQuick_PROGRAM align \
+			--index_prefix $indexPrefix \
+			--fastq_1 $fastq_1 \
+			--fastq_2 $fastq_2 \
+			--out_prefix ${outputPrefix} \
+			--t ${threads} \
+			--q 15 \
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+	  echo "$(date)	Complete analyzing	$fastqList" | tee -a $timinglogfile
+	else
+		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
+	fi
+
+	if [[ -f "${outputPrefix}.bam" ]]; then
 		  echo "$(date)	Start sorting bam file..." | tee -a $timinglogfile
 		  samtools sort -O BAM ${outputPrefix}.bam > ${outputPrefix}.sorted.bam
 		  samtools index ${outputPrefix}.sorted.bam
 		  rm ${outputPrefix}.bam
-		else
+	else
 		  echo "$(date)	Analyzing $fastqList failed!" | tee -a $timinglogfile
 		  exit 16
-		fi
-	else
-		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
 	fi
-	echo "$(date)	Complete analyzing	$fastqList" | tee -a $timinglogfile
 else
 	echo "$(date)	Skipping analyzing	$fastqList" | tee -a $timinglogfile
 fi
+
 if [[ $do_cont_anc == true ]] ; then
 	echo "$(date)	Start estimating contamination and genetic ancestry..." | tee -a $timinglogfile
 	if [[ -f "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]] ; then

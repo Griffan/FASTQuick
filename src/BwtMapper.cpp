@@ -20,7 +20,7 @@ KHASH_MAP_INIT_INT64(64, poslist_t)
 kh_64_t *g_hash;
 
 std::mutex myMutex;
-std::condition_variable myCV;
+// std::condition_variable myCV;
 
 //#define DEBUG 0
 #ifdef DEBUG
@@ -180,11 +180,12 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     /*
     SamFileHeader SFH;
     SamFile SFIO;*/
-    notice("Restore Variant Site Info...");
+    double t_tmp = realtime();
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     if (targetRegionPath != "Empty")
       collector.SetTargetRegion(targetRegionPath);
+    notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
     int total_add = 0;
     collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout,
@@ -192,11 +193,11 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     notice("%d sequences are retained for QC.", total_add);
     fout.close();
     // BamFile->ifclose();
-    // destroy
-    notice("Calculate distributions...");
+    t_tmp = realtime();
     collector.ProcessCore(Prefix, opt);
+    notice("Calculate distributions... %f sec", realtime() - t_tmp);
   } else if (Fastq_2 != "Empty") {
-    notice("Using Pair End mapping...");
+    notice("Processing Pair End mapping\t%s\t%s", Fastq_1.c_str(), Fastq_2.c_str());
     SamFileHeader SFH;
     BamInterface BamIO;
     IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
@@ -204,73 +205,73 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &Fastq_1,
     StatGenStatus StatusTracker;
     StatusTracker.setStatus(StatGenStatus::Status::SUCCESS,
                             "Initialization when start.\n");
-    /*********bam header init end***********/
-
     if (!opt->out_bam) {
       bwa_print_sam_SQ(BwtIndex.bns);
       bwa_print_sam_PG();
     } else {
       if (!BamFile->isOpen()) {
         warning("Open Bam file for writing failed, abort!\n");
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       SetSamFileHeader(SFH, BwtIndex);
       BamIO.writeHeader(BamFile, SFH, StatusTracker);
     }
-    notice("Restore Variant Site Info...");
+    double t_tmp = realtime();
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     if (targetRegionPath != "Empty")
       collector.SetTargetRegion(targetRegionPath);
+    notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
+    ofstream fout(Prefix + ".InsertSizeTable");
+
     FileStatCollector FSC(Fastq_1.c_str(), Fastq_2.c_str());
-    ofstream fout(Prefix + ".InsertSizeTable");
-    PairEndMapper(BwtIndex, popt, opt, SFH, BamIO, BamFile,
-                                  StatusTracker, fout, FSC);
-    fout.close();
+    PairEndMapper(BwtIndex, popt, opt, SFH, BamIO, BamFile, StatusTracker, fout,
+                  FSC);
     collector.AddFSC(FSC);
-    BamFile->ifclose();
-    delete BamFile; // destroy
-    notice("Calculate distributions...");
-    collector.ProcessCore(Prefix, opt);
 
-  } else {
-    notice("Using Single End mapping...");
-    SamFileHeader SFH;
-    BamInterface BamIO;
-    IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
-                                  InputFile::ifileCompression::BGZF);
-    StatGenStatus StatusTracker;
-    StatusTracker.setStatus(StatGenStatus::Status::SUCCESS,
-                            "Initialization when start.\n");
-    /*********bam header init end***********/
-
-    if (!opt->out_bam) {
-      bwa_print_sam_SQ(BwtIndex.bns);
-      bwa_print_sam_PG();
-    } else {
-      if (!BamFile->isOpen()) {
-        warning("Open Bam file for writing failed, abort!\n");
-        exit(1);
-      }
-      SetSamFileHeader(SFH, BwtIndex);
-      BamIO.writeHeader(BamFile, SFH, StatusTracker);
-    }
-    notice("Restore Variant Site Info...");
-    collector.RestoreVcfSites(RefPath, opt);
-    collector.SetGenomeSize(BwtIndex.ref_genome_size);
-    if (targetRegionPath != "Empty")
-      collector.SetTargetRegion(targetRegionPath);
-    FileStatCollector FSC(Fastq_1.c_str());
-    ofstream fout(Prefix + ".InsertSizeTable");
-    SingleEndMapper(BwtIndex, opt, SFH, BamIO, BamFile, StatusTracker, fout,
-                    FSC);
     fout.close();
-    collector.AddFSC(FSC);
     BamFile->ifclose();
     delete BamFile;
-    // destroy
-    notice("Calculate distributions...");
+    t_tmp = realtime();
     collector.ProcessCore(Prefix, opt);
+    notice("Calculate distributions... %f sec", realtime() - t_tmp);
+  } else {
+    notice("Processing Single End mapping\t%s\n", Fastq_1.c_str());
+    SamFileHeader SFH;
+    BamInterface BamIO;
+    IFILE BamFile = new InputFile((Prefix + ".bam").c_str(), "w",
+                                  InputFile::ifileCompression::BGZF);
+    StatGenStatus StatusTracker;
+    StatusTracker.setStatus(StatGenStatus::Status::SUCCESS,
+                            "Initialization when start.\n");
+    if (!opt->out_bam) {
+      bwa_print_sam_SQ(BwtIndex.bns);
+      bwa_print_sam_PG();
+    } else {
+      if (!BamFile->isOpen()) {
+        warning("Open Bam file for writing failed, abort!\n");
+        exit(EXIT_FAILURE);
+      }
+      SetSamFileHeader(SFH, BwtIndex);
+      BamIO.writeHeader(BamFile, SFH, StatusTracker);
+    }
+    double t_tmp = realtime();
+    collector.RestoreVcfSites(RefPath, opt);
+    collector.SetGenomeSize(BwtIndex.ref_genome_size);
+    if (targetRegionPath != "Empty")
+      collector.SetTargetRegion(targetRegionPath);
+    notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
+    ofstream fout(Prefix + ".InsertSizeTable");
+    FileStatCollector FSC(Fastq_1.c_str());
+    SingleEndMapper(BwtIndex, opt, SFH, BamIO, BamFile, StatusTracker, fout,
+                    FSC);
+    collector.AddFSC(FSC);
+    fout.close();
+    BamFile->ifclose();
+    delete BamFile;
+    t_tmp = realtime();
+    collector.ProcessCore(Prefix, opt);
+    notice("Calculate distributions... %f sec", realtime() - t_tmp);
   }
 }
 
@@ -286,11 +287,12 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     /*
     SamFileHeader SFH;
     SamFile SFIO;*/
-    notice("Restore Variant Site Info...");
+    double t_tmp = realtime();
     collector.RestoreVcfSites(RefPath, opt);
     collector.SetGenomeSize(BwtIndex.ref_genome_size);
     if (targetRegionPath != "Empty")
       collector.SetTargetRegion(targetRegionPath);
+    notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
     int total_add = 0;
     collector.ReadAlignmentFromBam(opt, /*SFH, SFIO,*/ opt->in_bam, fout,
@@ -298,8 +300,9 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
     notice("%d sequences are retained for QC.", total_add);
     fout.close();
     // BamFile->ifclose();
-    notice("Calculate distributions...");
+    t_tmp = realtime();
     collector.ProcessCore(Prefix, opt);
+    notice("Calculate distributions... %f sec", realtime() - t_tmp);
   } else {
     notice("Open Fastq List ...");
     SamFileHeader SFH;
@@ -327,6 +330,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
       collector.SetTargetRegion(targetRegionPath);
     notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
     ofstream fout(Prefix + ".InsertSizeTable");
+
     ifstream fin(FaList);
     if (!fin.is_open())
       error("Open file %s failed", FaList.c_str());
@@ -356,10 +360,10 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FaList,
         collector.AddFSC(FSC);
       }
     }
+
     fout.close();
     BamFile->ifclose();
     delete BamFile;
-    // destroy
     t_tmp = realtime();
     collector.ProcessCore(Prefix, opt);
     notice("Calculate distributions... %f sec", realtime() - t_tmp);
@@ -409,7 +413,6 @@ typedef struct {
 } aln_buf_t;
 // specific wrapper for bwa_read_seq[begin]
 #include "../libbwa/bamlite.h"
-#include "../libbwa/bwtaln.h"
 #include "../libbwa/kseq.h"
 #include "zlib.h"
 
@@ -822,10 +825,6 @@ static int bwa_read_seq_with_hash_dev(BwtIndexer *BwtIndex, bwa_seqio_t *bs,
 // specific wrapper for bwa_read_seq[end]
 #ifdef HAVE_PTHREAD
 
-static void bwa_cal_sa_reg_gap(int tid, bwt_t *const bwt[2], int n_seqs,
-                               bwa_seq_t *seqs, const gap_opt_t *opt,
-                               const BwtIndexer *Indexer);
-
 typedef struct {
   int tid;
   bwt_t *bwt[2];
@@ -1026,10 +1025,8 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
             int ret;
 
             std::unique_lock<std::mutex> lock(myMutex);
-            //            myCV.wait(lock);
             khint_t iter = kh_put(64, g_hash, key, &ret);
             myMutex.unlock();
-            //            myCV.notify_one();
 
             if (ret) { // if this key is not in the hash table; ret must equal 1
                        // as we never remove elements
@@ -2114,9 +2111,7 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
   kh_destroy(64, g_hash);
   return 0;
 }
-/*
- * Experiment area
- */
+
 bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
                               gap_opt_t *opt, SamFileHeader &SFH,
                               BamInterface &BamIO, IFILE BamFile,
@@ -2170,6 +2165,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     n_align_thread = 2;
 
 #if defined HAVE_PTHREAD
+  notice("HAVE_PTHREAD Defined");
   pthread_t *tid = (pthread_t *)calloc(n_align_thread, sizeof(pthread_t));
   thread_aux_t *data =
       (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
@@ -2190,6 +2186,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
   IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
 #ifdef __ctpl_stl_thread_pool_H__
+  notice("__ctpl_stl_thread_pool_H__ Defined");
   ctpl::thread_pool p(n_align_thread);
   std::vector<std::future<void>> results(n_align_thread);
 #endif
@@ -2234,6 +2231,23 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
                opt->read_len)) != 0) {
       } else
         ReadIsGood = 0;
+
+      cnt_chg =
+          bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
+
+      if (pacseq == 0) // indexing path
+      {
+        /*pacseq = */
+        pacseq = bwa_paired_sw(BwtIndex.bns, BwtIndex.pac_buf, n_seqs[0], seqs,
+                               popt, &ii, opt->mode);
+      } else {
+        /*pacseq = */
+        pacseq = bwa_paired_sw(BwtIndex.bns, pacseq, n_seqs[0], seqs, popt, &ii,
+                               opt->mode);
+      }
+
+      for (int j = 0; j < 2; ++j)
+        bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
     } else {
       size_t grain_size = n_seqs[0] / n_first_thread;
       for (int j = 0; j < n_first_thread; ++j) {
@@ -2249,7 +2263,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         data[j].Indexer_Ptr = &BwtIndex;
 #ifdef __ctpl_stl_thread_pool_H__
         results[j] = p.push(workerAlt, data + j);
-#elif defined HAVE_PTHREAD
+#else
         pthread_create(&tid[j], &attr, worker, data + j);
 #endif
       }
@@ -2266,7 +2280,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         data[j].Indexer_Ptr = &BwtIndex;
 #ifdef __ctpl_stl_thread_pool_H__
         results[j] = p.push(workerAlt, data + j);
-#elif defined HAVE_PTHREAD
+#else
         pthread_create(&tid[j], &attr, worker, data + j);
 #endif
       }
@@ -2274,7 +2288,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       for (int j = 0; j < n_align_thread; ++j)
 #ifdef __ctpl_stl_thread_pool_H__
         results[j].get();
-#elif defined HAVE_PTHREAD
+#else
         pthread_join(tid[j], 0);
 #endif
 
@@ -2322,11 +2336,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         IO_param[j]->seqAddress = seqs_buff[j];
         IO_param[j]->ret = &ret_tmp[j];
         IO_param[j]->read_len = opt->read_len;
-#ifdef __ctpl_stl_thread_pool_H__
         results[n_first_thread + j] = p.push(IOworkerAlt, IO_param[j]);
-#elif defined HAVE_PTHREAD
-        pthread_create(&tid[n_first_thread + j], &attr, IOworker, IO_param[j]);
-#endif
       }
       for (int j = 0; j < n_first_thread + 2; ++j)
         results[j].get();
@@ -2335,7 +2345,6 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       round++;
       if ((ret_tmp[0] | ret_tmp[1]) == 0)
         ReadIsGood = 0;
-    }
 #else
     cnt_chg =
         bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
@@ -2354,7 +2363,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     for (int j = 0; j < 2; ++j)
       bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
 #endif
-
+    }
     if (!opt->out_bam) {
       for (int i = 0; i < n_seqs[0]; ++i) {
         bwa_seq_t *p[2];
