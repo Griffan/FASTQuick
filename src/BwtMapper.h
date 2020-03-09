@@ -42,12 +42,8 @@ class BwtMapper {
 public:
   BwtMapper();
 
-  BwtMapper(BwtIndexer &BwtIndex, const std::string &Fastq_1,
-            const std::string &Fastq_2, const std::string &Prefix,
-            const std::string &RefPath, const pe_opt_t *popt, gap_opt_t *opt,
-            const std::string &targetRegionPath);
-
-  BwtMapper(BwtIndexer &BwtIndex, const std::string &Fa_List,
+  BwtMapper(BwtIndexer &BwtIndex, const std::string &FQList, const std::string &Fastq_1,
+            const std::string &Fastq_2,
             const std::string &Prefix, const std::string &RefPath,
             const pe_opt_t *popt, gap_opt_t *opt,
             const std::string &targetRegionPath);

@@ -32,7 +32,7 @@ using namespace std;
 
 //#define USE_BWT 1
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.0.1"
+#define PACKAGE_VERSION "1.0.2b"
 #endif
 
 extern void notice(const char *, ...);
@@ -478,13 +478,8 @@ int runAlign(int argc, char **argv) {
     Indexer.LoadIndex(NewRef);
     notice("Index file exists, loading...%f sec", realtime() - t_tmp);
     t_tmp = realtime();
-    if (FaList != "Empty") {
-      BwtMapper Mapper(Indexer, FaList, Prefix, NewRef, popt, opt,
-                       TargetRegionPath);
-    } else {
-      BwtMapper Mapper(Indexer, Fastq_1, Fastq_2, Prefix, NewRef, popt, opt,
-                       TargetRegionPath);
-    }
+    BwtMapper Mapper(Indexer, FaList, Fastq_1, Fastq_2, Prefix, NewRef, popt,
+                     opt, TargetRegionPath);
     notice("Mapping...%f sec", realtime() - t_tmp);
   }
   notice("Version: %s", PACKAGE_VERSION);
