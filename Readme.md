@@ -88,7 +88,7 @@ These resource files can be shared and reused by different samples:
 
 **1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
-**candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffled" candidate variant list before using it.)
+**candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list before using it.)
 
 **Optionally**, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
 
@@ -96,7 +96,7 @@ These resource files can be shared and reused by different samples:
 
 #### Input Files
 
-**--fastq_1** and **--fastq_2** expect pair-end fastq files(leave --fastq_2 empty for single-end dataset).
+**--fastq_1** and **--fastq_2** expect pair-end fastq files(omit --fastq_2 for single-end dataset).
 
 You can download fastq files of HG00553 from 1000 genome to reproduce the low-coverage [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in our example:
 
