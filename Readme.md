@@ -38,7 +38,8 @@ Please refer to [INSTALL](#install) for more comprehensive guide on how to downl
 To perform a test run to make sure that FASTQuick runs as expected with a very small-sized example (assuming that you are still inside `build` directory, run
 
 ```
-bash ../example/example.sh
+cd ../example/
+bash example.sh
 ```
 
 for more example scripts to test whether the software tool works as expected or not, see [EXAMPLES](#examples).
