@@ -22,7 +22,8 @@ Follow the procedures below to quickly get started using FASTQuick.
 First, to start using FASTQuick, clone and install the repository.
 
 ```
-git clone https://github.com/Griffan/FASTQuick.git   
+git clone https://github.com/Griffan/FASTQuick.git
+cd FASTQuick
 mkdir build
 cd build
 cmake ..
@@ -34,17 +35,17 @@ Please refer to [INSTALL](#install) for more comprehensive guide on how to downl
 
 #### Perform a Test Run
 
-To perform a test run to make sure that FASTQuick runs as expected with a very small-sized example, run
+To perform a test run to make sure that FASTQuick runs as expected with a very small-sized example (assuming that you are still inside `build` directory, run
 
 ```
-bash example.sh
+bash ../example/example.sh
 ```
 
 for more example scripts to test whether the software tool works as expected or not, see [EXAMPLES](#examples).
 
 #### Download Resource Files
 
-To run FASTQuick on real human sequence data, you need to download resource files using the following commands. 
+To run FASTQuick on real human sequence data, you need to download resource files using the following commands. (Before downloading, you may want to change your current directory.)
 
 ```
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
