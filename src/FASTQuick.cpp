@@ -76,7 +76,7 @@ int runIndex(int argc, char **argv) {
                     "[String] Prefix of all the output "
                     "index files[Required]")
   LONG_STRING_PARAM("--callableRegion", &MaskPath,
-                    "[String] Repeat Mask FASTA file[Required if "
+                    "[String] Repeat Mask FASTA file or Bed file[Required if "
                     "--predefinedVCF not specified]")
   LONG_PARAM_GROUP("Parameters for Reference Sequence ",
                    "Parameters being used to extract "
@@ -642,8 +642,8 @@ static int usage() {
           "         align       summarize alignment based basic statisic\n");
   fprintf(stderr, "         pop+con     jointly estimate sample genetic "
                   "ancestry and contamination rate(VerifyBamID2)\n");
-  fprintf(stderr, "         pop         estimate sample genetic ancestry\n");
-  fprintf(stderr, "         con         estimate sample contamination rate\n");
+  //fprintf(stderr, "         pop         estimate sample genetic ancestry\n");
+  //fprintf(stderr, "         con         estimate sample contamination rate\n");
   fprintf(stderr, "\n");
   fprintf(stderr,
           "Use FASTQuick <command> --help to see detailed help information.\n");
