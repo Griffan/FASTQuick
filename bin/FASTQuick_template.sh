@@ -239,8 +239,8 @@ fi
 echo "Using $threads worker threads." 1>&2
 
 if [[ "$callableRegion" == "" ]] ; then
-	echo "--callableRegion not specified. Use default hg19 callableRegion from ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed" 1>&2
-	wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingdir/20141020.strict_mask.whole_genome.bed
+	echo "--callableRegion not specified. Use default hg19 callableRegion from ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed" 1>&2
+	wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingdir/20141020.strict_mask.whole_genome.bed
   callableRegion="$workingdir/20141020.strict_mask.whole_genome.bed"
 elif [[ ! -f $callableRegion ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
@@ -319,10 +319,10 @@ if [[ $do_index == true ]] ; then
       #TODO:consider hg19 and hg38
       genoPrefix=""
       genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
-      ebiPrefix="ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
+      ncbiPrefix="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/"
       ucscPrefix="http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/"
-      if curl --head --fail --silent "$ebiPrefix$genoTestFile" >/dev/null; then
-          genoPrefix=$ebiPrefix
+      if curl --head --fail --silent "$ncbiPrefix$genoTestFile" >/dev/null; then
+          genoPrefix=$ncbiPrefix
       elif curl --head --fail --silent "$ucscPrefix$genoTestFile" >/dev/null; then
           genoPrefix=$ucscPrefix
       fi
