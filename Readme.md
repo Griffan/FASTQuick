@@ -44,6 +44,8 @@ bash example.sh
 
 for more example scripts to test whether the software tool works as expected or not, see [EXAMPLES](#examples).
 
+**Note** that you need `samtools` installed in your system and included in the `${PATH}` directory to run the test successfully
+
 #### Download Resource Files
 
 To run FASTQuick on real human sequence data, you need to download resource files using the following commands. (Before downloading, you may want to change your current directory.)
