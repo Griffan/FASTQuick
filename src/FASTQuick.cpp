@@ -75,7 +75,7 @@ int runIndex(int argc, char **argv) {
   LONG_STRING_PARAM("out_prefix", &Prefix,
                     "[String] Prefix of all the output "
                     "index files[Required]")
-  LONG_STRING_PARAM("mask", &MaskPath,
+  LONG_STRING_PARAM("--callableRegion", &MaskPath,
                     "[String] Repeat Mask FASTA file[Required if "
                     "--predefinedVCF not specified]")
   LONG_PARAM_GROUP("Parameters for Reference Sequence ",
