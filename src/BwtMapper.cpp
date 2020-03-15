@@ -1943,13 +1943,13 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   int ret(-1);
   // round thread number up
   unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-  int n_align_thread = opt->n_threads <= concurentThreadsSupported
-                           ? opt->n_threads
-                           : concurentThreadsSupported;
+  unsigned n_align_thread =
+      (opt->n_threads <= concurentThreadsSupported ? opt->n_threads
+                                                   : concurentThreadsSupported);
   if (n_align_thread < 4)
     n_align_thread = 4;
 
-#if defined HAVE_PTHREAD
+#ifdef HAVE_PTHREAD
   pthread_t *tid = (pthread_t *)calloc(n_align_thread, sizeof(pthread_t));
   thread_aux_t *data =
       (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
@@ -1996,26 +1996,26 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     isize_info_t ii;
 
 #ifdef HAVE_PTHREAD
-//    if (opt->n_threads <= 1) { // no multi-threading at all
-//      for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
-//        bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
-//                           &BwtIndex);
-//      }
-//      round++;
-//      if ((ret = bwa_read_seq_with_hash_dev(
-//               &BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff[0], opt->mode,
-//               opt->trim_qual, opt->frac, round, seqs_buff[0],
-//               opt->read_len)) != 0) {
-//      } else
-//        ReadIsGood = 0;
-//      if ((ret = bwa_read_seq_with_hash_dev(
-//               &BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1], opt->mode,
-//               opt->trim_qual, opt->frac, round, seqs_buff[1],
-//               opt->read_len)) != 0) {
-//      } else
-//        ReadIsGood = 0;
-//    } else
-      {
+    //    if (opt->n_threads <= 1) { // no multi-threading at all
+    //      for (int pair_idx = 0; pair_idx < 2; ++pair_idx) {
+    //        bwa_cal_sa_reg_gap(0, bwt, n_seqs[pair_idx], seqs[pair_idx], opt,
+    //                           &BwtIndex);
+    //      }
+    //      round++;
+    //      if ((ret = bwa_read_seq_with_hash_dev(
+    //               &BwtIndex, ks[0], READ_BUFFER_SIZE, &n_seqs_buff[0],
+    //               opt->mode, opt->trim_qual, opt->frac, round, seqs_buff[0],
+    //               opt->read_len)) != 0) {
+    //      } else
+    //        ReadIsGood = 0;
+    //      if ((ret = bwa_read_seq_with_hash_dev(
+    //               &BwtIndex, ks[1], READ_BUFFER_SIZE, &n_seqs_buff[1],
+    //               opt->mode, opt->trim_qual, opt->frac, round, seqs_buff[1],
+    //               opt->read_len)) != 0) {
+    //      } else
+    //        ReadIsGood = 0;
+    //    } else
+    {
       size_t grain_size = n_seqs[0] / n_first_thread;
       for (int j = 0; j < n_first_thread; ++j) {
         data[j].tid = j;
@@ -2049,9 +2049,11 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
 
       p.clear_queue();
 
-      for (int j = 0; j < n_first_thread; ++j) {
-        pe_data[j].aux1 = &(data[j]);
-        pe_data[j].aux2 = &(data[n_first_thread + j]);
+      for (int j = 0; j < 1; ++j) {
+        data[0].n_seqs = n_seqs[0];
+        pe_data[j].aux1 = &(data[0]);
+        data[n_first_thread].n_seqs = n_seqs[1];
+        pe_data[j].aux2 = &(data[n_first_thread]);
         pe_data[j].ntbns = ntbns;
         pe_data[j].pacseq = pacseq;
         pe_data[j].popt = popt;
@@ -2070,9 +2072,9 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         IO_param[j]->seqAddress = seqs_buff[j];
         IO_param[j]->ret = &ret_tmp[j];
         IO_param[j]->read_len = opt->read_len;
-        results[n_first_thread + j] = p.push(IOworkerAlt, IO_param[j]);
+        results[1 + j] = p.push(IOworkerAlt, IO_param[j]);
       }
-      for (int j = 0; j < n_first_thread + 2; ++j)
+      for (int j = 0; j < 1 + 2; ++j)
         results[j].get();
 
       /*IO thread*/
@@ -2117,6 +2119,12 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
 #endif
 
+    //    for (int j = 0; j < n_first_thread; ++j) {
+    //      warning("%dth batch pe_data last_ii avg,low,high:(%g,%g,%g)\n",
+    //          j, pe_data[j].last_ii.avg, pe_data[j].last_ii.low,
+    //          pe_data[j].last_ii.high);
+    //    }
+
     if (!opt->out_bam) {
       for (int i = 0; i < n_seqs[0]; ++i) {
         bwa_seq_t *p[2];
@@ -2144,7 +2152,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         bwa_print_sam1(BwtIndex.bns, p[0], p[1], opt->mode, opt->max_top2);
         bwa_print_sam1(BwtIndex.bns, p[1], p[0], opt->mode, opt->max_top2);
       }
-    } else {
+    } else
       for (int i = 0; i < n_seqs[0]; ++i) {
         bwa_seq_t *p[2];
         p[0] = seqs[0] + i;
@@ -2179,7 +2187,6 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         BamIO.writeRecord(BamFile, SFH, SR[1],
                           SamRecord::SequenceTranslation::NONE);
       }
-    }
 
     FSC.NumRead += (n_seqs[0] + n_seqs[1]);
     for (int j = 0; j < 2; ++j) {
