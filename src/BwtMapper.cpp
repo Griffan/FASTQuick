@@ -165,6 +165,11 @@ pthread_mutex_unlock(&g_seq_lock);
   gap_destroy_stack(stack);
 }
 
+static int bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
+                              bwa_seq_t *seqs[2], isize_info_t *ii,
+                              const pe_opt_t *opt, const gap_opt_t *gopt,
+                              const isize_info_t *last_ii, kh_64_t *hash);
+
 BwtMapper::BwtMapper() : bwa_rg_line(nullptr), bwa_rg_id(nullptr) {}
 
 BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FQList,
@@ -640,6 +645,7 @@ typedef struct {
   isize_info_t last_ii;
   ubyte_t *pacseq;
   bntseq_t *ntbns;
+  kh_64_t *l_hash;
 } thread_PE_t;
 
 void PEworker(int id, void *data) {
@@ -651,8 +657,8 @@ void PEworker(int id, void *data) {
 
   isize_info_t ii;
 
-  BwtMapper::bwa_cal_pac_pos_pe(d->aux1->bwt, d->aux1->n_seqs, seqs, &ii,
-                                d->popt, d->aux1->opt, &d->last_ii);
+  bwa_cal_pac_pos_pe(d->aux1->bwt, d->aux1->n_seqs, seqs, &ii,
+                                d->popt, d->aux1->opt, &d->last_ii, d->l_hash);
 
   if (d->pacseq == 0) // indexing path
   {
@@ -709,12 +715,12 @@ void IOworkerAlt(int id, void *data) {
 
 #endif
 
-int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
+static int bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
                                   bwa_seq_t *seqs[2], isize_info_t *ii,
                                   const pe_opt_t *opt, const gap_opt_t *gopt,
-                                  const isize_info_t *last_ii) {
+                                  const isize_info_t *last_ii,
+                                  kh_64_t *hash) {
   int i, j, cnt_chg = 0;
-  // char str[1024];
   bwt_t *bwt[2];
   pe_data_t *d;
   aln_buf_t *buf[2];
@@ -808,17 +814,11 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
             uint64_t key = (uint64_t)r->k << 32 |
                            r->l; // key is formed by lower and upper bound
             int ret;
-
-            std::unique_lock<std::mutex> lock(myMutex);
-            //            myCV.wait(lock);
-            khint_t iter = kh_put(64, g_hash, key, &ret);
-            myMutex.unlock();
-            //            myCV.notify_one();
-
+            khint_t iter = kh_put(64, hash, key, &ret);
             if (ret) { // if this key is not in the hash table; ret must equal 1
                        // as we never remove elements
               poslist_t *z = &kh_val(
-                  g_hash, iter); // return the bwtint_ts pointed by this iter
+                  hash, iter); // return the bwtint_ts pointed by this iter
               z->n = r->l - r->k + 1;
               z->a = (bwtint_t *)malloc(sizeof(bwtint_t) * z->n);
               for (l = r->k; l <= r->l; ++l)
@@ -829,12 +829,12 @@ int BwtMapper::bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
                                 p[j]->len); // call forward / reverse bwt
                                             // respectively
             }
-            for (l = 0; (int)l < kh_val(g_hash,
+            for (l = 0; (int)l < kh_val(hash,
                                         iter)
                                      .n;
                  ++l) { // ret will surelly show this key in hash, just get its
                         // value
-              x = kh_val(g_hash, iter).a[l];
+              x = kh_val(hash, iter).a[l];
               x = x << 32 | k << 1 |
                   j; // packed by  bwtint, lower bound k and pair end j
               kv_push(uint64_t, d->arr, x);
@@ -1761,8 +1761,8 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
     } else
       ReadIsGood = 0;
 #endif
-    cnt_chg =
-        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
+    cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii,
+                                 g_hash);
 
     if (pacseq == 0) // indexing path
     {
@@ -1950,12 +1950,19 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     n_align_thread = 4;
 
 #ifdef HAVE_PTHREAD
-  pthread_t *tid = (pthread_t *)calloc(n_align_thread, sizeof(pthread_t));
-  thread_aux_t *data =
-      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+  thread_aux_t *data =
+      (thread_aux_t *)calloc(n_align_thread, sizeof(thread_aux_t));
+  for (int j = 0; j < n_align_thread; ++j) {
+    data[j].tid = j;
+    data[j].bwt[0] = bwt[0];
+    data[j].bwt[1] = bwt[1];
+    data[j].opt = opt;
+    data[j].Indexer_Ptr = &BwtIndex;
+  }
 
   int n_first_thread = n_align_thread / 2;
   int n_second_thread = n_align_thread - n_first_thread;
@@ -1963,12 +1970,23 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   thread_PE_t *pe_data =
       (thread_PE_t *)calloc(n_first_thread, sizeof(thread_PE_t));
   for (int k = 0; k < n_first_thread; ++k) {
+    pe_data[k].ntbns = ntbns;
+    pe_data[k].pacseq = pacseq;
+    pe_data[k].popt = popt;
     pe_data[k].last_ii.avg = -1.0;
+    pe_data[k].l_hash = kh_init(64);
   }
 
   thread_IO_t *IO_param[2];
-  IO_param[0] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
-  IO_param[1] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+  for (int j = 0; j < 2; ++j) {
+    IO_param[j] = (thread_IO_t *)calloc(1, sizeof(thread_IO_t));
+    IO_param[j]->BwtIndex = &BwtIndex;
+    IO_param[j]->mode = opt->mode;
+    IO_param[j]->trim_qual = opt->trim_qual;
+    IO_param[j]->frac = opt->frac;
+    IO_param[j]->read_len = opt->read_len;
+  }
+
 #ifdef __ctpl_stl_thread_pool_H__
   ctpl::thread_pool p(n_align_thread);
   std::vector<std::future<void>> results(n_align_thread);
@@ -2018,29 +2036,19 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     {
       size_t grain_size = n_seqs[0] / n_first_thread;
       for (int j = 0; j < n_first_thread; ++j) {
-        data[j].tid = j;
-        data[j].bwt[0] = bwt[0];
-        data[j].bwt[1] = bwt[1];
         if (j == n_first_thread - 1)
           data[j].n_seqs = n_seqs[0] - grain_size * (n_first_thread - 1);
         else
           data[j].n_seqs = grain_size;
         data[j].seqs = seqs[0] + j * grain_size;
-        data[j].opt = opt;
-        data[j].Indexer_Ptr = &BwtIndex;
         results[j] = p.push(workerAlt, data + j);
       }
       for (int j = n_first_thread; j < n_align_thread; ++j) {
-        data[j].tid = j;
-        data[j].bwt[0] = bwt[0];
-        data[j].bwt[1] = bwt[1];
         if (j == n_align_thread - 1)
           data[j].n_seqs = n_seqs[1] - grain_size * (n_second_thread - 1);
         else
           data[j].n_seqs = grain_size;
         data[j].seqs = seqs[1] + (j - n_first_thread) * grain_size;
-        data[j].opt = opt;
-        data[j].Indexer_Ptr = &BwtIndex;
         results[j] = p.push(workerAlt, data + j);
       }
 
@@ -2049,32 +2057,32 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
 
       p.clear_queue();
 
-      for (int j = 0; j < 1; ++j) {
-        data[0].n_seqs = n_seqs[0];
-        pe_data[j].aux1 = &(data[0]);
-        data[n_first_thread].n_seqs = n_seqs[1];
-        pe_data[j].aux2 = &(data[n_first_thread]);
-        pe_data[j].ntbns = ntbns;
-        pe_data[j].pacseq = pacseq;
-        pe_data[j].popt = popt;
+//      int n_pe_threads = n_first_thread;
+//      for (int j = 0; j < n_pe_threads; ++j) {
+//        pe_data[j].aux1 = &(data[j]);
+//        pe_data[j].aux2 = &(data[n_first_thread+j]);
+//        results[j] = p.push(PEworker, pe_data + j);
+//      }
+
+      int n_pe_threads = 1;
+      for (int j = 0; j < n_pe_threads; ++j) {
+        data[j].n_seqs = n_seqs[0];
+        pe_data[j].aux1 = &(data[j]);
+        data[n_first_thread+j].n_seqs = n_seqs[1];
+        pe_data[j].aux2 = &(data[n_first_thread+j]);
         results[j] = p.push(PEworker, pe_data + j);
       }
 
       int ret_tmp[2] = {-1, -1};
       for (int j = 0; j < 2; ++j) {
-        IO_param[j]->BwtIndex = &BwtIndex;
         IO_param[j]->ksAddress = ks[j];
         IO_param[j]->n_seqs = &n_seqs_buff[j];
-        IO_param[j]->mode = opt->mode;
-        IO_param[j]->trim_qual = opt->trim_qual;
-        IO_param[j]->frac = opt->frac;
         IO_param[j]->round = round;
         IO_param[j]->seqAddress = seqs_buff[j];
         IO_param[j]->ret = &ret_tmp[j];
-        IO_param[j]->read_len = opt->read_len;
-        results[1 + j] = p.push(IOworkerAlt, IO_param[j]);
+        results[n_pe_threads + j] = p.push(IOworkerAlt, IO_param[j]);
       }
-      for (int j = 0; j < 1 + 2; ++j)
+      for (int j = 0; j < n_pe_threads + 2; ++j)
         results[j].get();
 
       /*IO thread*/
@@ -2102,7 +2110,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       ReadIsGood = 0;
 
     cnt_chg =
-        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii);
+        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii, g_hash);
 
     if (pacseq == 0) // indexing path
     {
@@ -2118,12 +2126,6 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     for (int j = 0; j < 2; ++j)
       bwa_refine_gapped(BwtIndex.bns, n_seqs[0], seqs[j], pacseq, ntbns);
 #endif
-
-    //    for (int j = 0; j < n_first_thread; ++j) {
-    //      warning("%dth batch pe_data last_ii avg,low,high:(%g,%g,%g)\n",
-    //          j, pe_data[j].last_ii.avg, pe_data[j].last_ii.low,
-    //          pe_data[j].last_ii.high);
-    //    }
 
     if (!opt->out_bam) {
       for (int i = 0; i < n_seqs[0]; ++i) {
