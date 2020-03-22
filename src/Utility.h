@@ -55,12 +55,12 @@ public:
 	}
 	void write(std::ofstream& fout)
 	{
-		fout.write((char*)this,sizeof(_GCstruct));
+		fout.write(reinterpret_cast<char*>(&len),sizeof(unsigned int));
 		fout.write((char*) this->GC, this->len*sizeof(unsigned char));
 	}
 	void read(std::ifstream & fin)
 	{
-		fin.read((char*)this,sizeof(_GCstruct));
+		fin.read(reinterpret_cast<char*>(this->len),sizeof(unsigned int));
 		this->GC = new unsigned char [this->len];
 		fin.read((char*) this->GC, this->len*sizeof(unsigned char));
 	}
