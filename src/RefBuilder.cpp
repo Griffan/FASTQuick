@@ -17,7 +17,8 @@
 
 static std::string ExtractSeq(const faidx_t *faidx, const std::string &chrom,
                               int beg, int end) {
-  char region[128], chrRegion[128];
+  char region[128] = {0};
+  char chrRegion[128] = {0};
   int dummy;
   sprintf(region, "%s:%d-%d", chrom.c_str(), beg, end);
   char *seq = fai_fetch(faidx, region, &dummy);
@@ -495,7 +496,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   if (nShortMarker + nLongMarker <
       num_variant_long + num_variant_short) // not enough essential markers
   {
-    warning("there are insufficient candidate markers(%d/%d) in %s",
+    warning("Iinsufficient candidate markers(%d/%d) in %s",
             nShortMarker + nLongMarker, num_variant_long + num_variant_short,
             VcfPath.c_str());
   }
@@ -645,8 +646,8 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
 
 void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine,
                            std::ofstream &FGC, std::ofstream &FaOut) {
-  int flank_len;
-  char newChrName[1024];
+  int flank_len = 0;
+  char newChrName[1024]={0};
 
   if (std::string(VcfLine->getIDStr()).find('L') !=
       std::string::npos) // Long region
@@ -676,6 +677,7 @@ void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine,
   //    VcfLine.get1BasedPosition(), VcfLine.getRefStr(), VcfLine.getAltStr());
   //    RefTableIndex.insert(make_pair(string(region), nseqs));
   //    nseqs++;
+
   FaOut << newChrName << std::endl;
   FaOut << FetchedSeq.substr(0, flank_len) + std::string(VcfLine->getRefStr()) +
                FetchedSeq.substr(flank_len + 1, flank_len)
@@ -690,8 +692,8 @@ int RefBuilder::PrepareRefSeq() {
   std::string GCpath = NewRef + ".gc";
   std::ofstream FGC(GCpath, std::ios_base::binary);
   std::ofstream FaOut(NewRef);
-  for (auto &kv : VcfTable) {
-    for (auto &kv2 : kv.second) // each marker in VcfTable
+  for (const auto &kv : VcfTable) {
+    for (const auto &kv2 : kv.second) // each marker in VcfTable
     {
       SubstrRef(seq, VcfVec[kv2.second], FGC, FaOut);
       delete VcfVec[kv2.second];
@@ -699,6 +701,7 @@ int RefBuilder::PrepareRefSeq() {
   }
   FaOut.close();
   FGC.close();
+  fai_destroy(seq);
   return 0;
 }
 RefBuilder::~RefBuilder() {}

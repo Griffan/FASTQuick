@@ -24,6 +24,7 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 
 	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
 	-o/--output: prefix of output files.
+	-i/--index: prefix of index files.
 	-1/--fastq_1: path of pair_end_1 fastq file or single_end fastq file.
 	-2/--fastq_2: path of pair_end_2 fastq file.
 	-f/--fastqList: tab-separated list of fastq files, one pair of fq files or single fq files per line.
@@ -34,11 +35,19 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-t/--targetRegion: target region to focus on.
 	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	-n/--nThread: number of threads.
+	-p/--priorInfoLevel: value[1，2，3]
+	-e/--eigenPrefix: prefix of Singular Value Decomposition(SVD) files
+
+	Notice:
+	Both --steps and --priorInfoLevel will govern specific pipeline in use, --steps choose from which step to start and --priorInfoLevel choose how much prior information is provided.
+	If priorInfoLevel is 3(default option), FASTQuick.sh expects --candidateVCF with a predefined variant list in VCF format and --eigenPrefix with predefined SVD files prefix (e.g. SVD files in resource directory)
+	If priorInfoLevel is 2, FASTQuick.sh expects --candidateVCF with a predefined variant list in VCF format (e.g. variant list of previous FASTQuick run)
+	If priorInfoLevel is 1, FASTQuick.sh expects --candidateVCF with a variant list in VCF format (e.g. hapmap VCF)
 	"
 
 
-OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:
-LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:
+OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:p:e:
+LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,priorInfoLevel:,eigenPrefix:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -61,11 +70,21 @@ fastq_1=""
 fastq_2=""
 metricsrecords=10000000
 steps="AllButIndex"
+priorInfoLevel=3
+eigenPrefix="${candidateVCF}"
 
 while true; do
   case "$1" in
     -l|--candidateVCF)
             candidateVCF="$2"
+            shift 2
+            ;;
+    -p|--priorInfoLevel)
+            priorInfoLevel="$2"
+            shift 2
+            ;;
+    -e|--eigenPrefix)
+            eigenPrefix="$2"
             shift 2
             ;;
     -n|--nThread)
@@ -128,7 +147,7 @@ while true; do
 done
 
 if [[ "$indexPrefix" == "" ]] ; then
-  indexPrefix="${outputPrefix}.index"
+  indexPrefix="${candidateVCF}.index"
 fi
 
 do_index=false
@@ -259,6 +278,10 @@ if [[ ! -f $fastqList ]] && [[ ! -f $fastq_1 ]]; then
 	exit 13
 fi
 
+if [[ $priorInfoLevel == 3 ]] && [[ ! -f "${eigenPrefix}.UD" ]]; then
+  echo "You specified --priorInfoLevel 3 which expects --eigenPrefix files(ending with .UD or .mu) exist!"  1>&2
+  exit 13
+fi
 
 # Validate tools exist on path
 for tool in bcftools pandoc; do
@@ -281,7 +304,7 @@ echo "$(date)	Running FASTQuick. The full log is in $logfile"
 
 FASTQuick_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 FASTQuick_BIN_DIR="${FASTQuick_SRC_DIR}/bin/"
-#FASTQuick_RESOURCE_DIR="${FASTQuick_SRC_DIR}/resource/"
+FASTQuick_RESOURCE_DIR="${FASTQuick_SRC_DIR}/resource/"
 
 FASTQuick_PROGRAM="${FASTQuick_SRC_DIR}/bin/FASTQuick"
 if [[ ! -f "${FASTQuick_PROGRAM}" ]] ; then
@@ -291,7 +314,17 @@ fi
 
 ###analysis start
 if [[ $do_index == true ]] ; then
-	  if [[ "$targetRegion" == "" ]] ; then
+    if [[ $priorInfoLevel != 1 ]] ; then
+    echo "$(date)	Start indexing on whole genome with predfined marker set..."| tee -a $timinglogfile
+		{ /usr/bin/time \
+			$FASTQuick_PROGRAM index \
+			--predefinedVCF $candidateVCF \
+			--dbsnpVCF $dbSNP \
+			--ref $reference  \
+			--callableRegion $callableRegion \
+			--out_prefix $indexPrefix \
+		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+	  elif [[ "$targetRegion" == "" ]] ; then
 		echo "$(date)	Start indexing on whole genome..."| tee -a $timinglogfile
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
@@ -314,7 +347,14 @@ if [[ $do_index == true ]] ; then
 		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
 		fi
 		echo "$(date)	Finished selecting markers..."| tee -a $timinglogfile
-    if [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
+
+		if [[ $priorInfoLevel == 3 ]] ; then
+		  echo "$(date)	Copy eigen resource files to ${eigenPrefix} files..."| tee -a $timinglogfile
+      cp "${eigenPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
+      cp "${eigenPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
+      cp "${eigenPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
+      cp "${eigenPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
+    elif [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
       echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a $timinglogfile
       #TODO:consider hg19 and hg38
       genoPrefix=""
