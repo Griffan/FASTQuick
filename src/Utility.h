@@ -51,6 +51,7 @@ public:
 		if(GC!=0)
 		{
 		delete [] GC;
+		GC = 0;
 		}
 	}
 	void write(std::ofstream& fout)
@@ -60,7 +61,7 @@ public:
 	}
 	void read(std::ifstream & fin)
 	{
-		fin.read(reinterpret_cast<char*>(this->len),sizeof(unsigned int));
+		fin.read(reinterpret_cast<char*>(&this->len),sizeof(unsigned int));
 		this->GC = new unsigned char [this->len];
 		fin.read((char*) this->GC, this->len*sizeof(unsigned char));
 	}

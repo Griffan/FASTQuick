@@ -20,7 +20,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 USAGE_MESSAGE="
-Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingdir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
+Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|Visualize] --candidateVCF <1000g.phase3.site.vcf> --reference <reference.fa> --output <output.prefix> --index <index.prefix> --dbSNP <dbSNP.vcf.gz> --fastqList <one_pair_of_fq_or_single_fq_per_line> [--workingDir <directory>] [--callableRegion <callableRegion.bed>] [--targetRegion <targetRegion.bed>]
 
 	-s/--steps: processing steps to run. Defaults to AllButIndex steps. Multiple steps are specified using comma separators.
 	-o/--output: prefix of output files.
@@ -33,21 +33,16 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-d/--dbSNP: location of the dbSNP vcf file.
 	-c/--callableRegion: BED file to specify callable region. For example: 20141020.strict_mask.whole_genome.bed
 	-t/--targetRegion: target region to focus on.
-	-w/--workingdir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
+	-w/--workingDir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	-n/--nThread: number of threads.
-	-p/--priorInfoLevel: value[1，2，3]
-	-e/--eigenPrefix: prefix of Singular Value Decomposition(SVD) files
+	-v/--SVDPrefix: prefix of Singular Value Decomposition(SVD) files
 
 	Notice:
-	Both --steps and --priorInfoLevel will govern specific pipeline in use, --steps choose from which step to start and --priorInfoLevel choose how much prior information is provided.
-	If priorInfoLevel is 3(default option), FASTQuick.sh expects --candidateVCF with a predefined variant list in VCF format and --eigenPrefix with predefined SVD files prefix (e.g. SVD files in resource directory)
-	If priorInfoLevel is 2, FASTQuick.sh expects --candidateVCF with a predefined variant list in VCF format (e.g. variant list of previous FASTQuick run)
-	If priorInfoLevel is 1, FASTQuick.sh expects --candidateVCF with a variant list in VCF format (e.g. hapmap VCF)
+	When --SVDPrefix is specified, FASTQuick expects predefined marker set from --candidateVCF.
 	"
 
-
-OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:p:e:
-LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingdir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,priorInfoLevel:,eigenPrefix:
+OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:v:
+LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingDir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,SVDPrefix:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -56,7 +51,7 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     exit 2
 fi
 eval set -- "$PARSED"
-workingdir="."
+workingDir="."
 candidateVCF=""
 reference=""
 outputPrefix="default.output"
@@ -70,8 +65,7 @@ fastq_1=""
 fastq_2=""
 metricsrecords=10000000
 steps="AllButIndex"
-priorInfoLevel=3
-eigenPrefix="${candidateVCF}"
+SVDPrefix="${candidateVCF}"
 
 while true; do
   case "$1" in
@@ -79,12 +73,8 @@ while true; do
             candidateVCF="$2"
             shift 2
             ;;
-    -p|--priorInfoLevel)
-            priorInfoLevel="$2"
-            shift 2
-            ;;
-    -e|--eigenPrefix)
-            eigenPrefix="$2"
+    -e|--SVDPrefix)
+            SVDPrefix="$2"
             shift 2
             ;;
     -n|--nThread)
@@ -99,8 +89,8 @@ while true; do
             steps="$(echo $2 | tr '[:upper:]' '[:lower:]')"
             shift 2
             ;;
-    -w|--workingdir)
-            workingdir="$2"
+    -w|--workingDir)
+            workingDir="$2"
             shift 2
             ;;
     -o|--output)
@@ -147,7 +137,10 @@ while true; do
 done
 
 if [[ "$indexPrefix" == "" ]] ; then
-  indexPrefix="${candidateVCF}.index"
+  indexPrefix="${outputPrefix}.index"
+else
+  #defensively remove .FASTQuick.fa suffix
+  indexPrefix=${indexPrefix/".FASTQuick.fa"/}
 fi
 
 do_index=false
@@ -181,24 +174,24 @@ elif [[ "$steps" == *"visualize"* ]] ; then
 fi
 
 
-##### --workingdir
-echo "Using working directory \"$workingdir\"" 1>&2
-if [[ "$workingdir" == "" ]] ; then
+##### --workingDir
+echo "Using working directory \"$workingDir\"" 1>&2
+if [[ "$workingDir" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
-	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
+	echo "Working directory must be specified. Specify using the --workingDir command line argument" 1>&2
 	exit 4
 fi
-if [[ "$(tr -d ' 	\n' <<< $workingdir)" != "$workingdir" ]] ; then
-		echo "workingdir cannot contain whitespace" 1>&2
+if [[ "$(tr -d ' 	\n' <<< $workingDir)" != "$workingDir" ]] ; then
+		echo "workingDir cannot contain whitespace" 1>&2
 		exit 4
 	fi
-if [[ ! -d $workingdir ]] ; then
-	if ! mkdir -p $workingdir ; then
-		echo Unable to create working directory $workingdir 1>&2
+if [[ ! -d $workingDir ]] ; then
+	if ! mkdir -p $workingDir ; then
+		echo Unable to create working directory $workingDir 1>&2
 		exit 4
 	fi
 fi
-workingdir=$(dirname $workingdir/placeholder)
+workingDir=$(dirname $workingDir/placeholder)
 ##### --reference
 echo "Using reference genome \"$reference\"" 1>&2
 if [[ "$reference" == "" ]] ; then
@@ -259,8 +252,8 @@ echo "Using $threads worker threads." 1>&2
 
 if [[ "$callableRegion" == "" ]] ; then
 	echo "--callableRegion not specified. Use default hg19 callableRegion from ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed" 1>&2
-	wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingdir/20141020.strict_mask.whole_genome.bed
-  callableRegion="$workingdir/20141020.strict_mask.whole_genome.bed"
+	wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingDir/20141020.strict_mask.whole_genome.bed
+  callableRegion="$workingDir/20141020.strict_mask.whole_genome.bed"
 elif [[ ! -f $callableRegion ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing callableRegion file $callableRegion" 1>&2
@@ -278,23 +271,19 @@ if [[ ! -f $fastqList ]] && [[ ! -f $fastq_1 ]]; then
 	exit 13
 fi
 
-if [[ $priorInfoLevel == 3 ]] && [[ ! -f "${eigenPrefix}.UD" ]]; then
-  echo "You specified --priorInfoLevel 3 which expects --eigenPrefix files(ending with .UD or .mu) exist!"  1>&2
-  exit 13
-fi
-
 # Validate tools exist on path
-for tool in bcftools pandoc; do
+for tool in samtools bcftools pandoc R; do
 	if ! which $tool >/dev/null; then
 	  echo "Error: unable to find $tool on \$PATH, please install before continue" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2
 done
 
+echo "Please also ensure your R environment has installed these libraries: ggplot2 scales knitr rmarkdown"
 
 timestamp=$(date +%Y%m%d_%H%M%S)
-mkdir -p $workingdir
-logfile=$workingdir/FASTQuick.full.$timestamp.$HOSTNAME.$$.log
-timinglogfile=$workingdir/FASTQuick.timing.$timestamp.$HOSTNAME.$$.log
+mkdir -p $workingDir
+logfile=$workingDir/FASTQuick.full.$timestamp.$HOSTNAME.$$.log
+timinglogfile=$workingDir/FASTQuick.timing.$timestamp.$HOSTNAME.$$.log
 
 #ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles
 #unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
@@ -314,8 +303,8 @@ fi
 
 ###analysis start
 if [[ $do_index == true ]] ; then
-    if [[ $priorInfoLevel != 1 ]] ; then
-    echo "$(date)	Start indexing on whole genome with predfined marker set..."| tee -a $timinglogfile
+    if [[ $SVDPrefix != "" ]] ; then
+    echo "$(date)	Start indexing on whole genome with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--predefinedVCF $candidateVCF \
@@ -323,9 +312,9 @@ if [[ $do_index == true ]] ; then
 			--ref $reference  \
 			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 	  elif [[ "$targetRegion" == "" ]] ; then
-		echo "$(date)	Start indexing on whole genome..."| tee -a $timinglogfile
+		echo "$(date)	Start indexing on whole genome..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--siteVCF $candidateVCF \
@@ -333,9 +322,9 @@ if [[ $do_index == true ]] ; then
 			--ref $reference  \
 			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 		else
-		echo "$(date)	Start indexing on target region..."| tee -a $timinglogfile
+		echo "$(date)	Start indexing on target region..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--siteVCF $candidateVCF \
@@ -344,18 +333,18 @@ if [[ $do_index == true ]] ; then
 			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
 			--regionList $targetRegion \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 		fi
-		echo "$(date)	Finished selecting markers..."| tee -a $timinglogfile
+		echo "$(date)	Finished selecting markers..."| tee -a "$timinglogfile"
 
-		if [[ $priorInfoLevel == 3 ]] ; then
-		  echo "$(date)	Copy eigen resource files to ${eigenPrefix} files..."| tee -a $timinglogfile
-      cp "${eigenPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
-      cp "${eigenPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
-      cp "${eigenPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
-      cp "${eigenPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
+		if [[ $SVDPrefix != "" ]] ; then
+		  echo "$(date)	Copy eigen resource files to ${SVDPrefix} files..."| tee -a "$timinglogfile"
+      cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
+      cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
+      cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
+      cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
     elif [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
-      echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a $timinglogfile
+      echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a "$timinglogfile"
       #TODO:consider hg19 and hg38
       genoPrefix=""
       genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
@@ -385,22 +374,22 @@ if [[ $do_index == true ]] ; then
       rm ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz
 
       if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
-        echo "$(date)	Extract subset of genotype matrix finished"| tee -a $timinglogfile
+        echo "$(date)	Extract subset of genotype matrix finished"| tee -a "$timinglogfile"
         { /usr/bin/time \
           $FASTQuick_PROGRAM pop+con \
           --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
           --Reference $reference \
-        1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
-        echo "$(date)	Build SVD files finished" | tee -a $timinglogfile
+        1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+        echo "$(date)	Build SVD files finished" | tee -a "$timinglogfile"
       else
-        echo "$(date)	Extract subset of genotype matrix failed"| tee -a $timinglogfile
+        echo "$(date)	Extract subset of genotype matrix failed"| tee -a "$timinglogfile"
       fi
     else
-      echo "$(date)	Marker selction failed..."| tee -a $timinglogfile
+      echo "$(date)	Marker selction failed..."| tee -a "$timinglogfile"
       exit 15
     fi
 else
-	echo "$(date)	Skipping indexing."| tee -a $timinglogfile
+	echo "$(date)	Skipping indexing."| tee -a "$timinglogfile"
 fi
 
 if [[ $do_align == true ]] ; then
@@ -409,9 +398,9 @@ if [[ $do_align == true ]] ; then
     echo "${outputPrefix}.Summary exists, please manually remove existing files before restart..."
     exit 16
   fi
-	echo "$(date)	Start analyzing	$fastqList" | tee -a $timinglogfile
+	echo "$(date)	Start analyzing	$fastqList" | tee -a "$timinglogfile"
 	if [[ "$fastqList" != "" ]] && [[ -f $fastqList ]] ; then
-	  echo "$(date)	Align fastq files in list: $fastqList" | tee -a $timinglogfile
+	  echo "$(date)	Align fastq files in list: $fastqList" | tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM align \
 			--index_prefix $indexPrefix \
@@ -419,10 +408,10 @@ if [[ $do_align == true ]] ; then
 			--out_prefix ${outputPrefix} \
 			--t ${threads} \
 			--q 15 \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
-	  echo "$(date)	Complete analyzing	$fastqList" | tee -a $timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+	  echo "$(date)	Complete analyzing	$fastqList" | tee -a "$timinglogfile"
 	elif [[ "$fastq_1" != "" ]] && [[ -f $fastq_1 ]] ; then
-		  echo "$(date)	Align fastq file: $fastq_1 and $fastq_2" | tee -a $timinglogfile
+		  echo "$(date)	Align fastq file: $fastq_1 and $fastq_2" | tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM align \
 			--index_prefix $indexPrefix \
@@ -431,27 +420,27 @@ if [[ $do_align == true ]] ; then
 			--out_prefix ${outputPrefix} \
 			--t ${threads} \
 			--q 15 \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
-	  echo "$(date)	Complete analyzing	$fastqList" | tee -a $timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+	  echo "$(date)	Complete analyzing	$fastqList" | tee -a "$timinglogfile"
 	else
-		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a $timinglogfile
+		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a "$timinglogfile"
 	fi
 
 	if [[ -f "${outputPrefix}.bam" ]]; then
-		  echo "$(date)	Start sorting bam file..." | tee -a $timinglogfile
+		  echo "$(date)	Start sorting bam file..." | tee -a "$timinglogfile"
 		  samtools sort -O BAM ${outputPrefix}.bam > ${outputPrefix}.sorted.bam
 		  samtools index ${outputPrefix}.sorted.bam
 		  rm ${outputPrefix}.bam
 	else
-		  echo "$(date)	Analyzing $fastqList failed!" | tee -a $timinglogfile
+		  echo "$(date)	Analyzing $fastqList failed!" | tee -a "$timinglogfile"
 		  exit 16
 	fi
 else
-	echo "$(date)	Skipping analyzing	$fastqList" | tee -a $timinglogfile
+	echo "$(date)	Skipping analyzing	$fastqList" | tee -a "$timinglogfile"
 fi
 
 if [[ $do_cont_anc == true ]] ; then
-	echo "$(date)	Start estimating contamination and genetic ancestry..." | tee -a $timinglogfile
+	echo "$(date)	Start estimating contamination and genetic ancestry..." | tee -a "$timinglogfile"
 	if [[ -f "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]] ; then
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM pop+con \
@@ -459,27 +448,26 @@ if [[ $do_cont_anc == true ]] ; then
 			--Reference $reference \
 			--SVDPrefix ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 			--Output ${outputPrefix} \
-		1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 	else
-		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a $timinglogfile
+		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a "$timinglogfile"
 	fi
-	echo "$(date)	Complete estimating contamination and genetic ancestry" | tee -a $timinglogfile
+	echo "$(date)	Complete estimating contamination and genetic ancestry" | tee -a "$timinglogfile"
 else
-	echo "$(date)	Skipping estimating contamination and genetic ancestry..."| tee -a $timinglogfile
+	echo "$(date)	Skipping estimating contamination and genetic ancestry..."| tee -a "$timinglogfile"
 fi
 
 if [[ $do_viz == true ]] ; then
-echo "$(date)	Visualize QC statistics..." | tee -a $timinglogfile
+echo "$(date)	Visualize QC statistics..." | tee -a "$timinglogfile"
 { /usr/bin/time \
 	Rscript ${FASTQuick_BIN_DIR}/RPlotScript.R \
 	${outputPrefix} \
 	${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 	${FASTQuick_SRC_DIR} \
-1>&2 2>> $logfile; } 1>&2 2>>$timinglogfile
+1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
   outputDir=$(dirname ${outputPrefix})
 { /usr/bin/time \
 	Rscript -e "rmarkdown::render('${FASTQuick_BIN_DIR}/FinalReport.rmd', params=list(input = '${outputPrefix}', SVDPrefix = '${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz', FASTQuickInstallDir = '${FASTQuick_SRC_DIR}'), output_dir = '$outputDir')"
-	1>&2 2>> $logfile;} 1>&2 2>>$timinglogfile
-
+	1>&2 2>> "$logfile";} 1>&2 2>>"$timinglogfile"
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."

@@ -3,7 +3,12 @@
 require(ggplot2)
 require(scales)
 require(knitr)
+require(rmarkdown)
 library(ggplot2)
+library(ggplot2)
+library(scales)
+
+
 #multiplot function
 # Multiple plot function
 #
@@ -235,8 +240,6 @@ q8=ggplot(mydata2,aes(x=mydata2[,1],y=mydata2[,2]))+ggtitle("Summary")+
 #ancestry
 
 
-library(ggplot2)
-library(scales)
 alphaScale=scale_alpha_discrete(range = c(0.9,0.3),guide=FALSE)
 sizeScale=scale_size(range=c(1.5,1),guide=FALSE)
 cat("Background data points:1000g phase3\n")

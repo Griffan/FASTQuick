@@ -17,9 +17,12 @@ params:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r libraries}
+```{r libraries, message=FALSE}
+if (!require('ggplot2')) install.packages('ggplot2')
 library(ggplot2)
+if (!require('scales')) install.packages('scales')
 library(scales)
+if (!require('knitr')) install.packages('knitr')
 library(knitr)
 
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {

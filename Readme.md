@@ -75,6 +75,7 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh
 --fastq1 <input.R1.fastq.gz> \
 --fastq2 <input.R2.fastq.gz> \
 --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
+[--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz] \
 [--targetRegion <targetRegion.bed>] 
 ```
 
@@ -92,7 +93,14 @@ These resource files can be shared and reused by different samples:
 
 **1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
-**candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list before using it.)
+**candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list with [bedtools](https://bedtools.readthedocs.io/en/latest/content/tools/shuffle.html) before using it.)
+
+For a quick start, it's recommended that you can feed **--candidateVCF** with a set of predefined markers, and **--SVDPrefix** wioth ready SVD files(to avoid SVD calculation on the fly). For example: 
+```
+--candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
+--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
+
+```
 
 **Optionally**, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
 
@@ -177,7 +185,21 @@ read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
 read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
 read.group.C.single.end.fq.gz
 ```
-   
+2. A full list of required libraries an packages that are required to run the pipeline:
+```
+binary libraries:
+zlib
+libbzip2
+libcurl
+libssl
+
+R libraries:
+ggplot2
+scales
+knitr
+rmarkdown
+```
+
 ### AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)
 

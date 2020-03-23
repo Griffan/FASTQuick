@@ -260,14 +260,14 @@ void SVDcalculator::WriteSVD(const std::string &Prefix) {
     fBed << chr << "\t" << beg << "\t" << end << "\t"
          << chooseBed[chr][end].first << "\t" << chooseBed[chr][end].second
          << std::endl;
-    for (int j = 0; j < UD[i].size(); ++j) {
+    for (int j = 0; j < 10; ++j) {
       fUD << UD[i][j] << "\t";
     }
     fUD << std::endl;
   }
   for (int k = 0; k < numIndividual; ++k) {
     fPC << Samples[k] << "\t";
-    for (int i = 0; i < PC[k].size(); ++i) {
+    for (int i = 0; i < 10; ++i) {
       fPC << PC[k][i] << "\t";
     }
     fPC << std::endl;
