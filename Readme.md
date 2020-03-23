@@ -95,7 +95,7 @@ These resource files can be shared and reused by different samples:
 
 **candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list with [bedtools](https://bedtools.readthedocs.io/en/latest/content/tools/shuffle.html) before using it.)
 
-For a quick start, it's recommended that you can feed **--candidateVCF** with a set of predefined markers, and **--SVDPrefix** wioth ready SVD files(to avoid SVD calculation on the fly). For example: 
+For a quick start, it's recommended that you can feed **--candidateVCF** with a set of predefined markers, and **--SVDPrefix** with ready SVD files(to avoid SVD calculation on the fly). For example: 
 ```
 --candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
 --SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
