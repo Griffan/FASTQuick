@@ -71,21 +71,23 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh
 --reference /path/to/hs37d5.fa \
 --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
 --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
---output <output.prefix> \
---fastq1 <input.R1.fastq.gz> \
---fastq2 <input.R2.fastq.gz> \
+--index <index.prefix> \
+--output <sample.output.prefix> \
+--fastq1 <sample.input.R1.fastq.gz> \
+--fastq2 <sample.input.R2.fastq.gz> \
 --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
 [--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz] \
 [--targetRegion <targetRegion.bed>] 
 ```
-
+We denote the git repo home as ${FASTQUICK_HOME}. 
+ 
 Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
 
 **Note** that you only need to build indices once, hence `--steps AllButIndex` should be the preferred option once indices are ready.
 
 #### Resource Files
 
-These resource files can be shared and reused by different samples:
+From these resource files, we build index files which can be shared and reused by different samples:
 
 **reference genome**(**--reference**) [hs37d5.fa](http://tinyurl.com/jvflzg3)
 
@@ -93,16 +95,23 @@ These resource files can be shared and reused by different samples:
 
 **1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
-**candidate variant list**(**--candidateVCF**) [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list with [bedtools](https://bedtools.readthedocs.io/en/latest/content/tools/shuffle.html) before using it.)
-
-For a quick start, it's recommended that you can feed **--candidateVCF** with a set of predefined markers, and **--SVDPrefix** with ready SVD files(to avoid SVD calculation on the fly). For example: 
-```
---candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
---SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
-
-```
-
 **Optionally**, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
+
+As for **candidate variant list**(**--candidateVCF**), you have two options:
+ 
+ 1. To select marker set from [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list with [bedtools](https://bedtools.readthedocs.io/en/latest/content/tools/shuffle.html) before using it.)
+    For example
+    ```
+    --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz
+    ```
+ 2. To reuse predefined marker set we have prepared in ${FASTQUICK_HOME}/resource/ directory for a quick start, you can feed **--candidateVCF** with VCF file of the predefined markers, and **--SVDPrefix** with prefix of predefined SVD files. 
+    For example: 
+    ```
+    --candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
+    --SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
+
+    ```
+    These two parameters are the same in the above example. Actually, if you reuse predefined marker set generated from FASTQuick.sh, they always follow this nomenclature.
 
 **Note** that if other build version of reference genomes are needed, all these resource files are required to be the same build version with the reference genome.
 

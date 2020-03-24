@@ -73,7 +73,7 @@ while true; do
             candidateVCF="$2"
             shift 2
             ;;
-    -e|--SVDPrefix)
+    -v|--SVDPrefix)
             SVDPrefix="$2"
             shift 2
             ;;
@@ -398,7 +398,7 @@ if [[ $do_align == true ]] ; then
     echo "${outputPrefix}.Summary exists, please manually remove existing files before restart..."
     exit 16
   fi
-	echo "$(date)	Start analyzing	$fastqList" | tee -a "$timinglogfile"
+	echo "$(date)	Start analyzing fastq files..." | tee -a "$timinglogfile"
 	if [[ "$fastqList" != "" ]] && [[ -f $fastqList ]] ; then
 	  echo "$(date)	Align fastq files in list: $fastqList" | tee -a "$timinglogfile"
 		{ /usr/bin/time \
@@ -409,7 +409,6 @@ if [[ $do_align == true ]] ; then
 			--t ${threads} \
 			--q 15 \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
-	  echo "$(date)	Complete analyzing	$fastqList" | tee -a "$timinglogfile"
 	elif [[ "$fastq_1" != "" ]] && [[ -f $fastq_1 ]] ; then
 		  echo "$(date)	Align fastq file: $fastq_1 and $fastq_2" | tee -a "$timinglogfile"
 		{ /usr/bin/time \
@@ -421,10 +420,11 @@ if [[ $do_align == true ]] ; then
 			--t ${threads} \
 			--q 15 \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
-	  echo "$(date)	Complete analyzing	$fastqList" | tee -a "$timinglogfile"
 	else
 		echo "$(date)	Abort analyzing as $fastqList does not exist." | tee -a "$timinglogfile"
 	fi
+	echo "$(date)	Complete analyzing fastq files" | tee -a "$timinglogfile"
+
 
 	if [[ -f "${outputPrefix}.bam" ]]; then
 		  echo "$(date)	Start sorting bam file..." | tee -a "$timinglogfile"
@@ -470,4 +470,4 @@ echo "$(date)	Visualize QC statistics..." | tee -a "$timinglogfile"
 	Rscript -e "rmarkdown::render('${FASTQuick_BIN_DIR}/FinalReport.rmd', params=list(input = '${outputPrefix}', SVDPrefix = '${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz', FASTQuickInstallDir = '${FASTQuick_SRC_DIR}'), output_dir = '$outputDir')"
 	1>&2 2>> "$logfile";} 1>&2 2>>"$timinglogfile"
 fi
-echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
+echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors." | tee -a "$timinglogfile"
