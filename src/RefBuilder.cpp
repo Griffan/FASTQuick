@@ -54,82 +54,7 @@ static void CalculateGC(const int flank_len, const faidx_t *seq,
 
 bool RefBuilder::VariantCheck(std::string &chr, int position,
                               VcfRecord *VcfLine, int chrFlag) {
-  int flank_len = 0;
-  if (not IsChromInWhiteList(chr)) // strip chr from e.g. chr11
-  {
-    warning("%s is not in chromosome white list:1-22,X,Y", chr.c_str());
-    return true;
-  }
-
-  if (VcfLine->getNumRefBases() != 1 || strlen(VcfLine->getAltStr()) != 1 ||
-      VcfLine->getNumAlts() != 1) // filtering indel sites
-  {
-    warning("%s:%d is around INDEL or MULTI_ALLELIC", chr.c_str(), position);
-    return true;
-  }
-
-  std::string::size_type sz; // alias of size_t
-  const std::string *AFstr = VcfLine->getInfo().getString("AF");
-  if (AFstr != nullptr) {
-    double AF = std::stod(*AFstr, &sz);
-    if (AF < MIN_AF or AF > 1 - MIN_AF) {
-      warning("%s:%d is a rare variant AF:%g", chr.c_str(), position, AF);
-      return true;
-    }
-  } else {
-    warning("%s:%d does not have AF field", chr.c_str(), position);
-    return true;
-  }
-
-  if (chrFlag == 1)
-    flank_len = flank_long_len;
-  else
-    flank_len = flank_short_len;
-
-  // ensure no overlapping regions
-  if (regionWhiteList.empty()) { // whole genome mode
-    if (VcfTable.find(chr) != VcfTable.end()) {
-      auto low_iter = VcfTable[chr].upper_bound(position);
-      if (low_iter != VcfTable[chr].begin()) {
-        auto up_iter = low_iter--;
-
-        int adjacentPos = VcfVec[low_iter->second]->get1BasedPosition();
-        int adjacentFlankLen = GetFlankLen(low_iter->second);
-
-        if (abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
-          warning("%s:%d is too close to other variants", chr.c_str(),
-                  position);
-          return true; // overlap with left region
-        }
-
-        adjacentPos = VcfVec[up_iter->second]->get1BasedPosition();
-        adjacentFlankLen = GetFlankLen(up_iter->second);
-
-        if (up_iter != VcfTable[chr].end() and
-            abs(position - adjacentPos) < adjacentFlankLen + flank_len) {
-          warning("%s:%d is too close to other variants", chr.c_str(),
-                  position);
-          return true; // overlap with right region
-        }
-      }
-    }
-  }
-  //
-  if (MaskPath != "Empty") {
-    std::string suffix = MaskPath.substr(MaskPath.size() - 3, 3);
-    if (suffix == "bed" or suffix == "BED" or suffix == "Bed") {
-      if (IsInCallableRegion(chr, position - flank_len, position + flank_len))
-        return true;
-    } else {
-      std::string MaskSeq(ExtractSeq(
-          FastaMask, chr.c_str(), position - flank_len, position + flank_len));
-      double n = std::count(MaskSeq.begin(), MaskSeq.end(), 'P');
-      if (n < CALLABLE_RATE * MaskSeq.size()) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return Skip(chr, position, VcfLine, chrFlag);
 }
 
 int RefBuilder::GetFlankLen(int index) {
@@ -216,7 +141,6 @@ bool RefBuilder::Skip(std::string &chr, int position, VcfRecord *VcfLine,
       }
     }
   }
-
   return false;
 }
 
@@ -393,8 +317,6 @@ void RefBuilder::IncreaseNumMarker(int chrFlag) {
  */
 int RefBuilder::SelectMarker(const std::string &RegionPath) {
   notice("Start to select markers...");
-  std::string SelectedSite = NewRef + ".SelectedSite.vcf";
-
   // read in vcf, hapmap3 sites
   std::string Chrom;
   int Position(0);
@@ -420,7 +342,6 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
       if (Chrom.find("CHR") != std::string::npos) {
         Chrom = Chrom.substr(3); // strip chr
       }
-//      notice("Now test if %s:%d is selected...", Chrom.c_str(), Position);
 
     RESCUE:
       if (IsMaxNumMarker(Chrom, chrFlag, false, isForcedShort)) {
@@ -436,7 +357,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
       if (Skip(Chrom, Position, VcfLine, chrFlag)) {
         if (not isForcedShort) {
           isForcedShort = true;
-          goto RESCUE;
+          goto RESCUE; // increase selecting effeciency
         }
         delete VcfLine;
         continue;
@@ -446,8 +367,6 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
         VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E|L").c_str());
       else
         VcfLine->setID((std::string(VcfLine->getIDStr()) + "$E").c_str());
-//      notice("Now confirm if %s:%d is selected as %s...", Chrom.c_str(),
-//             Position, VcfLine->getIDStr());
 
       VcfTable[Chrom][Position] =
           nShortMarker + nLongMarker + nXMarker + nYMarker;
@@ -501,6 +420,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
             VcfPath.c_str());
   }
   // output vcf and bed files
+  std::string SelectedSite = NewRef + ".SelectedSite.vcf";
   InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
   std::string BedPath = NewRef + ".bed";
   std::ofstream BedFile(BedPath);
@@ -521,19 +441,20 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   BedFile.close();
   FoutHapMapSelectedSite.ifclose();
 
-//  reader.open(dbSNP.c_str(), header);
-//  reader.close();
+  //  reader.open(dbSNP.c_str(), header);
+  //  reader.close();
 
-//  // create header for dbSNP subset vcf file
-//  InputFile FoutdbSNPSelectedSite(
-//      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
-//  header.write(&FoutdbSNPSelectedSite);
-//  FoutdbSNPSelectedSite.ifclose();
+  //  // create header for dbSNP subset vcf file
+  //  InputFile FoutdbSNPSelectedSite(
+  //      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
+  //  header.write(&FoutdbSNPSelectedSite);
+  //  FoutdbSNPSelectedSite.ifclose();
 
   char cmdline[2048];
   // subset dbsnp
   sprintf(cmdline,
-          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > %s.dbSNP.subset.vcf",
+          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > "
+          "%s.dbSNP.subset.vcf",
           BedPath.c_str(), dbSNP.c_str(), NewRef.c_str());
   int ret = system(cmdline);
   if (ret != 0) {
@@ -545,16 +466,11 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
 
 int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
   notice("Start to load predefined marker set...");
-  std::string SelectedSite = NewRef + ".SelectedSite.vcf";
-  InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
-  std::string BedPath = NewRef + ".bed";
-  std::ofstream BedFile(BedPath);
 
   // read in predefined vcf
   VcfHeader header;
   VcfFileReader reader;
   reader.open(predefinedVcf.c_str(), header);
-  header.write(&FoutHapMapSelectedSite);
 
   std::string Chrom;
   int Position;
@@ -579,8 +495,8 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
     }
 
     if (VariantCheck(Chrom, Position, VcfLine, chrFlag)) {
-      // warning("%s:%d is a low quality marker. Consider to filter
-      // it.",VcfLine->getChromStr(),VcfLine->get1BasedPosition()); continue;
+      warning("%s:%d is a low quality marker. Consider filtering it.",
+              VcfLine->getChromStr(), VcfLine->get1BasedPosition());
     }
 
     if (chrFlag == 1 and not isLong)
@@ -603,6 +519,11 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
            "triggered warning above.",
            predefinedVcf.c_str());
   // output vcf and bed files
+  std::string SelectedSite = NewRef + ".SelectedSite.vcf";
+  InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
+  std::string BedPath = NewRef + ".bed";
+  std::ofstream BedFile(BedPath);
+  header.write(&FoutHapMapSelectedSite);
   int flank_len = 0;
   for (auto kv : VcfTable) {
     for (auto pq : kv.second) {
@@ -610,10 +531,7 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
         warning("Writing retained sites failed!\n");
         exit(EXIT_FAILURE);
       }
-      if (std::string(VcfVec[pq.second]->getIDStr()).back() == 'L')
-        flank_len = flank_long_len;
-      else
-        flank_len = flank_short_len;
+      flank_len = GetFlankLen(pq.second);
       BedFile << kv.first << "\t" << pq.first - flank_len << "\t"
               << pq.first + flank_len << std::endl;
       //            delete VcfVec[pq.second];
@@ -622,19 +540,20 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
   BedFile.close();
   FoutHapMapSelectedSite.ifclose();
 
-//  reader.open(dbSNP.c_str(), header);
-//  reader.close();
+  //  reader.open(dbSNP.c_str(), header);
+  //  reader.close();
 
-//  // create header for dbSNP subset vcf file
-//  InputFile FoutdbSNPSelectedSite(
-//      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
-//  header.write(&FoutdbSNPSelectedSite);
-//  FoutdbSNPSelectedSite.ifclose();
+  //  // create header for dbSNP subset vcf file
+  //  InputFile FoutdbSNPSelectedSite(
+  //      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
+  //  header.write(&FoutdbSNPSelectedSite);
+  //  FoutdbSNPSelectedSite.ifclose();
 
   char cmdline[2048];
   // subset dbsnp
   sprintf(cmdline,
-          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > %s.dbSNP.subset.vcf",
+          "sort -k1,1 -k2,2n %s|bcftools view -v snps -O v -R - %s > "
+          "%s.dbSNP.subset.vcf",
           BedPath.c_str(), dbSNP.c_str(), NewRef.c_str());
   int ret = system(cmdline);
   if (ret != 0) {
@@ -647,7 +566,7 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
 void RefBuilder::SubstrRef(const faidx_t *seq, VcfRecord *VcfLine,
                            std::ofstream &FGC, std::ofstream &FaOut) {
   int flank_len = 0;
-  char newChrName[1024]={0};
+  char newChrName[1024] = {0};
 
   if (std::string(VcfLine->getIDStr()).find('L') !=
       std::string::npos) // Long region
