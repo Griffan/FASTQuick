@@ -10,6 +10,7 @@
 #include "Utility.h"
 #include "VcfFileReader.h"
 #include "VcfHeader.h"
+#include "Version.h"
 
 #define DEBUG 0
 #define MIN_AF 0.01
@@ -424,6 +425,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
   std::string BedPath = NewRef + ".bed";
   std::ofstream BedFile(BedPath);
+  header.addHeaderLine((std::string("##FASTQuickVersion=")+std::string(PACKAGE_VERSION)).c_str());
   header.write(&FoutHapMapSelectedSite);
   int flank_len = 0;
   for (const auto &kv : VcfTable) {
@@ -440,15 +442,6 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   }
   BedFile.close();
   FoutHapMapSelectedSite.ifclose();
-
-  //  reader.open(dbSNP.c_str(), header);
-  //  reader.close();
-
-  //  // create header for dbSNP subset vcf file
-  //  InputFile FoutdbSNPSelectedSite(
-  //      std::string(NewRef + ".dbSNP.subset.vcf").c_str(), "w");
-  //  header.write(&FoutdbSNPSelectedSite);
-  //  FoutdbSNPSelectedSite.ifclose();
 
   char cmdline[2048];
   // subset dbsnp
@@ -471,6 +464,16 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
   VcfHeader header;
   VcfFileReader reader;
   reader.open(predefinedVcf.c_str(), header);
+  // detect FASTQuick header
+  bool IsFASTQuickFormat = false;
+  for (int i = 0; i < header.getNumMetaLines(); ++i) {
+    if(std::string(header.getMetaLine(i)).find("##FASTQuickVersion") != std::string::npos)
+    {
+      IsFASTQuickFormat = true;
+      notice("Detect FASTQuick format in predefined marker set");
+      break;
+    }
+  }
 
   std::string Chrom;
   int Position;
@@ -480,7 +483,6 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
     int chrFlag(-1) /*0:short;1:long;2:Y;3:X*/;
     VcfRecord *VcfLine = new VcfRecord;
     reader.readRecord(*VcfLine);
-    bool isLong = (std::string(VcfLine->getIDStr()).back() == 'L');
     Position = VcfLine->get1BasedPosition();
     Chrom = VcfLine->getChromStr();
 
@@ -489,23 +491,27 @@ int RefBuilder::InputPredefinedMarker(const std::string &predefinedVcf) {
       Chrom = Chrom.substr(3); // strip chr
     }
 
-    if (IsMaxNumMarker(Chrom, chrFlag, isLong, false)) {
-      delete VcfLine;
-      continue;
+    if(not IsFASTQuickFormat) {
+      if (IsMaxNumMarker(Chrom, chrFlag, false, false)) {
+        delete VcfLine;
+        continue;
+      }
+      if (VariantCheck(Chrom, Position, VcfLine, chrFlag)) {
+        warning("%s:%d is a low quality marker. Consider filtering it.",
+                VcfLine->getChromStr(), VcfLine->get1BasedPosition());
+      }
+      if (chrFlag == 1)
+        VcfLine->setID((std::string(VcfLine->getIDStr()) + "|L").c_str());
+    } else // FASTQuickFormat
+    {
+      if (IsMaxNumMarker(Chrom, chrFlag, false, false)) {
+        error("Unexpectedly reach maximal number of markers in FASTQuick format!");
+      }
     }
-
-    if (VariantCheck(Chrom, Position, VcfLine, chrFlag)) {
-      warning("%s:%d is a low quality marker. Consider filtering it.",
-              VcfLine->getChromStr(), VcfLine->get1BasedPosition());
-    }
-
-    if (chrFlag == 1 and not isLong)
-      VcfLine->setID((std::string(VcfLine->getIDStr()) + "|L").c_str());
 
     VcfTable[Chrom][Position] =
         nShortMarker + nLongMarker + nXMarker + nYMarker;
     VcfVec.push_back(VcfLine);
-
     IncreaseNumMarker(chrFlag);
   }
 

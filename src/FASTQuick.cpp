@@ -18,6 +18,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 /* Contact: Fan Zhang <fanzhang@umich.edu> */
+#include "Version.h"
 #include "../VerifyBamID/vb2Main.h"
 #include "../libbwa/bwtaln.h"
 #include "../libbwa/utils.h"
@@ -29,11 +30,6 @@ SOFTWARE.
 #include <vector>
 //#include <gperftools/profiler.h>
 using namespace std;
-
-//#define USE_BWT 1
-#ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.0.2b"
-#endif
 
 extern void notice(const char *, ...);
 extern void warning(const char *, ...);
