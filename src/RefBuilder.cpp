@@ -425,7 +425,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   InputFile FoutHapMapSelectedSite(SelectedSite.c_str(), "w");
   std::string BedPath = NewRef + ".bed";
   std::ofstream BedFile(BedPath);
-  header.addHeaderLine((std::string("##FASTQuickVersion=")+std::string(PACKAGE_VERSION)).c_str());
+  header.appendMetaLine((std::string("##FASTQuickVersion=")+std::string(PACKAGE_VERSION)).c_str());
   header.write(&FoutHapMapSelectedSite);
   int flank_len = 0;
   for (const auto &kv : VcfTable) {
