@@ -52,7 +52,7 @@ wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/hapmap_3.3.b
 #### Run FASTQuick for Your Own FASTQ Files
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) in one command line.
 ```
-${FASTQUICK_HOME}/bin/FASTQuick.sh 
+${FASTQUICK_HOME}/bin/FASTQuick.sh \
 --steps All \
 --reference /path/to/hs37d5.fa \
 --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
@@ -111,6 +111,15 @@ Once the process finished, you'll find summary statistics in various files start
 You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of prefix provided by **--output**). 
 
 ### FAQ
+[1. What are these SVD files, why do I need them and how to generate them?](#faq-1)
+[2. What are the files in ${FASTQUICK_HOME}/resource/ directory?](#faq-2)
+[3. Can I run FASTQuick **without** predefined marker set and predefined SVD files?](#faq-3)
+[4. Can I run FASTQuick **with** predefined marker set but **without** predefined SVD files?](#faq-4)
+[5. Can I run FASTQuick on target sequencing datasets?](#faq-5)
+[6. Can I run FASTQuick step by step?](#faq-6)
+[7. What is the format of fastq file list required by **--fastqList**?](#faq-7)
+
+<a href="#faq-1" id="faq-1"></a>
 
 1. What are these SVD files, why do I need them and how to generate them?
     
@@ -122,17 +131,21 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     
     1. Use FASTQuick.sh without specifying --SVDPrefix like in FAQ question 3 and 4.
     2. Refer to **example.pop+con.sh** mentioned in FAQ question 6.
-    
+
+    <a href="#faq-2" id="faq-2"></a>
+
 2. What are the files in ${FASTQUICK_HOME}/resource/ directory?
     
     This directory contains the predefined marker set and its corresponding SVD files. Because the SVD files(same prefix ending with .bed .mu .UD .V) usually can be reused, we prepare these files in advance to speed up the process.
+    
+    <a href="#faq-3" id="faq-3"></a>
     
 3. Can I run FASTQuick **without** predefined marker set and predefined SVD files?
 
     Using cmdline example in [GETTING STARTED](#getting-started) as a start point, you can select your own eligible marker set and prepare your own index files from scratch.
     The command line becomes:
     ```
-    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh \
     --steps All \
     --reference /path/to/hs37d5.fa \
     --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
@@ -146,12 +159,14 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     In this mode, FASTQuick will generate all the index files that are required in later steps with fewer compatibility issues. 
     FASTQuick will prepare SVD files in this mode, which will take longer time. Internet connection is required to download 1000 genome variants files.
 
+    <a href="#faq-4" id="faq-4"></a>
+
 4. Can I run FASTQuick **with** predefined marker set but **without** predefined SVD files?
 
     Using cmdline example in [GETTING STARTED](#getting-started) as a start point, you can specify predefined marker set only. 
     The command line becomes:
     ```
-    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh \
     --steps All \
     --reference /path/to/hs37d5.fa \
     --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
@@ -167,12 +182,14 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     **--SVDPrefix NA** is required to notify FASTQuick that you only provide predefined marker set with --candidateVCF, but no SVD files.
     FASTQuick will also prepare SVD files at the cost longer indexing time. Internet connection is required to download 1000 genome variants files.
 
+    <a href="#faq-5" id="faq-5"></a>
+
 5. Can I run FASTQuick on target sequencing datasets?
 
     Using cmdline example in  [GETTING STARTED](#getting-started) as a start point, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
     The command line becomes:
     ```
-    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh \
     --steps All \
     --reference /path/to/hs37d5.fa \
     --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
@@ -187,6 +204,8 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     In this mode, you will select markers only within your target regions. Once the index files are generated, the usage of the pipeline can be the same as the above examples.
     **Note** that **--targetRegion <targetRegion.bed>** is required to be the same build version with the reference genome.
 
+    <a href="#faq-6" id="faq-6"></a>
+
 6. Can I run FASTQuick step by step?
 
     We have prepared an example directory, in which you can find example scripts for each single step as template for customized usage.
@@ -195,6 +214,8 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     * the script **example.align.sh** is the template for primary analysis.
     * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
     * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
+
+    <a href="#faq-7" id="faq-7"></a>
 
 7. What is the format of fastq file list required by **--fastqList**?
 
