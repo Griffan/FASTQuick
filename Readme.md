@@ -112,11 +112,17 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
 
 ### FAQ
 [1. What are these SVD files, why do I need them and how to generate them?](#faq-1)
+
 [2. What are the files in ${FASTQUICK_HOME}/resource/ directory?](#faq-2)
+
 [3. Can I run FASTQuick **without** predefined marker set and predefined SVD files?](#faq-3)
+
 [4. Can I run FASTQuick **with** predefined marker set but **without** predefined SVD files?](#faq-4)
+
 [5. Can I run FASTQuick on target sequencing datasets?](#faq-5)
+
 [6. Can I run FASTQuick step by step?](#faq-6)
+
 [7. What is the format of fastq file list required by **--fastqList**?](#faq-7)
 
 <a href="#faq-1" id="faq-1"></a>
