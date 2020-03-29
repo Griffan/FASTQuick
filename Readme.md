@@ -8,19 +8,16 @@
 
 - [GETTING STARTED](#getting-started)
 - [INSTALL](#install)
-- [WIKI PAGE](#wiki-page)
 - [FAQ](#faq)
+- [WIKI PAGE](#wiki-page)
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
 
 ### GETTING STARTED
-
 Follow the procedures below to quickly get started using FASTQuick.
 
 #### Clone and Install FASTQuick
-
 First, to start using FASTQuick, clone and install the repository.
-
 ```
 git clone https://github.com/Griffan/FASTQuick.git
 cd FASTQuick
@@ -30,26 +27,18 @@ cmake ..
 make   
 make test
 ```
-
 Please refer to [INSTALL](#install) for more comprehensive guide on how to download and install FASTQuick.
 
 #### Perform a Test Run
-
 To perform a test run to make sure that FASTQuick runs as expected with a very small-sized example (assuming that you are still inside `build` directory, run
-
 ```
 cd ../example/
 bash example.sh
 ```
+for more example scripts to test whether the software tool works as expected or not, see [FAQ](#faq).
 
-for more example scripts to test whether the software tool works as expected or not, see [EXAMPLES](#examples).
-
-**Note** that you need `samtools` installed in your system and included in the `${PATH}` directory to run the test successfully
-
-#### Download Resource Files
-
-To run FASTQuick on real human sequence data, you need to download resource files using the following commands. (Before downloading, you may want to change your current directory.)
-
+#### Download Reference Files
+To run FASTQuick on real human sequence data, you need to download reference files using the following commands. (Before downloading, you may want to change your current directory.)
 ```
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
 gzip -d hs37d5.fa.gz
@@ -58,36 +47,31 @@ wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/access
 wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/hapmap_3.3.b37.vcf.gz
 ```
 
-Please refer to [RESOURCE FILES](#resource-files) for more details. Note that you do not need to run FASTQuick on GRCh38 reference because the alignment of FASTQuick will be used only for internal purpose and will provide very similar results regardless of which reference will be used.
-
+Note that you do not need to run FASTQuick on GRCh38 reference because the alignment of FASTQuick will be used only for internal purpose and will provide very similar results regardless of which reference will be used.
 
 #### Run FASTQuick for Your Own FASTQ Files
-
 For simplicity, we prepared an all-in-one script to process the whole FASTQuick pipeline or choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) in one command line.
-
 ```
 ${FASTQUICK_HOME}/bin/FASTQuick.sh 
 --steps All \
 --reference /path/to/hs37d5.fa \
 --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
 --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
+--candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
 --index <index.prefix> \
 --output <sample.output.prefix> \
 --fastq1 <sample.input.R1.fastq.gz> \
 --fastq2 <sample.input.R2.fastq.gz> \
---candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
-[--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz] \
-[--targetRegion <targetRegion.bed>] 
+[--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz] 
 ```
-We denote the git repo home as ${FASTQUICK_HOME}. 
- 
+where we denote the git repo home as ${FASTQUICK_HOME}. 
 Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
 
 **Note** that you only need to build indices once, hence `--steps AllButIndex` should be the preferred option once indices are ready.
 
-#### Resource Files
+#### Reference Files
 
-From these resource files, we build index files which can be shared and reused by different samples:
+From these reference files, we build index files which can be shared and reused by different samples:
 
 **reference genome**(**--reference**) [hs37d5.fa](http://tinyurl.com/jvflzg3)
 
@@ -95,30 +79,17 @@ From these resource files, we build index files which can be shared and reused b
 
 **1000 strict masked region**(**--callableRegion**) [20141020.strict_mask.whole_genome.bed](http://tinyurl.com/sjhb5nn)
 
-**Optionally**, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
-
-As for **candidate variant list**(**--candidateVCF**), you have two options:
- 
- 1. To select marker set from [hapmap_3.3.b37.vcf.gz](https://tinyurl.com/u69z6ts) (It's recommended to "shuffle" candidate variant list with [bedtools](https://bedtools.readthedocs.io/en/latest/content/tools/shuffle.html) before using it.)
-    For example
-    ```
-    --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz
-    ```
- 2. To reuse predefined marker set we have prepared in ${FASTQUICK_HOME}/resource/ directory for a quick start, you can feed **--candidateVCF** with VCF file of the predefined markers, and **--SVDPrefix** with prefix of predefined SVD files. 
-    For example: 
-    ```
-    --candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
-    --SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
-
-    ```
-    These two parameters are the same in the above example. Actually, if you reuse predefined marker set generated from FASTQuick.sh, they always follow this nomenclature.
-
-**Note** that if other build version of reference genomes are needed, all these resource files are required to be the same build version with the reference genome.
+As for **candidate variant list**(**--candidateVCF**), we have prepared predefined marker set in ${FASTQUICK_HOME}/resource/ directory for a quick start, you can feed **--candidateVCF** with VCF file of the predefined markers, and **--SVDPrefix** with prefix of predefined SVD files. 
+For example: 
+```
+--candidateVCF ${FASTQUICK_HOME}/resource/10k.b37.FASTQuick.fa.SelectedSite.vcf
+--SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz
+```
+Actually, these files are generated by FASTQuick.sh. We can always start from scratch without specifying --SVDPrefix with predefined marker set, but it is time consuming.
+**Note** that if other build version of reference genomes are needed, all these reference files are required to be the same build version with the reference genome.
 
 #### Input Files
-
 **--fastq_1** and **--fastq_2** expect pair-end fastq files(omit --fastq_2 for single-end dataset).
-
 You can download fastq files of HG00553 from 1000 genome to reproduce the low-coverage [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in our example:
 
 ```
@@ -132,15 +103,11 @@ wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR018/ERR018525/ERR018525_2.fastq.gz
 You can also use **--fastqList** to provide fastq files in format described in [FAQ](#faq)
 
 #### Output Files
-
 Once the process finished, you'll find summary statistics in various files starting with the same prefix(provided by **--output**). 
-
 You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq82zduk4la/FinalReport.html?dl=1) in your output directory(base directory of prefix provided by **--output**). 
 
 ### INSTALL
-
 To install FASTQuick, run the following series of commands.
-
 ```
 git clone https://github.com/Griffan/FASTQuick.git   
 mkdir build
@@ -151,9 +118,7 @@ make test
 ```
 
 Installation is complete if all tests finish successfully.
-
 In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
-
 ```
 
 For libhts:
@@ -166,35 +131,7 @@ For lzma:
   - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
 ```
 
-**Note** that if you use docker to deploy, the minimal memory requirement is 4GB.
-
-### EXAMPLES
-
-You can find example scripts for each single step in example directory as template for customized usage.
-
-For example:
- * the script **example.sh** is the simplified template for one-stop analysis.(our bin/FASTQuick.sh is more comprehensive and hence recommended)
- * the script **example.index.sh** is the template for selection new marker set and indexing reference data structures.
- * the script **example.align.sh** is the template for primary analysis.
- * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
- * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
-
-### WIKI PAGE
-
-We encourage users to refer to FASTQuick wiki page for more detailed description. [https://github.com/Griffan/FASTQuick/wiki]
-   
-### FAQ
-
-1. **--fastqList** expects tab-delimited format as follows:
-
-```
-read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
-read.group.A.single.end.fq.gz
-read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
-read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
-read.group.C.single.end.fq.gz
-```
-2. A full list of required libraries an packages that are required to run the pipeline:
+A full list of required libraries and packages that are required to run the pipeline:
 ```
 binary libraries:
 zlib
@@ -208,6 +145,93 @@ scales
 knitr
 rmarkdown
 ```
+
+**Note** that if you use docker to deploy, the minimal memory requirement is 4GB.
+  
+### FAQ
+
+1. What are these SVD files, why do I need them and how to generate them?
+
+1. What are the files in ${FASTQUICK_HOME}/resource/ directory?
+
+2. Can I run FASTQuick **without** predefined marker set and predefined SVD files?
+    Using cmdline example in [GETTING STARTED](#getting-started) as a start point, you can select your own eligible marker set and prepare your own index files from scratch.
+    The command line becomes:
+    ```
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    --steps All \
+    --reference /path/to/hs37d5.fa \
+    --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
+    --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
+    --index <index.prefix> \
+    --output <sample.output.prefix> \
+    --fastq1 <sample.input.R1.fastq.gz> \
+    --fastq2 <sample.input.R2.fastq.gz> \
+    --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz 
+    ```
+    In this mode, FASTQuick will generate all the index files that are required in later steps with fewer compatibility issues. 
+    FASTQuick will prepare SVD files in this mode, which will take longer time. Internet connection is required to download 1000 genome variants files.
+
+3. Can I run FASTQuick **with** predefined marker set but **without** predefined SVD files?
+    Using cmdline example in [GETTING STARTED](#getting-started) as a start point, you can specify predefined marker set only. 
+    The command line becomes:
+    ```
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    --steps All \
+    --reference /path/to/hs37d5.fa \
+    --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
+    --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
+    --index <index.prefix> \
+    --output <sample.output.prefix> \
+    --fastq1 <sample.input.R1.fastq.gz> \
+    --fastq2 <sample.input.R2.fastq.gz> \
+    --candidateVCF ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz \
+    --SVDPrefix NA
+    ```
+    In this mode, FASTQuick will build reduced reference and index files based on the predefined marker set.
+    **--SVDPrefix NA** is required to notify FASTQuick that you only provide predefined marker set with --candidateVCF, but no SVD files.
+    FASTQuick will also prepare SVD files at the cost longer indexing time. Internet connection is required to download 1000 genome variants files.
+
+4. Can I run FASTQuick on target sequencing datasets?
+    Using cmdline example in  [GETTING STARTED](#getting-started) as a start point, you can enable **_target region_** mode by specifying **--targetRegion** with a bed format file.
+    The command line becomes:
+    ```
+    ${FASTQUICK_HOME}/bin/FASTQuick.sh 
+    --steps All \
+    --reference /path/to/hs37d5.fa \
+    --dbSNP /path/to/dbsnp132_20101103.vcf.gz \
+    --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
+    --index <index.prefix> \
+    --output <sample.output.prefix> \
+    --fastq1 <sample.input.R1.fastq.gz> \
+    --fastq2 <sample.input.R2.fastq.gz> \
+    --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
+    [--targetRegion <targetRegion.bed>] 
+    ```
+    In this mode, you will select markers only within your target regions. Once the index files are generated, the usage of the pipeline can be the same as the above examples.
+    **Note** that **--targetRegion <targetRegion.bed>** is required to be the same build version with the reference genome.
+
+5. Can I run FASTQuick step by step?
+    We have prepared an example directory, in which you can find example scripts for each single step as template for customized usage.
+    * the script **example.sh** is the simplified template for one-stop analysis.(our bin/FASTQuick.sh is more comprehensive and hence recommended)
+    * the script **example.index.sh** is the template for selection new marker set and indexing reference data structures.
+    * the script **example.align.sh** is the template for primary analysis.
+    * the script **example.pop+con.sh** is the template to estimate contamination level and genetic ancestry of the intended sample.
+    * the script **example.predefine.marker.index.sh** is the template to use pre-defined marker set to build indices.
+
+6. What is the format of fastq file list required by **--fastqList**?
+    FASTQuick.sh expects tab-delimited format as follows:
+    ```
+    read.group.A.read_1.fq.gz   read.group.A.read_2.fq.gz
+    read.group.A.single.end.fq.gz
+    read.group.B.read_1.fq.gz   read.group.B.read_2.fq.gz
+    read.group.C.read_1.fq.gz   read.group.C.raed_2.fq.gz
+    read.group.C.single.end.fq.gz
+    ```
+
+### WIKI PAGE
+
+We encourage users to refer to FASTQuick wiki page for more detailed description. [https://github.com/Griffan/FASTQuick/wiki]
 
 ### AUTHOR
 Fan Zhang (email:fanzhang@umich.edu)

@@ -337,7 +337,7 @@ if [[ $do_index == true ]] ; then
 		fi
 		echo "$(date)	Finished selecting markers..."| tee -a "$timinglogfile"
 
-		if [[ $SVDPrefix != "" ]] ; then
+		if [[ $SVDPrefix != "" ]] && [[ $SVDPrefix != "NA" ]] ; then
 		  echo "$(date)	Copy eigen resource files from ${SVDPrefix} files..."| tee -a "$timinglogfile"
       cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
       cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
