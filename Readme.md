@@ -64,11 +64,12 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh \
 --fastq1 <sample.input.R1.fastq.gz> \
 --fastq2 <sample.input.R2.fastq.gz>
 ```
-where we denote the git repo home as ${FASTQUICK_HOME}. 
 
-Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
+* Users need to specify `<input.prefix>`, `<sample.input.R1.fastq.gz>`, `<sample.input.R2.fastq.gz>`. `${FASTQUICK_HOME}` represent the directory containing the FASTQuick repository. 
 
-**Note** that you only need to build indices once, hence `--steps AllButIndex` should be the preferred option once indices are ready.
+* Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
+
+* **Note** that you only need to build indices once, hence `--steps AllButIndex` should be the preferred option once indices are ready.
 
 #### Reference Files
 
