@@ -205,7 +205,7 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     --fastq1 <sample.input.R1.fastq.gz> \
     --fastq2 <sample.input.R2.fastq.gz> \
     --candidateVCF /path/to/hapmap_3.3.b37.sites.vcf.gz \
-    [--targetRegion <targetRegion.bed>] 
+    --targetRegion <targetRegion.bed> 
     ```
     In this mode, you will select markers only within your target regions. Once the index files are generated, the usage of the pipeline can be the same as the above examples.
     **Note** that **--targetRegion <targetRegion.bed>** is required to be the same build version with the reference genome.
