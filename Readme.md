@@ -65,7 +65,7 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh \
 --fastq2 <sample.input.R2.fastq.gz>
 ```
 
-* Users need to specify `<index.prefix>`, `<sample.input.R1.fastq.gz>`, `<sample.input.R2.fastq.gz>`. `${FASTQUICK_HOME}` represent the directory containing the FASTQuick repository. 
+* Users need to specify `<index.prefix>`, `<sample.input.R1.fastq.gz>`, `<sample.input.R2.fastq.gz>`. `${FASTQUICK_HOME}` represents the directory containing the FASTQuick repository. 
 
 * Please replace `/path/to/` the directory that contains the downloaded reference files (or use `.` if everything happened in the same directory). You will need to specify the input and output file names denoted as `<...>`.
 
