@@ -36,13 +36,16 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-w/--workingDir: directory to place FASTQuick intermediate and temporary files(.FASTQuick.working subdirectories will be created).
 	-n/--nThread: number of threads.
 	-v/--SVDPrefix: prefix of Singular Value Decomposition(SVD) files
+	-S/--ShortVariant: number of short variants
+	-L/--LongVariant: number of long variants
+	-R/--RefVCF: genotype VCF file of reference panel
 
 	Notice:
 	When --SVDPrefix is specified, FASTQuick expects predefined marker set from --candidateVCF.
 	"
 
-OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:v:
-LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingDir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,SVDPrefix:
+OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:v:S:L:R
+LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingDir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,SVDPrefix:,ShortVariant:,LongVariant:,RefVCF:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -66,9 +69,24 @@ fastq_2=""
 metricsrecords=10000000
 steps="AllButIndex"
 SVDPrefix="${candidateVCF}"
+ShortVariant=9000
+LongVariant=1000
+RefVCF=""
 
 while true; do
   case "$1" in
+    -S|--ShortVariant)
+            ShortVariant="$2"
+            shift 2
+            ;;
+    -L|--LongVariant)
+            LongVariant="$2"
+            shift 2
+            ;;
+    -R|--RefVCF)
+            RefVCF="$2"
+            shift 2
+            ;;
     -l|--candidateVCF)
             candidateVCF="$2"
             shift 2
@@ -322,6 +340,8 @@ if [[ $do_index == true ]] ; then
 			--ref $reference  \
 			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
+			--var_long $LongVariant \
+			--var_short $ShortVariant \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 		else
 		echo "$(date)	Start indexing on target region..."| tee -a "$timinglogfile"
@@ -333,29 +353,56 @@ if [[ $do_index == true ]] ; then
 			--callableRegion $callableRegion \
 			--out_prefix $indexPrefix \
 			--regionList $targetRegion \
+			--var_long $LongVariant \
+			--var_short $ShortVariant \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 		fi
 		echo "$(date)	Finished selecting markers..."| tee -a "$timinglogfile"
 
-		if [[ $SVDPrefix != "" ]] && [[ $SVDPrefix != "NA" ]] ; then
+		if [[ $SVDPrefix != "" ]] ; then
 		  echo "$(date)	Copy eigen resource files from ${SVDPrefix} files..."| tee -a "$timinglogfile"
       cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
       cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
       cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
       cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
+
+    elif [[ $RefVCF != "" ]] ; then
+      echo "$(date)	Extract reference genotype matrix from vcf list $RefVCF..."| tee -a "$timinglogfile"
+      chr=0
+      while read line;do
+        bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf $line > $workingDir/$(basename $line).list.vcf.gz &
+        pids[${chr}]=$!
+        chr=$chr+1
+        sleep 1s
+      done < $RefVCF
+
+      for pid in ${pids[*]}; do
+        if wait $pid; then
+           echo "Process $pid finished"
+        else
+           echo "Process $pid failed"
+        fi
+      done
+
+      echo "ls $workingDir/*.list.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
+      rm $workingDir/*.list.vcf.gz
+
     elif [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
-      echo "$(date)	Start preparing eigen space in 1000g phase3 genotype matrix..."| tee -a "$timinglogfile"
+      echo "$(date)	Extract reference genotype matrix by downloading 1000g variants database..."| tee -a "$timinglogfile"
+      echo "$(date)	[WARNING]This step might take longer time, please ensure internet connection is available before proceeding"| tee -a "$timinglogfile"
+
       #TODO:consider hg19 and hg38
       genoPrefix=""
       genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
       ncbiPrefix="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/"
       ucscPrefix="http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/"
+
       if curl --head --fail --silent "$ncbiPrefix$genoTestFile" >/dev/null; then
           genoPrefix=$ncbiPrefix
       elif curl --head --fail --silent "$ucscPrefix$genoTestFile" >/dev/null; then
           genoPrefix=$ucscPrefix
       fi
-      echo "Extracting genotype matrices from ${genoPrefix}..."
+      echo "Using genotype matrices from ${genoPrefix}..."
       for chr in {1..22};do
         bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf "${genoPrefix}ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
         pids[${chr}]=$!
@@ -372,21 +419,21 @@ if [[ $do_index == true ]] ; then
 
       echo "ls ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
       rm ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz
-
-      if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
-        echo "$(date)	Extract subset of genotype matrix finished"| tee -a "$timinglogfile"
-        { /usr/bin/time \
-          $FASTQuick_PROGRAM pop+con \
-          --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
-          --Reference $reference \
-        1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
-        echo "$(date)	Build SVD files finished" | tee -a "$timinglogfile"
-      else
-        echo "$(date)	Extract subset of genotype matrix failed"| tee -a "$timinglogfile"
-      fi
     else
       echo "$(date)	Marker selction failed..."| tee -a "$timinglogfile"
       exit 15
+    fi
+
+    if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
+      echo "$(date)	Extract subset of genotype matrix finished"| tee -a "$timinglogfile"
+      { /usr/bin/time \
+        $FASTQuick_PROGRAM pop+con \
+        --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
+        --Reference $reference \
+        1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+      echo "$(date)	Build SVD files finished" | tee -a "$timinglogfile"
+    else
+      echo "$(date)	Extract subset of genotype matrix failed"| tee -a "$timinglogfile"
     fi
 else
 	echo "$(date)	Skipping indexing."| tee -a "$timinglogfile"
