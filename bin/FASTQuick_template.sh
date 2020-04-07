@@ -38,14 +38,14 @@ Usage: FASTQuick.sh [--steps All|AllButIndex|Index|Align|Contamination|Ancestry|
 	-v/--SVDPrefix: prefix of Singular Value Decomposition(SVD) files
 	-S/--ShortVariant: number of short variants
 	-L/--LongVariant: number of long variants
-	-R/--RefVCF: genotype VCF file of reference panel
+	-R/--RefVCFList: list of genotype VCF files of reference panel
 
 	Notice:
 	When --SVDPrefix is specified, FASTQuick expects predefined marker set from --candidateVCF.
 	"
 
 OPTIONS=n:l:r:o:i:d:t:w:c:s:f:1:2:v:S:L:R
-LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingDir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,SVDPrefix:,ShortVariant:,LongVariant:,RefVCF:
+LONGOPTS=nThread:,candidateVCF:,reference:,output:,index:,dbSNP:,targetRegion:,workingDir:,callableRegion:,steps:,fastqList:,fastq_1:,fastq_2:,SVDPrefix:,ShortVariant:,LongVariant:,RefVCFList:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -71,7 +71,7 @@ steps="AllButIndex"
 SVDPrefix="${candidateVCF}"
 ShortVariant=9000
 LongVariant=1000
-RefVCF=""
+RefVCFList=""
 
 while true; do
   case "$1" in
@@ -83,8 +83,8 @@ while true; do
             LongVariant="$2"
             shift 2
             ;;
-    -R|--RefVCF)
-            RefVCF="$2"
+    -R|--RefVCFList)
+            RefVCFList="$2"
             shift 2
             ;;
     -l|--candidateVCF)
@@ -366,15 +366,15 @@ if [[ $do_index == true ]] ; then
       cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
       cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
 
-    elif [[ $RefVCF != "" ]] ; then
-      echo "$(date)	Extract reference genotype matrix from vcf list $RefVCF..."| tee -a "$timinglogfile"
+    elif [[ $RefVCFList != "" ]] ; then
+      echo "$(date)	Extract reference genotype matrix from vcf list RefVCFList..."| tee -a "$timinglogfile"
       chr=0
       while read line;do
         bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf $line > $workingDir/$(basename $line).list.vcf.gz &
         pids[${chr}]=$!
         chr=$chr+1
         sleep 1s
-      done < $RefVCF
+      done < $RefVCFList
 
       for pid in ${pids[*]}; do
         if wait $pid; then
