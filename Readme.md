@@ -123,7 +123,7 @@ wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR015/ERR015764/ERR015764_2.fastq.gz
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR018/ERR018525/ERR018525_1.fastq.gz
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR018/ERR018525/ERR018525_2.fastq.gz
 ```
-You can also use **--fastqList** to provide fastq files in format described in [FAQ-6](#faq-6)
+You can also use **--fastqList** to provide fastq files in format described in [FAQ-7](#faq-7)
 
 #### Output Files
 Once the process finished, you'll find summary statistics in various files starting with the same prefix(provided by **--output**). 
