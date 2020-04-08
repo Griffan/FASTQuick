@@ -209,6 +209,7 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     <a href="#faq-4" id="faq-4"></a>
 
 4. Why does index step failed (or take long time)?
+
     If you encounter this problem, please check the log files to ensure if the internet connection is successful throughout the running time. You may consider to use **--SVDPrefix** or **--RefVCFList** to skip certain procedures.
 
     <a href="#faq-5" id="faq-5"></a>
