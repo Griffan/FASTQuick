@@ -124,9 +124,11 @@ private:
 
 private:
   bool AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
-                          const gap_opt_t *opt);
+                          const gap_opt_t *opt, int &readRealStart,
+                          int &readRealEnd);
 
-  bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt);
+  bool AddSingleAlignment(SamRecord &p, const gap_opt_t *opt,
+                          int &readRealStart, int &readRealEnd);
 
   void StatVecDistUpdate(const std::string &chrom, int i, int tmpCycle,
                          char readBase, char readQual, char refBase);

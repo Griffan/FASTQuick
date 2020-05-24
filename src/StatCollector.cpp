@@ -437,7 +437,8 @@ int StatCollector::UpdateInfoVecAtRegularSite(
 }
 
 bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
-                                       const gap_opt_t *opt) //
+                                       const gap_opt_t *opt, int &readRealStart,
+                                       int &readRealEnd)
 {
   // DEBUG related variables
   int total_effective_len(0);
@@ -470,7 +471,7 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
 
   int pos = static_cast<int>(p->pos - bns->anns[seqid].offset + 1);
 
-  int readRealStart(0);
+//  int readRealStart(0);
   int refRealStart(0), refRealEnd(0);
   size_t atPos;
   string chrom;
@@ -636,7 +637,8 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   return true;
 }
 
-bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
+bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt,
+                                       int &readRealStart, int &readRealEnd)
 {
   // TODO:unify both versions
   if (p.getFlag() & SAM_FSU or p.getMapQuality() == 0) {
@@ -662,7 +664,7 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) //
   std::vector<bwa_cigar_t> cigar = String2Cigar(p.getCigar());
   refSeq = RecoverRefseqByMDandCigar(seq, MD, &cigar[0], cigar.size());
 
-  int readRealStart(0);
+//  int readRealStart(0);
   int refRealStart(0), refRealEnd(0);
 
   if (chrom.find('@') !=
@@ -842,7 +844,7 @@ int StatCollector::IsDuplicated(
     const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
     const gap_opt_t *opt, AlignStatus type,
     ofstream &fout) { // in this setting p is fastq1 and q is fastq2
-  // todo: remember to also update IsDuplicated overloaded version
+  // todo: also update IsDuplicated overloaded version
 
   int maxInsert(-1), maxInsert2(-1);
   int readLength(0), seqid_p(-1), seqid_q(-1);
@@ -875,14 +877,13 @@ int StatCollector::IsDuplicated(
 
   if (type == AlignStatus::Second) // q is aligned only, read2
   {
-    readLength = static_cast<int>(
-        pos_end(q) -
-        q->pos); // length of read including cigar for bns tracking, length of
-                 // the reference in the alignment
+    // length of read including cigar for bns tracking, length of
+    // the reference in the alignment
+    readLength = static_cast<int>(pos_end(q) - q->pos);
     bns_coor_pac2real(bns, q->pos, readLength, &seqid_q);
+
     if (q->mapQ > threshQual) {
       status = "RevOnly";
-
       if (q->cigar) {
         op3 = "MIDS"[__cigar_op(q->cigar[0])]; // left most cigar
         if (op3 == 'S') {
@@ -1044,7 +1045,6 @@ int StatCollector::IsDuplicated(
     /*end deal with cigar*/
     if (!(p->strand) && q->strand && p->pos < q->pos) // FR
     {
-
       if ((p->pos - cl1) >=
           bns->anns[seqid_p].offset) // soft clip stays within Flank Region
         maxInsert = static_cast<int>(bns->anns[seqid_p].offset +
@@ -1088,31 +1088,16 @@ int StatCollector::IsDuplicated(
       return 0;
     }
   }
+
   // from now on only type 2 paired reads remained
   if (maxInsert >= INSERT_SIZE_LIMIT)
     maxInsert = INSERT_SIZE_LIMIT - 1;
   if (maxInsert2 >= INSERT_SIZE_LIMIT)
     maxInsert2 = INSERT_SIZE_LIMIT - 1;
-  //    MaxInsertSizeDist[maxInsert]++;
-  //    MaxInsertSizeDist[maxInsert2]++;
-  if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1) {
-    // int ActualInsert(-1);
-    //	ActualInsert=0;
-    InsertSizeDist[0]++;
-    // cerr<<"Duplicate function exit from diff chrom"<<endl;
-    fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
-         << "\t" << bns->anns[seqid_p].name << "\t"
-         << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
-         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len) << "\t"
-         << bns->anns[seqid_q].name << "\t"
-         << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
-         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
-         << "\tNotPair" << endl;
-    return 0;
-  }
-  if (p->mapQ > threshQual && q->mapQ > threshQual) {
-    int ActualInsert(-1), start(0), end(0); //[start, end)
 
+  if (p->mapQ > threshQual && q->mapQ > threshQual) {
+
+    int ActualInsert(-1), start(0), end(0); //[start, end)
     status = "PartialPair";
     if (!(p->strand) && q->strand && p->pos < q->pos) // FR
     {
@@ -1407,7 +1392,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   /*done checking if reads bridges two reference contigs*/
   if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
     if (q != 0 &&
-        AddSingleAlignment(bns, q, opt)) // adding single via pair interface
+        AddSingleAlignment(
+            bns, q, opt, <#initializer #>)) // adding single via pair interface
     {
       string qname(bns->anns[seqid2].name);
       if (string(qname).find("Y") != string::npos ||
@@ -1431,7 +1417,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   // until now p is aligned
   string pname(bns->anns[seqid].name);
   if (q == 0 || q->type == BWA_TYPE_NO_MATCH) {
-    if (AddSingleAlignment(bns, p, opt)) // adding single via pair interface
+    if (AddSingleAlignment(
+            bns, p, opt, <#initializer #>)) // adding single via pair interface
     {
       if (string(pname).find('Y') != string::npos ||
           string(pname).find('X') != string::npos) {
@@ -1473,15 +1460,15 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     if (IsDuplicated(bns, p, q, opt, AlignStatus::Both, fout) != 1 ||
         opt->cal_dup) // test IsDuplicated first to get insert size info
     {
-      if (AddSingleAlignment(bns, p, opt)) {
-        if (AddSingleAlignment(bns, q, opt)) {
+      if (AddSingleAlignment(bns, p, opt, <#initializer #>)) {
+        if (AddSingleAlignment(bns, q, opt, <#initializer #>)) {
           return 2;
         } else {
           total_add_failed += 1;
           return 1;
         }
       } else {
-        if (AddSingleAlignment(bns, q, opt)) {
+        if (AddSingleAlignment(bns, q, opt, <#initializer #>)) {
           total_add_failed += 1;
           return 1;
         } else {
@@ -1515,16 +1502,17 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
       contigStatusTable[pname].addNumOverlappedReads();
       contigStatusTable[pname].addNumFullyIncludedReads();
     }
-    if (IsDuplicated(bns, p, q, opt, AlignStatus::Both, fout) != 1 || opt->cal_dup) {
-      if (AddSingleAlignment(bns, p, opt)) {
-        if (AddSingleAlignment(bns, q, opt)) {
+    if (IsDuplicated(bns, p, q, opt, AlignStatus::Both, fout) != 1 ||
+        opt->cal_dup) {
+      if (AddSingleAlignment(bns, p, opt, <#initializer #>)) {
+        if (AddSingleAlignment(bns, q, opt, <#initializer #>)) {
           return 2;
         } else {
           total_add_failed += 1;
           return 1;
         }
       } else {
-        if (AddSingleAlignment(bns, q, opt)) {
+        if (AddSingleAlignment(bns, q, opt, <#initializer #>)) {
           total_add_failed += 1;
           return 1;
         } else {
@@ -1563,7 +1551,9 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
           string(qname).find('X') != string::npos) {
         contigStatusTable[qname].addNumOverlappedReads();
       }
-      if (AddSingleAlignment(*q, opt)) // adding single via pair interface
+      if (AddSingleAlignment(
+              *q, opt, <#initializer #>,
+              <#initializer #>)) // adding single via pair interface
       {
         // TO-DO:adding IsDup function here to generate single end MAX insersize
         // info
@@ -1579,7 +1569,9 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[qname].addNumOverlappedReads();
         contigStatusTable[qname].addNumFullyIncludedReads();
       }
-      if (AddSingleAlignment(*q, opt)) // adding single via pair interface
+      if (AddSingleAlignment(
+              *q, opt, <#initializer #>,
+              <#initializer #>)) // adding single via pair interface
       {
         // TO-DO:adding IsDup function here to generate single end MAX insersize
         // info
@@ -1597,7 +1589,9 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
           string(pname).find('X') != string::npos) {
         contigStatusTable[pname].addNumOverlappedReads();
       }
-      if (AddSingleAlignment(*p, opt)) // adding single via pair interface
+      if (AddSingleAlignment(
+              *p, opt, <#initializer #>,
+              <#initializer #>)) // adding single via pair interface
       {
         // TO-DO:adding IsDup function here to generate single end MAX insersize
         // info
@@ -1623,15 +1617,16 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[pname].addNumOverlappedReads();
       }
 
-      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 || opt->cal_dup) {
-        if (AddSingleAlignment(*p, opt)) {
-          if (AddSingleAlignment(*q, opt)) {
+      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
+          opt->cal_dup) {
+        if (AddSingleAlignment(*p, opt, <#initializer #>, <#initializer #>)) {
+          if (AddSingleAlignment(*q, opt, <#initializer #>, <#initializer #>)) {
             return 2;
           } else {
             return 1;
           }
         } else {
-          if (AddSingleAlignment(*q, opt)) {
+          if (AddSingleAlignment(*q, opt, <#initializer #>, <#initializer #>)) {
             return 1;
           } else
             return 0;
@@ -1650,7 +1645,9 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[pname].addNumOverlappedReads();
         contigStatusTable[pname].addNumFullyIncludedReads();
       }
-      if (AddSingleAlignment(*p, opt)) // adding single via pair interface
+      if (AddSingleAlignment(
+              *p, opt, <#initializer #>,
+              <#initializer #>)) // adding single via pair interface
       {
         // TO-DO:adding IsDup function here to generate single end MAX insert
         // size info
@@ -1682,15 +1679,16 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[pname].addNumFullyIncludedReads();
       }
 
-      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 || opt->cal_dup) {
-        if (AddSingleAlignment(*p, opt)) {
-          if (AddSingleAlignment(*q, opt)) {
+      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
+          opt->cal_dup) {
+        if (AddSingleAlignment(*p, opt, <#initializer #>, <#initializer #>)) {
+          if (AddSingleAlignment(*q, opt, <#initializer #>, <#initializer #>)) {
             return 2;
           } else {
             return 1;
           }
         } else {
-          if (AddSingleAlignment(*q, opt)) {
+          if (AddSingleAlignment(*q, opt, <#initializer #>, <#initializer #>)) {
             return 1;
           } else
             return 0;
@@ -1705,10 +1703,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
   return 1;
 }
 
-// universal IsDuplicate and AddAlignment
-
-
-
+// TODO:universal IsDuplicate and AddAlignment
 
 int StatCollector::ReadAlignmentFromBam(const gap_opt_t *opt,
                                         const char *BamFile,
@@ -2323,7 +2318,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
     total_low_mapQ += FSCVec[i].TotalMAPQ;
   }
   /*note that the average read length will be rounded to integer */
-  double avgReadLen = std::floor(0.5 + ((total_reads == 0) ? 0 : ((double)total_base / total_reads)));
+  double avgReadLen = std::floor(
+      0.5 + ((total_reads == 0) ? 0 : ((double)total_base / total_reads)));
   fcsv << "Total," << total_base << "," << total_reads << "," << total_unmapped
        << "," << total_low_mapQ << "," << total_retained << ",";
   fcsv << avgReadLen << endl;
@@ -2335,16 +2331,22 @@ int StatCollector::SummaryOutput(const string &outputPath) {
 
   /*Estimate total number of mapped reads from report_genome_size region only*/
 
-  double total_mapped_reads = (double)NumBaseMapped / avgReadLen * (ref_genome_size / total_region_size);
+  double total_mapped_reads = (double)NumBaseMapped / avgReadLen *
+                              (ref_genome_size / total_region_size);
   fout << "Estimated Read Mapping Rate : " << total_mapped_reads / total_reads
-       << "\n";
-       //<<"[" << total_mapped_reads << "/" << total_reads << "]\n";
+  //     << "\n";
+  <<"[" << total_mapped_reads << "/" << total_reads << "]\n";
+  fout << "Estimated Read PCR Duplication Rate : " << NumPCRDup/(
+      (double)NumBaseMapped / avgReadLen)
+  //     << "\n";
+  <<"[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen << "]\n";
 
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
 
-  auto report_genome_size =
-      targetRegion.IsEmpty() ? (ref_genome_size - ref_N_size) : targetRegion.Size();
+  auto report_genome_size = targetRegion.IsEmpty()
+                                ? (ref_genome_size - ref_N_size)
+                                : targetRegion.Size();
   fout << "Expected Read Depth : " << (double)total_base / report_genome_size
        << "[" << total_base << "/" << report_genome_size << "]\n";
   /*auto AvgDepth =
