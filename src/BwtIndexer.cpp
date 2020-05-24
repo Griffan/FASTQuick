@@ -70,7 +70,7 @@ extern bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is);
 extern void bwa_pac_rev_core(const char *fn, const char *fn_rev);
 
 BwtIndexer::BwtIndexer()
-    : RefPath(), ref_genome_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
+    : RefPath(), ref_genome_size(0), ref_N_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
       rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(0), m_rpac_buf(0), m_bwt_buf(0),
       m_rbwt_buf(0), bwt_d(0), rbwt_d(0) {
   //***bloom filter initialization
@@ -100,7 +100,7 @@ BwtIndexer::BwtIndexer()
 }
 
 BwtIndexer::BwtIndexer(int thresh)
-    : RefPath(), ref_genome_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
+    : RefPath(), ref_genome_size(0), ref_N_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
       rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(0), m_rpac_buf(0), m_bwt_buf(0),
       m_rbwt_buf(0), bwt_d(0), rbwt_d(0) {
   //***bloom filter initialization
@@ -130,7 +130,7 @@ BwtIndexer::BwtIndexer(int thresh)
 }
 
 BwtIndexer::BwtIndexer(RefBuilder &ArtiRef, string &prefix)
-    : RefPath(prefix), ref_genome_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
+    : RefPath(prefix), ref_genome_size(0), ref_N_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
       rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(0), m_rpac_buf(0), m_bwt_buf(0),
       m_rbwt_buf(0), bwt_d(0), rbwt_d(0) {
 #ifdef BLOOM_FPP
@@ -160,7 +160,7 @@ BwtIndexer::BwtIndexer(RefBuilder &ArtiRef, string &prefix)
 }
 
 BwtIndexer::BwtIndexer(string &prefix)
-    : RefPath(prefix), ref_genome_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
+    : RefPath(prefix), ref_genome_size(0), ref_N_size(0), pac_buf(0), rpac_buf(0), bwt_buf(0),
       rbwt_buf(0), bns(0), l_buf(0), m_pac_buf(0), m_rpac_buf(0), m_bwt_buf(0),
       m_rbwt_buf(0), bwt_d(0), rbwt_d(0) {
 #ifdef BLOOM_FPP
@@ -776,11 +776,28 @@ int BwtIndexer::LoadContigSize() {
         chr.find("CHR") != std::string::npos)
       chr = chr.substr(3);
     ss >> length;
-    contigSize.push_back(std::make_pair(chr, atoi(length.c_str())));
+    contigSize.emplace_back(chr, atoi(length.c_str()));
     ref_genome_size += atoi(length.c_str());
   }
   fin.close();
   notice("Reference genome size:%lld", ref_genome_size);
+
+  ifstream famb(RefPath + ".amb");
+  if (!famb.is_open()) {
+    cerr << "Open file:" << RefPath + ".amb"
+         << " failed!" << endl;
+    cerr << "Please check if "<< RefPath<<" is indexed with BWA index." << endl;
+    exit(1);
+  }
+  std::string offset, Nlen, Nchar;
+  while (getline(famb, line)) {
+    stringstream ss(line);
+    ss >> offset;
+    ss >> Nlen;
+    ref_N_size += atoi(Nlen.c_str());
+  }
+  famb.close();
+  notice("Reference genome N region size:%lld", ref_N_size);
   return 0;
 }
 bool BwtIndexer::LoadIndex(string &NewRef) {

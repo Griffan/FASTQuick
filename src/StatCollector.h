@@ -64,6 +64,7 @@ private:
   /*Expected Info*/
   uint64_t total_region_size;
   uint64_t ref_genome_size;
+  uint64_t ref_N_size;
 
   /*Actual Statistics*/
   uint64_t NumXorYMarker;
@@ -145,14 +146,17 @@ public:
   int AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
                    const gap_opt_t *opt, std::ofstream &fout,
                    long long &total_add_failed);
+
+  enum AlignStatus {First, Both, Second, Neither};
+
   int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
-                   const gap_opt_t *opt, int type, std::ofstream &fout);
+                   const gap_opt_t *opt, AlignStatus type, std::ofstream &fout);
   // overload functions for direct bam reading
   int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
                    const gap_opt_t *opt, std::ofstream &fout,
                    long long &total_add);
   int IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
-                   const gap_opt_t *opt, int type, std::ofstream &fout);
+                   const gap_opt_t *opt, AlignStatus type, std::ofstream &fout);
 
   int ReadAlignmentFromBam(
       const gap_opt_t *opt,
@@ -183,7 +187,7 @@ public:
                                                int n_cigar);
 
   int AddFSC(FileStatCollector a);
-  int SetGenomeSize(long total_size);
+  int SetGenomeSize(long total_size, long total_N_size);
   int SetTargetRegion(const std::string &targetRegionPath);
   int SummaryOutput(const std::string &outputPath);
 

@@ -187,7 +187,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FQList,
     SamFile SFIO;*/
     notice("Restore Variant Site Info...");
     collector.RestoreVcfSites(RefPath, opt);
-    collector.SetGenomeSize(BwtIndex.ref_genome_size);
+    collector.SetGenomeSize(BwtIndex.ref_genome_size, BwtIndex.ref_N_size);
     if (targetRegionPath != "Empty")
       collector.SetTargetRegion(targetRegionPath);
     ofstream fout(Prefix + ".InsertSizeTable");
@@ -220,7 +220,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FQList,
     }
     double t_tmp = realtime();
     collector.RestoreVcfSites(RefPath, opt);
-    collector.SetGenomeSize(BwtIndex.ref_genome_size);
+    collector.SetGenomeSize(BwtIndex.ref_genome_size, BwtIndex.ref_N_size);
     if (targetRegionPath != "Empty")
       collector.SetTargetRegion(targetRegionPath);
     notice("Restore Variant Site Info...%f sec", realtime() - t_tmp);
