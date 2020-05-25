@@ -42,8 +42,8 @@ class BwtMapper {
 public:
   BwtMapper();
 
-  BwtMapper(BwtIndexer &BwtIndex, const std::string &FQList, const std::string &Fastq_1,
-            const std::string &Fastq_2,
+  BwtMapper(BwtIndexer &BwtIndex, const std::string &FQList,
+            const std::string &Fastq_1, const std::string &Fastq_2,
             const std::string &Prefix, const std::string &RefPath,
             const pe_opt_t *popt, gap_opt_t *opt,
             const std::string &targetRegionPath);
@@ -63,11 +63,9 @@ public:
                        StatGenStatus &StatusTracker, std::ofstream &fout,
                        FileStatCollector &FSC);
 
-  bool PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
-                     gap_opt_t *opt, SamFileHeader &SFH,
-                     BamInterface &BamIO, IFILE BamFile,
-                     StatGenStatus &StatusTracker,
-                     std::ofstream &fout,
+  bool PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt, gap_opt_t *opt,
+                     SamFileHeader &SFH, BamInterface &BamIO, IFILE BamFile,
+                     StatGenStatus &StatusTracker, std::ofstream &fout,
                      FileStatCollector &FSC);
 
   bool PairEndMapper_without_asyncIO(BwtIndexer &BwtIndex, const pe_opt_t *popt,
@@ -77,13 +75,10 @@ public:
                                      std::ofstream &fout,
                                      FileStatCollector &FSC);
 
-  bool IsFP(const std::string &seq, const std::string &qual, const char *);
-
   bool SetSamRecord(const bntseq_t *bns, bwa_seq_t *p, const bwa_seq_t *mate,
-                    int mode, int max_top2, SamFileHeader &SFH, SamRecord &SR);
+                    SamFileHeader &SFH, SamRecord &SR, const gap_opt_t *opt);
+
   bool SetSamFileHeader(SamFileHeader &SFH, const BwtIndexer &BwtIndex);
-  // bool Skip(BwtIndexer& BwtIndex, int mode, const char* seq1, const char*
-  // qual1, const char* seq2 , const char* qual2 , int len , double frac );
 
   int bwa_set_rg(const char *s);
 

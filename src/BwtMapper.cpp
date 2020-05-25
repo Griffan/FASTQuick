@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "Version.h"
+
 #include "ctpl_stl.h"
 //#include <gperftools/profiler.h>
 
@@ -182,6 +184,7 @@ BwtMapper::BwtMapper(BwtIndexer &BwtIndex, const string &FQList,
     warning("Setting @RG tag failed!\n");
   if (opt->in_bam != 0) {
     notice("Input alignments from Bam file...");
+    error("Input alignments from Bam file is disabled.");
     /*
     SamFileHeader SFH;
     SamFile SFIO;*/
@@ -657,8 +660,8 @@ void PEworker(int id, void *data) {
 
   isize_info_t ii;
 
-  bwa_cal_pac_pos_pe(d->aux1->bwt, d->aux1->n_seqs, seqs, &ii,
-                                d->popt, d->aux1->opt, &d->last_ii, d->l_hash);
+  bwa_cal_pac_pos_pe(d->aux1->bwt, d->aux1->n_seqs, seqs, &ii, d->popt,
+                     d->aux1->opt, &d->last_ii, d->l_hash);
 
   if (d->pacseq == 0) // indexing path
   {
@@ -716,10 +719,9 @@ void IOworkerAlt(int id, void *data) {
 #endif
 
 static int bwa_cal_pac_pos_pe(bwt_t *const _bwt[2], const int n_seqs,
-                                  bwa_seq_t *seqs[2], isize_info_t *ii,
-                                  const pe_opt_t *opt, const gap_opt_t *gopt,
-                                  const isize_info_t *last_ii,
-                                  kh_64_t *hash) {
+                              bwa_seq_t *seqs[2], isize_info_t *ii,
+                              const pe_opt_t *opt, const gap_opt_t *gopt,
+                              const isize_info_t *last_ii, kh_64_t *hash) {
   int i, j, cnt_chg = 0;
   bwt_t *bwt[2];
   pe_data_t *d;
@@ -945,8 +947,7 @@ extern int64_t pos_end_multi(const bwt_multi1_t *p,
 bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH,
                                  const BwtIndexer &BwtIndex) {
 
-  /*PACKAGE_VERSION*/
-  if (!SFH.setPGTag("VN", "1.0.0", "FastqA"))
+  if (!SFH.setPGTag("VN", PACKAGE_VERSION, "FASTQuick"))
     std::cerr << "WARNING:SetPGTag failed" << endl;
 
   if (bwa_rg_line && strstr(bwa_rg_line, "@RG") == bwa_rg_line) {
@@ -965,33 +966,19 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH,
     std::cerr << "WARNING:@RG is empty" << endl;
   }
 
-#ifdef BAM_DEBUG
-
   for (int i = 0; i < BwtIndex.contigSize.size(); ++i) {
     std::string chrom = BwtIndex.contigSize[i].first;
     int len = BwtIndex.contigSize[i].second;
     SFH.setSQTag("LN", std::to_string(len).c_str(), chrom.c_str());
-    //            std::cerr << "WARNING:SetSQTag failed" << endl;
-    // printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
   }
-#else
-  for (int i = 0; i < bns->n_seqs; ++i) {
-    if (!SFH.setSQTag(
-            "LN",
-            std::to_string(static_cast<long long int>(bns->anns[i].len))
-                .c_str(),
-            bns->anns[i].name))
-      std::cerr << "WARNING:SetSQTag failed" << endl;
-    // printf("@SQ\tSN:%s\tLN:%d\n", bns->anns[i].name, bns->anns[i].len);
-  }
-#endif
-
   return 0;
 }
 
 bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
-                             const bwa_seq_t *mate, int mode, int max_top2,
-                             SamFileHeader &SFH, SamRecord &SR) {
+                             const bwa_seq_t *mate, SamFileHeader &SFH,
+                             SamRecord &SR, const gap_opt_t *opt) {
+  int mode = opt->mode;
+  int max_top2 = opt->max_top2;
   int j;
   int is_64 = mode & BWA_MODE_IL13;
   int flag;
@@ -1016,7 +1003,6 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
         p->pos + j - bns->anns[seqid].offset > bns->anns[seqid].len)
       flag |= SAM_FSU; // flag UNMAP as this alignment bridges two adjacent
                        // reference sequences
-
     // update flag and print it
     if (p->strand)
       flag |= SAM_FSR;
@@ -1027,8 +1013,7 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       } else
         flag |= SAM_FMU;
     }
-    // printf("%s\t%d\t%s\t", p->name, flag, bns->anns[seqid].name);
-    // ss<<p->name<<"\t"<<flag<<"\t"<<bns->anns[seqid].name<<"\t";
+
     SR.setReadName(p->name);
     SR.setFlag(flag);
 
@@ -1047,12 +1032,12 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       int refCoord = static_cast<int>(strtol(
           chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
           10)); // absolute coordinate of variant
-      if (chrName[chrName.size() - 1] == 'L') {
-        readRealStart = refCoord - 1000 + pos -
+      if (chrName.back() == 'L') {
+        readRealStart = refCoord - opt->flank_long_len + pos -
                         1; // absolute coordinate of current reads on reference
 
       } else {
-        readRealStart = refCoord - 250 + pos - 1;
+        readRealStart = refCoord - opt->flank_len + pos - 1;
       }
       SR.setReferenceName(SFH, chrom.c_str());
       SR.set1BasedPosition(readRealStart);
@@ -1065,34 +1050,18 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
     SR.set1BasedPosition((int)(p->pos - bns->anns[seqid].offset + 1));
 
 #endif
-    // SR.set0BasedPosition((int) (p->pos - bns->anns[seqid].offset ));
     SR.setMapQuality(p->mapQ);
     // print CIGAR
     ostringstream ss;
-    //		if (p->cigar)
-    //		{
-    //			for (j = 0; j != p->n_cigar; ++j)
-    //				//printf("%d%c",
-    //__cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
-    // ss
-    //<<
-    //__cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
-    //		}
-    //		else
+
     if (p->type == BWA_TYPE_NO_MATCH)
-      // printf("*");
       ss << "*";
     else if (p->cigar) {
       for (j = 0; j != p->n_cigar; ++j)
-        // printf("%d%c",
-        // __cigar_len(p->cigar[j]),"MIDS"[__cigar_op(p->cigar[j])]);
         ss << __cigar_len(p->cigar[j]) << "MIDS"[__cigar_op(p->cigar[j])];
     } else
-      // printf("%dM", p->len);
       ss << p->len << "M";
     SR.setCigar(ss.str().c_str());
-    // ss.clear();
-    // ss.str("");
     // print mate coordinate
     if (mate && mate->type != BWA_TYPE_NO_MATCH) {
       int m_seqid;
@@ -1101,8 +1070,6 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
                               : p->seQ; // smaller single-end mapping quality
       // redundant calculation here, but should not matter too much
       int m_is_N = bns_coor_pac2real(bns, mate->pos, mate->len, &m_seqid);
-      // printf("\t%s\t", (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name);
-      // ss << (seqid == m_seqid) ? "=" : bns->anns[m_seqid].name;
 
 #ifdef BAM_DEBUG
       std::string chrName = std::string(bns->anns[m_seqid].name);
@@ -1114,11 +1081,11 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       int refCoord = static_cast<int>(strtol(
           chrName.substr(colonPos + 1, atPos - colonPos + 1).c_str(), &pEnd,
           10)); // absolute coordinate of variant
-      if (chrName[chrName.size() - 1] == 'L') {
-        readRealStart = refCoord - 1000 + pos -
+      if (chrName.back() == 'L') {
+        readRealStart = refCoord - opt->flank_long_len + pos -
                         1; // absolute coordinate of current reads on reference
       } else {
-        readRealStart = refCoord - 250 + pos - 1;
+        readRealStart = refCoord - opt->flank_len + pos - 1;
       }
       (seqid == m_seqid) ? SR.setMateReferenceName(SFH, "=")
                          : SR.setMateReferenceName(SFH, chrom.c_str());
@@ -1142,10 +1109,6 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       SR.setInsertSize(isize);
 #endif
     } else if (mate) // mate is unmapped
-                     // printf("\t=\t%d\t0\t", (int) (p->pos -
-                     // bns->anns[seqid].offset + 1)); ss<<"\t=\t"<<(int)
-                     // (p->pos
-                     // - bns->anns[seqid].offset + 1)<<"\t0\t";
     {
       SR.setMateReferenceName(SFH, "=");
 #ifdef BAM_DEBUG
@@ -1154,10 +1117,7 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       SR.set1BasedMatePosition((int)(p->pos - bns->anns[seqid].offset + 1));
 #endif
       SR.setInsertSize(0);
-    } else
-    // printf("\t*\t0\t0\t");
-    // ss<<"\t*0\t0\t";
-    {
+    } else {
       SR.setMateReferenceName(SFH, "*");
       SR.set1BasedMatePosition(0);
       SR.setInsertSize(0);
@@ -1167,17 +1127,13 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
     // print sequence and quality
     if (p->strand == 0) {
       for (j = 0; j != p->full_len; ++j)
-        // putchar("ACGTN"[(int) p->seq[j]]);
         ss << "ACGTN"[(int)p->seq[j]];
       SR.setSequence(ss.str().c_str());
     } else {
       for (j = 0; j != p->full_len; ++j)
-        // putchar("TGCAN"[p->seq[p->full_len - 1 - j]]);
         ss << "TGCAN"[p->seq[p->full_len - 1 - j]];
       SR.setSequence(ss.str().c_str());
     }
-    // putchar('\t');
-    // ss<<"\t";
     ss.clear();
     ss.str("");
     if (p->qual) {
@@ -1187,25 +1143,15 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       }
       if (p->strand)
         seq_reverse(p->len, p->qual, 0); // reverse quality
-      // printf("%s", p->qual);
-      // ss << p->qual;
       SR.setQuality((char *)p->qual);
     } else
-      // printf("*");
-      // ss<<"*";
       SR.setQuality("*");
 
     if (bwa_rg_id)
-      // printf("\tRG:Z:%s", bwa_rg_id);
-      // ss<<"\tRG:Z:"<<bwa_rg_id;
       SR.addTag("RG", 'Z', bwa_rg_id);
     if (p->bc[0])
-      // printf("\tBC:Z:%s", p->bc);
-      // ss<<"\tBC:Z:"<<p->bc;
       SR.addTag("BC", 'Z', p->bc);
     if (p->clip_len < p->full_len)
-      // printf("\tXC:i:%d", p->clip_len);
-      // ss<<"\tXC:i:"<<p->clip_len;
       SR.addTag(
           "XC", 'i',
           std::to_string(static_cast<long long int>(p->clip_len)).c_str());
@@ -1215,9 +1161,6 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       XT[0] = "NURM"[p->type];
       if (nn > 10)
         XT[0] = 'N';
-      // print tags
-      // printf("\tXT:A:%c\t%s:i:%d", XT, (mode & BWA_MODE_COMPREAD) ? "NM" :
-      // "CM",p->nm); ss<<"\tXT:A:"<<XT<<"\t";
       XT[1] = '\0';
       SR.addTag("XT", 'A', XT);
       ss.clear();
@@ -1227,37 +1170,23 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
       } else {
         ss << "CM";
       }
-      // ss<<":i:"<<p->nm;
       SR.addTag(ss.str().c_str(), 'i',
                 to_string(static_cast<long long int>(p->nm)).c_str());
       if (nn)
-        // printf("\tXN:i:%d", nn);
-        // ss<<"\tXN:i:"<<nn;
         SR.addTag("XN", 'i', to_string(static_cast<long long int>(nn)).c_str());
-      if (mate)
-      // printf("\tSM:i:%d\tAM:i:%d", p->seQ, am);
-      // ss<<"\tSM:i:"<<p->seQ<<"\tAM:i:"<<am;
-      {
+      if (mate) {
         SR.addTag("SM", 'i',
                   to_string(static_cast<long long int>(p->seQ)).c_str());
         SR.addTag("AM", 'i', to_string(static_cast<long long int>(am)).c_str());
       }
       if (p->type != BWA_TYPE_MATESW) { // X0 and X1 are not available for this
                                         // type of alignment
-        // printf("\tX0:i:%d", p->c1);
-        // ss<<"\tX0:i:"<<p->c1;
         SR.addTag("X0", 'i',
                   to_string(static_cast<long long int>(p->c1)).c_str());
         if (p->c1 <= max_top2)
-          // printf("\tX1:i:%d", p->c2);
-          // ss<<"\tX1:i:"<<p->c2;
           SR.addTag("X1", 'i',
                     to_string(static_cast<long long int>(p->c2)).c_str());
       }
-      // printf("\tXM:i:%d\tXO:i:%d\tXG:i:%d", p->n_mm, p->n_gapo,p->n_gapo +
-      // p->n_gape);
-      // ss<<"\tXM:i:"<<p->n_mm<<"\tXO:i:"<<p->n_gapo<<"\tXG:i:"<<p->n_gapo +
-      // p->n_gape;
       SR.addTag("XM", 'i',
                 to_string(static_cast<long long int>(p->n_mm)).c_str());
       SR.addTag("XO", 'i',
@@ -1266,23 +1195,16 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
           "XG", 'i',
           to_string(static_cast<long long int>(p->n_gapo + p->n_gape)).c_str());
       if (p->md)
-        // printf("\tMD:Z:%s", p->md);
-        // ss<<"\tMD:Z:"<<p->md;
         SR.addTag("MD", 'Z', p->md);
       // print multiple hits
       ss.clear();
       ss.str("");
       if (p->n_multi) {
-        // printf("\tXA:Z:");
-        // ss<<"\tXA:Z:";
-
         for (i = 0; i < p->n_multi; ++i) {
           bwt_multi1_t *q = p->multi + i;
           int k;
           j = pos_end_multi(q, p->len) - q->pos;
           nn = bns_coor_pac2real(bns, q->pos, j, &seqid);
-          // printf("%s,%c%d,", bns->anns[seqid].name, q->strand ? '-' :
-          // '+',(int) (q->pos - bns->anns[seqid].offset + 1));
           ss << bns->anns[seqid].name << ",";
           if (q->strand)
             ss << '-';
@@ -1291,28 +1213,20 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
           ss << (int)(q->pos - bns->anns[seqid].offset + 1) << ",";
           if (q->cigar) {
             for (k = 0; k < q->n_cigar; ++k)
-              // printf("%d%c",
-              // __cigar_len(q->cigar[k]),"MIDS"[__cigar_op(q->cigar[k])]);
               ss << __cigar_len(q->cigar[k]) << "MIDS"[__cigar_op(q->cigar[k])];
           } else
-            // printf("%dM", p->len);
             ss << p->len << "M";
-          // printf(",%d;", q->gap + q->mm);
           ss << "," << q->gap + q->mm << ";";
         }
         SR.addTag("XA", 'Z', ss.str().c_str());
       }
     }
-    // putchar('\n');
-    // ss<<endl;
   } else { // this read has no match
     ostringstream ss;
     ubyte_t *s = p->strand ? p->rseq : p->seq;
     flag = p->extra_flag | SAM_FSU;
     if (mate && mate->type == BWA_TYPE_NO_MATCH)
       flag |= SAM_FMU;
-    // printf("%s\t%d\t*\t0\t0\t*\t*\t0\t0\t", p->name, flag);
-    // ss << p->name << "\t" << flag << "\t*\t0\t0\t*\t*\t0\t0\t";
     SR.setReadName(p->name);
     SR.setFlag(flag);
     SR.setReferenceName(SFH, "*");
@@ -1325,39 +1239,23 @@ bool BwtMapper::SetSamRecord(const bntseq_t *bns, bwa_seq_t *p,
     ss.clear();
     ss.str("");
     for (j = 0; j != p->len; ++j)
-      // putchar("ACGTN"[(int) s[j]]);
       ss << "ACGTN"[(int)s[j]];
-    // putchar('\t');
-    // ss << "\t";
     SR.setSequence(ss.str().c_str());
     ss.clear();
     ss.str("");
     if (p->qual) {
       if (p->strand)
         seq_reverse(p->len, p->qual, 0); // reverse quality
-      // printf("%s", p->qual);
-      // ss << p->qual;
       SR.setQuality((char *)p->qual);
     } else
-      // printf("*");
-      // ss < "*";
       SR.setQuality("*");
-    // SR.setQuality(ss.str().c_str());
     if (bwa_rg_id)
-      // printf("\tRG:Z:%s", bwa_rg_id);
-      // ss << "\tRG:Z:" << bwa_rg_id;
       SR.addTag("RG", 'Z', bwa_rg_id);
     if (p->bc[0])
-      // printf("\tBC:Z:%s", p->bc);
-      // ss << "\tBC:Z:", p->bc;
       SR.addTag("BC", 'Z', p->bc);
     if (p->clip_len < p->full_len)
-      // printf("\tXC:i:%d", p->clip_len);
-      // ss << "\tXC:i:" << p->clip_len;
       SR.addTag("XC", 'i',
                 to_string(static_cast<long long int>(p->clip_len)).c_str());
-    // putchar('\n');
-    // ss << "\n";
   }
   if ((flag & SAM_FSU) && (flag & SAM_FMU))
     return 1; // this read pair is unmapped
@@ -1485,8 +1383,7 @@ bool BwtMapper::SingleEndMapper(BwtIndexer &BwtIndex, const gap_opt_t *opt,
         FSC.TotalRetained += collector.AddAlignment(BwtIndex.bns, seqs + i, 0,
                                                     opt, fout, FSC.TotalMAPQ);
         SamRecord SR;
-        SetSamRecord(BwtIndex.bns, seqs + i, 0, opt->mode, opt->max_top2, SFH,
-                     SR);
+        SetSamRecord(BwtIndex.bns, seqs + i, 0, SFH, SR, opt);
         BamIO.writeRecord(BamFile, SFH, SR,
                           SamRecord::SequenceTranslation::NONE);
       }
@@ -1832,10 +1729,8 @@ bool BwtMapper::PairEndMapper_without_asyncIO(
         FSC.TotalRetained += collector.AddAlignment(
             BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt, fout, FSC.TotalMAPQ);
         SamRecord SR[2];
-        SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt->mode,
-                     opt->max_top2, SFH, SR[0]);
-        SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, opt->mode,
-                     opt->max_top2, SFH, SR[1]);
+        SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i, SFH, SR[0], opt);
+        SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, SFH, SR[1], opt);
 
         BamIO.writeRecord(BamFile, SFH, SR[0],
                           SamRecord::SequenceTranslation::NONE);
@@ -2057,19 +1952,19 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
 
       p.clear_queue();
 
-//      int n_pe_threads = n_first_thread;
-//      for (int j = 0; j < n_pe_threads; ++j) {
-//        pe_data[j].aux1 = &(data[j]);
-//        pe_data[j].aux2 = &(data[n_first_thread+j]);
-//        results[j] = p.push(PEworker, pe_data + j);
-//      }
+      //      int n_pe_threads = n_first_thread;
+      //      for (int j = 0; j < n_pe_threads; ++j) {
+      //        pe_data[j].aux1 = &(data[j]);
+      //        pe_data[j].aux2 = &(data[n_first_thread+j]);
+      //        results[j] = p.push(PEworker, pe_data + j);
+      //      }
 
       int n_pe_threads = 1;
       for (int j = 0; j < n_pe_threads; ++j) {
         data[j].n_seqs = n_seqs[0];
         pe_data[j].aux1 = &(data[j]);
-        data[n_first_thread+j].n_seqs = n_seqs[1];
-        pe_data[j].aux2 = &(data[n_first_thread+j]);
+        data[n_first_thread + j].n_seqs = n_seqs[1];
+        pe_data[j].aux2 = &(data[n_first_thread + j]);
         results[j] = p.push(PEworker, pe_data + j);
       }
 
@@ -2109,8 +2004,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
     } else
       ReadIsGood = 0;
 
-    cnt_chg =
-        bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii, g_hash);
+    cnt_chg = bwa_cal_pac_pos_pe(bwt, n_seqs[0], seqs, &ii, popt, opt, &last_ii,
+                                 g_hash);
 
     if (pacseq == 0) // indexing path
     {
@@ -2179,10 +2074,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
         FSC.TotalRetained += collector.AddAlignment(
             BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt, fout, FSC.TotalMAPQ);
         SamRecord SR[2];
-        SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i, opt->mode,
-                     opt->max_top2, SFH, SR[0]);
-        SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, opt->mode,
-                     opt->max_top2, SFH, SR[1]);
+        SetSamRecord(BwtIndex.bns, seqs[0] + i, seqs[1] + i, SFH, SR[0], opt);
+        SetSamRecord(BwtIndex.bns, seqs[1] + i, seqs[0] + i, SFH, SR[1], opt);
 
         BamIO.writeRecord(BamFile, SFH, SR[0],
                           SamRecord::SequenceTranslation::NONE);
