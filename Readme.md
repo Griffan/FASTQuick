@@ -92,7 +92,7 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh \
 
 #### Reference Files
 
-From these reference files, we build index files which can be shared and reused by different samples:
+From these reference files, we build index files which can be **shared** and **reused** by different samples:
 
 **reference genome**(**--reference**) [hs37d5.fa](http://tinyurl.com/jvflzg3)
 
