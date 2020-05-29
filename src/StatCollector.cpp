@@ -718,18 +718,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
            << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
            << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
            << "\t" << status << endl;
-//      char start_end[256];
-//      sprintf(start_end, "%d:%lld:%lld", seqid_q,
-//              q->pos - bns->anns[seqid_q].offset + 1 - cl3,
-//              q->pos - bns->anns[seqid_q].offset + 1 - cl3 + q->len);
-//      pair<unordered_map<string, bool>::iterator, bool> iter =
-//          duplicateTable.insert(make_pair(string(start_end), true));
-//      if (!iter.second) // insert failed, duplicated
-//      {
-//        //	cerr<<"Duplicate function exit from duplicate"<<endl;
-//        NumPCRDup++;
-//        return 1;
-//      }
       return 0;
     } else {
       fout << q->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
@@ -798,18 +786,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
            << "\t" << flag2 << "\t" << 0 << "\t"
            << "*"
            << "\t" << status << endl;
-//      char start_end[256];
-//      sprintf(start_end, "%d:%lld:%lld", seqid_p,
-//              p->pos - bns->anns[seqid_p].offset + 1 - cl1,
-//              p->pos - bns->anns[seqid_p].offset + 1 - cl1 + p->len);
-//      pair<unordered_map<string, bool>::iterator, bool> iter =
-//          duplicateTable.insert(make_pair(string(start_end), true));
-//      if (!iter.second) // insert failed, duplicated
-//      {
-//        //	cerr<<"Duplicate function exit from duplicate"<<endl;
-//        NumPCRDup++;
-//        return 1;
-//      }
       return 0;
     } else {
       fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
@@ -902,67 +878,64 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
            << "\tNotPair" << endl;
       return 0;
     }
-
-    // from now on only type 2 paired reads remained
-    if (maxInsert >= INSERT_SIZE_LIMIT)
-      maxInsert = INSERT_SIZE_LIMIT - 1;
-    if (maxInsert2 >= INSERT_SIZE_LIMIT)
-      maxInsert2 = INSERT_SIZE_LIMIT - 1;
-
-    if (p->mapQ > threshQual && q->mapQ > threshQual) {
-
-      int ActualInsert(-1), start(0), end(0); //[start, end)
-      status = "PartialPair";
-      if (!(p->strand) && q->strand && p->pos < q->pos) // FR
-      {
-        start = p->pos - cl1;
-        end = q->pos - cl3 + q->len;
-        ActualInsert = end - start;
-      } else if (!(q->strand) && p->strand && q->pos < p->pos) // FR but rotated
-      {
-        start = q->pos - cl3;
-        end = p->pos - cl1 + p->len;
-        ActualInsert = end - start;
-      }
-
-      if (maxInsert != -1 and maxInsert2 != -1)
-        status = "PropPair";
-
-      InsertSizeDist[ActualInsert]++;
-      fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t"
-           << ActualInsert << "\t" << bns->anns[seqid_p].name << "\t"
-           << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
-           << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
-           << "\t" << bns->anns[seqid_q].name << "\t"
-           << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
-           << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
-           << "\t" << status << endl;
-
-      char start_end[256];
-      sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
-      pair<unordered_map<string, bool>::iterator, bool> iter =
-          duplicateTable.insert(make_pair(string(start_end), true));
-      if (!iter.second) // insert failed, duplicated
-      {
-        //	cerr<<"Duplicate function exit from duplicate"<<endl;
-        NumPCRDup += 2;
-        return 1;
-      }
-      return 0;
-    } else {
-      // cerr<<"exit from LowQualf"<<endl;
-      fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
-           << "\t" << bns->anns[seqid_p].name << "\t"
-           << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
-           << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
-           << "\t" << bns->anns[seqid_q].name << "\t"
-           << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
-           << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
-           << "\tLowQual" << endl;
-      return 2; // low quality
-    }
   }
-  error("IsDuplicated shouldn't reach here!");
+  // from now on only type 2 paired reads remained
+  if (maxInsert >= INSERT_SIZE_LIMIT)
+    maxInsert = INSERT_SIZE_LIMIT - 1;
+  if (maxInsert2 >= INSERT_SIZE_LIMIT)
+    maxInsert2 = INSERT_SIZE_LIMIT - 1;
+
+  if (p->mapQ > threshQual && q->mapQ > threshQual) {
+
+    int ActualInsert(-1), start(0), end(0); //[start, end)
+    status = "PartialPair";
+    if (!(p->strand) && q->strand && p->pos < q->pos) // FR
+    {
+      start = p->pos - cl1;
+      end = q->pos - cl3 + q->len;
+      ActualInsert = end - start;
+    } else if (!(q->strand) && p->strand && q->pos < p->pos) // FR but rotated
+    {
+      start = q->pos - cl3;
+      end = p->pos - cl1 + p->len;
+      ActualInsert = end - start;
+    }
+
+    if (maxInsert != -1 and maxInsert2 != -1)
+      status = "PropPair";
+
+    InsertSizeDist[ActualInsert]++;
+    fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t"
+         << ActualInsert << "\t" << bns->anns[seqid_p].name << "\t"
+         << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
+         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
+         << "\t" << bns->anns[seqid_q].name << "\t"
+         << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
+         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
+         << "\t" << status << endl;
+
+    char start_end[256];
+    sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
+    pair<unordered_map<string, bool>::iterator, bool> iter =
+        duplicateTable.insert(make_pair(string(start_end), true));
+    if (!iter.second) // insert failed, duplicated
+    {
+      NumPCRDup += 2;
+//since we don't mark PCR duplicate
+//      return 1;
+    }
+  } else {
+    // cerr<<"exit from LowQualf"<<endl;
+    fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+         << "\t" << bns->anns[seqid_p].name << "\t"
+         << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
+         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
+         << "\t" << bns->anns[seqid_q].name << "\t"
+         << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
+         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
+         << "\tLowQual" << endl;
+    return 2; // low quality
+  }
   return 0;
 }
 
@@ -2272,7 +2245,7 @@ double StatCollector::Q30BaseFraction() {
 
 int StatCollector::SummaryOutput(const string &outputPath) {
   ofstream fastqOut(outputPath + ".FASTQ.csv");
-  fastqOut << "FileNumber,PairEnd1,PairEnd2" << endl;
+  fastqOut << "FileIndex,PairEnd1,PairEnd2" << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
     size_t last_slash_idx = FSCVec[i].FileName1.find_last_of("\\/");
     if (std::string::npos != last_slash_idx) {
@@ -2294,8 +2267,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   long long total_retained(0);
   long long total_unmapped(0);
   long long total_low_mapQ(0);
-  fcsv << "FileNumber,NumOfBase,NumOfReads,NumOfUmappedReads,NumOfLowMAPQReads,"
-          "NumOfRetainedReads,AverageLength"
+  fcsv << "FileIndex,NumOfBases,NumOfReads,NumOfUmappedReads,NumOfLowMAPQReads,"
+          "NumOfQCPassReads,ReadLength"
        << endl;
   for (size_t i = 0; i != FSCVec.size(); ++i) {
     fcsv << i + 1 << "," << FSCVec[i].NumBase << "," << FSCVec[i].NumRead << ","
