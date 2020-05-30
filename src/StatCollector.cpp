@@ -885,6 +885,22 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
   if (maxInsert2 >= INSERT_SIZE_LIMIT)
     maxInsert2 = INSERT_SIZE_LIMIT - 1;
 
+  if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1) {
+    // int ActualInsert(-1);
+    //	ActualInsert=0;
+    InsertSizeDist[0]++;
+    // cerr<<"Duplicate function exit from diff chrom"<<endl;
+    fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
+         << "\t" << bns->anns[seqid_p].name << "\t"
+         << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
+         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len) << "\t"
+         << bns->anns[seqid_q].name << "\t"
+         << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
+         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
+         << "\tNotPair" << endl;
+    return 0;
+  }
+
   if (p->mapQ > threshQual && q->mapQ > threshQual) {
 
     int ActualInsert(-1), start(0), end(0); //[start, end)
@@ -2305,9 +2321,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
 //       << "[" << total_mapped_reads << "/" << total_reads << "]\n";
   fout << "Estimated Read PCR Duplication Rate : "
        << NumPCRDup / ((double)NumBaseMapped / avgReadLen)
-       //     << "\n";
-       << "[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen
-       << "]\n";
+            << "\n";
+//       << "[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen << "]\n";
 
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";

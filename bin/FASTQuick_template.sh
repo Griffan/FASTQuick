@@ -254,7 +254,7 @@ fi
 	fi
 	#mkdir -p $(dirname $outputPrefix) || echo "Unable to create directory $(dirname $outputPrefix) for output files." 1>&2
 	if [[ "${indexPrefix:0:1}" != "/" && "${indexPrefix:0:2}" != "~[/a-z]" ]] ; then
-    echo "Absolute path is required for --indexPrefix." 1>&2
+    echo "Absolute path is required for --index." 1>&2
     exit 10
   fi
 	echo "Using index prefix $indexPrefix" 1>&2
