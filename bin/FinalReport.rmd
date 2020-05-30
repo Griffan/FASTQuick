@@ -130,9 +130,6 @@ create.DenDist=function(InsertTable,positionCol,countCol){
 #input=args[1]
 #SVDPrefix=args[2]
 #FASTQuickInstallDir=args[3]
-#input="~/Downloads/FASTQuick_test/EmpQualityInvestigation/output/regular_size_output_HG00553_exome"
-#SVDPrefix="~/Downloads/FASTQuick_test/EmpQualityInvestigation/index/regular_size_test.FASTQuick.fa.bed.phase3.vcf.gz"
-#FASTQuickInstallDir="/Users/fanzhang/Dropbox/ClionProjects/FASTQuick/"
 input=params$input
 SVDPrefix=params$SVDPrefix
 FASTQuickInstallDir=params$FASTQuickInstallDir
@@ -180,7 +177,7 @@ q4=ggplot(mydata)+geom_line(aes(y=BaseCount,x=SequencingQuality),color="red",lin
 
 mydata= read.table(paste(input,".GCDist",sep=""),header=FALSE)
 mydata=mydata[2:100,]
-colnames(mydata)=c("GC","dummy1","dummy2","AvgDepth")
+colnames(mydata)=c("GC","dummy1","dummy2","NormalizedDepth")
 q5=ggplot(mydata,aes(x=GC,y=AvgDepth))+geom_line(color="#00BFC4")+
   ggtitle("GC Distribution")+coord_cartesian(xlim=c(0,100))+
   geom_abline(intercept=1, slope=0,color="red",linetype="dotted")+ theme(plot.title = element_text(hjust = 0.5))
