@@ -269,7 +269,7 @@ fi
 echo "Using $threads worker threads." 1>&2
 
 if [[ "$callableRegion" == "" ]] ; then
-	echo "--callableRegion not specified. Use default hg19 callableRegion from ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed" 1>&2
+	echo "--callableRegion not specified. Use default hg19 callableRegion from \" wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed\"" 1>&2
 	wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed -O $workingDir/20141020.strict_mask.whole_genome.bed
   callableRegion="$workingDir/20141020.strict_mask.whole_genome.bed"
 elif [[ ! -f $callableRegion ]] ; then
@@ -296,7 +296,7 @@ for tool in samtools bcftools pandoc R; do
 	echo "Found $(which $tool)" 1>&2
 done
 
-echo "Please also ensure your R environment has installed these libraries: ggplot2 scales knitr rmarkdown"
+echo "Please also ensure that your R environment has installed these libraries: ggplot2 scales knitr dplyr rmarkdown"
 
 timestamp=$(date +%Y%m%d_%H%M%S)
 mkdir -p $workingDir
@@ -365,75 +365,80 @@ if [[ $do_index == true ]] ; then
       cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
       cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
       cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
+    else
+      if [[ $RefVCFList != "" ]] ; then
+        echo "$(date)	Extract reference genotype matrix from vcf list RefVCFList..."| tee -a "$timinglogfile"
+        chr=0
+        while read line;do
+          bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf $line > $workingDir/$(basename $line).list.vcf.gz &
+          pids[${chr}]=$!
+          chr=$chr+1
+          sleep 1s
+        done < $RefVCFList
 
-    elif [[ $RefVCFList != "" ]] ; then
-      echo "$(date)	Extract reference genotype matrix from vcf list RefVCFList..."| tee -a "$timinglogfile"
-      chr=0
-      while read line;do
-        bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf $line > $workingDir/$(basename $line).list.vcf.gz &
-        pids[${chr}]=$!
-        chr=$chr+1
-        sleep 1s
-      done < $RefVCFList
+        for pid in ${pids[*]}; do
+          if wait $pid; then
+             echo "Process $pid finished"
+          else
+             echo "Process $pid failed"
+          fi
+        done
 
-      for pid in ${pids[*]}; do
-        if wait $pid; then
-           echo "Process $pid finished"
-        else
-           echo "Process $pid failed"
+        echo "ls $workingDir/*.list.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
+        rm $workingDir/*.list.vcf.gz
+
+      elif [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
+        echo "$(date)	Extract reference genotype matrix by downloading 1000g variants database..."| tee -a "$timinglogfile"
+        echo "$(date)	[WARNING]This step might take longer time, please ensure internet connection is available before proceeding"| tee -a "$timinglogfile"
+
+        #TODO:consider hg19 and hg38
+        genoPrefix=""
+        genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+        ncbiPrefix="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/"
+        ucscPrefix="http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/"
+
+        if curl --head --fail --silent "$ncbiPrefix$genoTestFile" >/dev/null; then
+            genoPrefix=$ncbiPrefix
+        elif curl --head --fail --silent "$ucscPrefix$genoTestFile" >/dev/null; then
+            genoPrefix=$ucscPrefix
         fi
-      done
+        echo "Using genotype matrices from ${genoPrefix}..."
+        for chr in {1..22};do
+          bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf "${genoPrefix}ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
+          pids[${chr}]=$!
+          sleep 1s
+        done
 
-      echo "ls $workingDir/*.list.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
-      rm $workingDir/*.list.vcf.gz
+        for chr in {1..22}; do
+          pid=${pids[chr]}
+          if wait $pid; then
+             echo "Process $pid finished"
+          else
+             echo "Process $pid failed!"
+             echo "Please manually run \"bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf "${genoPrefix}ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz \""
+          fi
+        done
 
-    elif [[ -f "$indexPrefix.FASTQuick.fa" ]] ; then
-      echo "$(date)	Extract reference genotype matrix by downloading 1000g variants database..."| tee -a "$timinglogfile"
-      echo "$(date)	[WARNING]This step might take longer time, please ensure internet connection is available before proceeding"| tee -a "$timinglogfile"
-
-      #TODO:consider hg19 and hg38
-      genoPrefix=""
-      genoTestFile="ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
-      ncbiPrefix="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/"
-      ucscPrefix="http://hgdownload.cse.ucsc.edu/gbdb/hg19/1000Genomes/phase3/"
-
-      if curl --head --fail --silent "$ncbiPrefix$genoTestFile" >/dev/null; then
-          genoPrefix=$ncbiPrefix
-      elif curl --head --fail --silent "$ucscPrefix$genoTestFile" >/dev/null; then
-          genoPrefix=$ucscPrefix
+        echo "ls ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
+        rm ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz
+      else
+        echo "$(date)	Marker selction failed..."| tee -a "$timinglogfile"
+        exit 15
       fi
-      echo "Using genotype matrices from ${genoPrefix}..."
-      for chr in {1..22};do
-        bcftools view -v snps -O z -R  ${indexPrefix}.FASTQuick.fa.SelectedSite.vcf "${genoPrefix}ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" > ${indexPrefix}.FASTQuick.fa.bed.chr${chr}.vcf.gz &
-        pids[${chr}]=$!
-        sleep 1s
-      done
 
-      for pid in ${pids[*]}; do
-        if wait $pid; then
-           echo "Process $pid finished"
-        else
-           echo "Process $pid failed"
-        fi
-      done
-
-      echo "ls ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz |bcftools concat -O z -f - -o ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz"|bash
-      rm ${indexPrefix}.FASTQuick.fa.bed.chr*.vcf.gz
-    else
-      echo "$(date)	Marker selction failed..."| tee -a "$timinglogfile"
-      exit 15
-    fi
-
-    if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] ; then
-      echo "$(date)	Extract subset of genotype matrix finished"| tee -a "$timinglogfile"
-      { /usr/bin/time \
-        $FASTQuick_PROGRAM pop+con \
-        --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
-        --Reference $reference \
-        1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
-      echo "$(date)	Build SVD files finished" | tee -a "$timinglogfile"
-    else
-      echo "$(date)	Extract subset of genotype matrix failed"| tee -a "$timinglogfile"
+      if [[ -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz" ]] && [[ ! -f "$indexPrefix.FASTQuick.fa.bed.phase3.vcf.gz.UD" ]]; then
+        echo "$(date)	Extract subset of genotype matrix finished"| tee -a "$timinglogfile"
+        { /usr/bin/time \
+          $FASTQuick_PROGRAM pop+con \
+          --RefVCF ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
+          --Reference $reference \
+          1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+        echo "$(date)	Build SVD files finished" | tee -a "$timinglogfile"
+      else
+        echo "$(date)	Extract subset of genotype matrix failed."| tee -a "$timinglogfile"
+        echo "$(date)	Check if SVD files have already existed, abort."| tee -a "$timinglogfile"
+        exit 16
+      fi
     fi
 else
 	echo "$(date)	Skipping indexing."| tee -a "$timinglogfile"
@@ -443,7 +448,7 @@ if [[ $do_align == true ]] ; then
   ###check overwrite
   if [[ -f "${outputPrefix}.Summary" ]] ; then
     echo "${outputPrefix}.Summary exists, please manually remove existing files before restart..."
-    exit 16
+    exit 17
   fi
 	echo "$(date)	Start analyzing fastq files..." | tee -a "$timinglogfile"
 	if [[ "$fastqList" != "" ]] && [[ -f $fastqList ]] ; then
@@ -480,7 +485,7 @@ if [[ $do_align == true ]] ; then
 		  rm ${outputPrefix}.bam
 	else
 		  echo "$(date)	Analyzing $fastqList failed!" | tee -a "$timinglogfile"
-		  exit 16
+		  exit 17
 	fi
 else
 	echo "$(date)	Skipping analyzing	$fastqList" | tee -a "$timinglogfile"
@@ -495,6 +500,7 @@ if [[ $do_cont_anc == true ]] ; then
 			--Reference $reference \
 			--SVDPrefix ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz \
 			--Output ${outputPrefix} \
+			--NumThread $threads \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 	else
 		echo "$(date)	Failed to load eigen space files:${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD" | tee -a "$timinglogfile"

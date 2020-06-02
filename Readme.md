@@ -52,6 +52,7 @@ gzip -d hs37d5.fa.gz
 wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/dbsnp132_20101103.vcf.gz
 wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
 ```
+**Tips** if you are experiencing downloading difficulties, try to use the tool axel with cmdline "axel -n 10 ftp-url" to replace wget. 
 
 **Note** that you do not need to run FASTQuick on GRCh38 reference because the alignment of FASTQuick will be used only for internal purpose and will provide very similar results regardless of which reference will be used.
 
@@ -174,7 +175,7 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     --candidateVCF /path/to/hapmap_3.3.b37.vcf.gz.shuffled.vcf \
     [--RefVCFList /path/to/ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.list]
     ```
-    FASTQuick will also take longer time to prepare SVD files in this mode. As described in [FAQ-3]($faq-3), you can either let FASTQuick autimatically download [1000 genome variants VCF files](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/) via internet or provide your own reference genotype vcf files with **--RefVCFList**.
+    FASTQuick will also take longer time to prepare SVD files in this mode. As described in [FAQ-3]($faq-3), you can either let FASTQuick autimatically download [1000 genome variants VCF files](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/) via internet or provide your own reference genotype vcf files with **--RefVCFList** (where each line hash a path of one vcf file).
 
     <a href="#faq-2" id="faq-2"></a>
 2. How can I run FASTQuick on target sequencing datasets?

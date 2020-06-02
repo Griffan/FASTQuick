@@ -3,10 +3,11 @@
 require(ggplot2)
 require(scales)
 require(knitr)
+require(dplyr)
 require(rmarkdown)
 library(ggplot2)
-library(ggplot2)
 library(scales)
+library(dplyr)
 
 
 #multiplot function
@@ -104,7 +105,7 @@ create.DenDist=function(InsertTable,positionCol,countCol){
   NewT=c(-1,0)
   for(i in 1:length(InsertTable[,positionCol]))
   {
-    if(InsertTable[i,positionCol]<start_pos+5)
+    if(InsertTable[i,positionCol]<start_pos+10)
     {
       count=count+InsertTable[i,countCol]
     }
@@ -115,7 +116,7 @@ create.DenDist=function(InsertTable,positionCol,countCol){
       count=InsertTable[i,countCol]
     }
   }
-  return(NewT)
+  return(data.frame(NewT,row.names=NULL))
 }
 
 ##################################################
@@ -169,10 +170,30 @@ q4=ggplot(mydata)+geom_line(aes(y=BaseCount,x=SequencingQuality),color="red",lin
   ggtitle("Base Count Distribution")+xlim(0,40)+ theme(plot.title = element_text(hjust = 0.5))
 
 mydata= read.table(paste(input,".GCDist",sep=""),header=FALSE)
-mydata=mydata[2:100,]
-colnames(mydata)=c("GC","dummy1","dummy2","AvgDepth")
-q5=ggplot(mydata,aes(x=GC,y=AvgDepth))+geom_line(color="#00BFC4")+
-  ggtitle("GC Distribution")+coord_cartesian(xlim=c(0,100))+
+mydata=mydata[2:101,c(1,3,4)]
+colnames(mydata)=c("GC","SiteCount","NormalizedMeanDepth")
+total = sum(mydata$SiteCount)
+#interpolate
+test2=mydata %>% mutate(CumCount=cumsum(SiteCount)/total*100)
+PercentileVSGC <- data.frame(
+  with(test2,
+       approx(CumCount, GC, xout = seq(0, 100, by = 0.05), method = "linear")
+  )
+)
+PercentileVSGC$Depth=apply(PercentileVSGC, 1, function(x) { sum(test2[test2$GC<=x[2],]$SiteCount*test2[test2$GC<=x[2],]$NormalizedMeanDepth)/sum(test2[test2$GC<=x[2],]$SiteCount)})
+colnames(PercentileVSGC)=c("GCPercentile","GCPercentage","NormalizedMeanDepth")
+apf<- approxfun(test2$CumCount, test2$GC)
+f <- Vectorize(function(x) {
+  if (x == 0) return(1/1e10)
+  apf(x)
+})
+
+q5=ggplot(PercentileVSGC,aes(x=GCPercentile,y=NormalizedMeanDepth))+geom_line(color="#00BFC4")+
+  #ggtitle("Normalized Mean Depth V.S. GC Content")+
+  #coord_cartesian(xlim = c(0,100), ylim = c(0,1.5), expand = TRUE)+
+  ylim(0,1.5)+
+  theme(plot.title = element_text(hjust = 0.5), axis.title.x =element_text(hjust = 0.5))+
+  scale_x_continuous(limits=c(0,100),expand = c(0, 0), sec.axis = sec_axis(tran=~f(.), name = "GCPercentage", breaks = seq(20,60,5)))+
   geom_abline(intercept=1, slope=0,color="red",linetype="dotted")+ theme(plot.title = element_text(hjust = 0.5))
 
 

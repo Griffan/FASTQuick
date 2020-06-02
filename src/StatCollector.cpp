@@ -924,11 +924,11 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t"
          << ActualInsert << "\t" << bns->anns[seqid_p].name << "\t"
          << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
-         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
-         << "\t" << bns->anns[seqid_q].name << "\t"
+         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len) << "\t"
+         << bns->anns[seqid_q].name << "\t"
          << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
-         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
-         << "\t" << status << endl;
+         << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len) << "\t"
+         << status << endl;
 
     char start_end[256];
     sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
@@ -937,16 +937,16 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     if (!iter.second) // insert failed, duplicated
     {
       NumPCRDup += 2;
-//since we don't mark PCR duplicate
-//      return 1;
+      // since we don't mark PCR duplicate
+      //      return 1;
     }
   } else {
     // cerr<<"exit from LowQualf"<<endl;
     fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
          << "\t" << bns->anns[seqid_p].name << "\t"
          << p->pos - bns->anns[seqid_p].offset + 1 << "\t" << flag1 << "\t"
-         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len)
-         << "\t" << bns->anns[seqid_q].name << "\t"
+         << p->len << "\t" << Cigar2String(p->n_cigar, p->cigar, p->len) << "\t"
+         << bns->anns[seqid_q].name << "\t"
          << q->pos - bns->anns[seqid_q].offset + 1 << "\t" << flag2 << "\t"
          << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len)
          << "\tLowQual" << endl;
@@ -2311,25 +2311,24 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   fout << "Statistics : "
        << "Value\n";
 
-  /*Estimate total number of mapped reads from report_genome_size region only*/
+  auto report_genome_size = targetRegion.IsEmpty()
+                                ? (ref_genome_size - ref_N_size)
+                                : targetRegion.Size();
 
+  /*Estimate total number of mapped reads from report_genome_size region only*/
   double total_mapped_reads = (double)NumBaseMapped / avgReadLen *
-                              (ref_genome_size / total_region_size);
-  fout << "Estimated Read Mapping Rate : "
-       << total_mapped_reads / total_reads
+                              (report_genome_size / total_region_size);
+  fout << "Estimated Read Mapping Rate : " << total_mapped_reads / total_reads
        << "\n";
-//       << "[" << total_mapped_reads << "/" << total_reads << "]\n";
+  //       << "[" << total_mapped_reads << "/" << total_reads << "]\n";
   fout << "Estimated Read PCR Duplication Rate : "
-       << NumPCRDup / ((double)NumBaseMapped / avgReadLen)
-            << "\n";
-//       << "[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen << "]\n";
+       << NumPCRDup / ((double)NumBaseMapped / avgReadLen) << "\n";
+  //       << "[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen <<
+  //       "]\n";
 
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
 
-  auto report_genome_size = targetRegion.IsEmpty()
-                                ? (ref_genome_size - ref_N_size)
-                                : targetRegion.Size();
   fout << "Expected Read Depth : " << (double)total_base / report_genome_size
        << "[" << total_base << "/" << report_genome_size << "]\n";
   /*auto AvgDepth =
