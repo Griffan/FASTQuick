@@ -130,7 +130,6 @@ args=commandArgs(trailingOnly = TRUE)
 input=args[1]
 SVDPrefix=args[2]
 FASTQuickInstallDir=args[3]
-#input="output"
 #print(args)
 
 pdf(file=paste(input,".pdf",sep=""))
@@ -277,10 +276,24 @@ colScale = scale_color_manual(values=c('ESN'='#FFCD00','GWD'='#FFB900','LWK'='#C
 #set 1000g coordinates
 POP=read.table(paste0(FASTQuickInstallDir,"/resource/1000g.pop"),header = F)
 RefCoord.1kg=read.table(paste0(SVDPrefix,".V"),header = F)
-RefCoord.1kg=RefCoord.1kg[,1:5]
-RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
-RefCoord.1kg['Size'] <- rep(0.5,length(RefCoord.1kg$POP))
-colnames(RefCoord.1kg)=c("ID","PC1","PC2","PC3","PC4","POP","DotSize")
+
+PCdim=dim(RefCoord.1kg)[2] - 1
+
+if(PCdim >= 4) 
+{
+  print("plot using 4 PCs")
+  RefCoord.1kg=RefCoord.1kg[,1:5]
+  RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
+  RefCoord.1kg['Size'] <- rep(0.5,length(RefCoord.1kg$POP))
+  colnames(RefCoord.1kg)=c("ID","PC1","PC2","PC3","PC4","POP","DotSize")
+}else if(PCdim >=2)
+{
+  print("plot using 2 PCs")
+  RefCoord.1kg=RefCoord.1kg[,1:3]
+  RefCoord.1kg['POP'] <- POP$V2[match(RefCoord.1kg$V1, POP$V1)]
+  RefCoord.1kg['Size'] <- rep(0.5,length(RefCoord.1kg$POP))
+  colnames(RefCoord.1kg)=c("ID","PC1","PC2","POP","DotSize")
+}
 RefCoord=RefCoord.1kg
 
 
@@ -293,20 +306,31 @@ colnames(TargetSample)=c("ID","PC1","PC2","PC3","PC4","POP","DotSize")
 #q9=ggplot(data=RefCoord,aes(PC1,PC2))+geom_point(color="grey")+geom_point(data=CombinedData,aes(PC1,PC2,color=POP))+
 #  colScale+alphaScale+sizeScale
 #prepare dataset for plot
-CombinedData=rbind(RefCoord,TargetSample)
+if(PCdim >= 4) 
+{
+  CombinedData=rbind(RefCoord,TargetSample)
+}else if(PCdim >=2)
+{
+  CombinedData=rbind(RefCoord,TargetSample[,c(1,2,3,6,7)])
+}
 #plot RefCoord as colorful
 q10=ggplot()+geom_point(data=CombinedData,aes(PC1,PC2,color=POP, size=DotSize), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
   colScale+alphaScale+scale_size(guide = 'none')#+sizeScale
 
-
+if(PCdim >= 4) 
+{
 q11=ggplot()+geom_point(data=CombinedData,aes(PC3,PC4,color=POP, size=DotSize), alpha=0.5)+#geom_text(data=CombinedData,aes(PC1,PC2,label=POP),size=1)+
   colScale+alphaScale+scale_size(guide = 'none')#+sizeScale
+}
 
 #output file
 multiplot(q1,q2,q3,q4, cols=2)
 multiplot(q5,q7,q6,q8,cols=2)
 multiplot(q10,cols=1)
+if(PCdim >= 4) 
+{
 multiplot(q11,cols=1)
+}
 dev.off()
 
 
