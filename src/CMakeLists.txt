@@ -4,7 +4,7 @@ file(GLOB CXX_SOURCE_FILES *.cpp)
 
 add_definitions(-DHAVE_PTHREAD)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fpic -pthread  -Wno-format-security -Wno-sign-compare -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fpic -pthread  -Wno-format-security -Wno-sign-compare -Wno-unused-function -Wno-unused-variable")
 
 include_directories(../misc/vcf/ ${STATGEN_INCLUDE_DIR} ../misc/)
 

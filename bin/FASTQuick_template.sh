@@ -522,5 +522,6 @@ echo "$(date)	Visualize QC statistics..." | tee -a "$timinglogfile"
 { /usr/bin/time \
 	Rscript -e "rmarkdown::render('${FASTQuick_BIN_DIR}/FinalReport.rmd', params=list(input = '${outputPrefix}', SVDPrefix = '${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz', FASTQuickInstallDir = '${FASTQuick_SRC_DIR}'), output_dir = '$outputDir')"
 	1>&2 2>> "$logfile";} 1>&2 2>>"$timinglogfile"
+	mv $outputDir/FinalReport.html $outputDir/${outputPrefix}.FinalReport.html
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors." | tee -a "$timinglogfile"

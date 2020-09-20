@@ -6,27 +6,71 @@
    
 ### CONTENTS
 
+- [INSTALL](#install)
 - [GETTING STARTED](#getting-started)
 - [FAQ](#faq)
-- [INSTALL](#install)
 - [WIKI PAGE](#wiki-page)
 - [AUTHOR](#author)
 - [COPYRIGHT](#copyright)
 
-### GETTING STARTED
-Follow the procedures below to quickly get started using FASTQuick.
+### INSTALL
+To install FASTQuick, run the following series of commands.
 
-#### Clone and Install FASTQuick
-First, to start using FASTQuick, clone and install the repository.
 ```
-git clone https://github.com/Griffan/FASTQuick.git
-cd FASTQuick
+git clone https://github.com/Griffan/FASTQuick.git   
 mkdir build
 cd build
 cmake ..
 make   
 make test
 ```
+
+Installation is complete if all tests finish successfully.
+
+In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
+```
+
+For libhts:
+  - cmake -DHTS_INCLUDE_DIRS=/hts_absolute_path/include/  -DHTS_LIBRARIES=/hts_absolute_path/lib/libhts.a ..
+
+For bzip2:
+  - cmake -DBZIP2_INCLUDE_DIRS=/bzip2_absolute_path/include/ -DBZIP2_LIBRARIES=/bzip2_absolute_path/lib/libbz2.a ..
+
+For lzma:
+  - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
+```
+
+A full list of required libraries and packages that are required to run the pipeline:
+```
+tools:
+bwa
+tabix
+samtools
+bcftools
+pandoc
+R
+
+binary libraries:
+libhts
+zlib
+libbzip2
+libcurl
+libssl
+
+R libraries:
+ggplot2
+scales
+knitr
+rmarkdown
+```
+
+**Note** that if you use docker to deploy, the minimal memory requirement is 4GB.
+
+### GETTING STARTED
+Follow the procedures below to quickly get started using FASTQuick.
+
+#### Clone and Install FASTQuick
+First, to start using FASTQuick, clone and install the repository.
 Please refer to [INSTALL](#install) for more comprehensive guide on how to download and install FASTQuick.
 
 #### Perform a Test Run
@@ -42,14 +86,22 @@ To run FASTQuick on real human sequence data, you need to download reference fil
 ```
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
 gzip -d hs37d5.fa.gz
+bwa index hs37d5.fa
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/dbsnp132_20101103.vcf.gz
+gzip -d dbsnp132_20101103.vcf.gz
+bgzip dbsnp132_20101103.vcf
+tabix dbsnp132_20101103.vcf.gz
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
 ```
 or from ncbi:
 ```
 wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
 gzip -d hs37d5.fa.gz
+bwa index hs37d5.fa
 wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/dbsnp132_20101103.vcf.gz
+gzip -d dbsnp132_20101103.vcf.gz
+bgzip dbsnp132_20101103.vcf
+tabix dbsnp132_20101103.vcf.gz
 wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/supporting/accessible_genome_masks/20141020.strict_mask.whole_genome.bed
 ```
 **Tips** if you are experiencing downloading difficulties, try to use the tool axel with cmdline "axel -n 10 ftp-url" to replace wget. 
@@ -79,8 +131,8 @@ ${FASTQUICK_HOME}/bin/FASTQuick.sh \
 --SVDPrefix ${FASTQUICK_HOME}/resource/1000g.phase3.10k.b37.vcf.gz \
 --index <index.prefix> \
 --output <sample.output.prefix> \
---fastq1 <sample.input.R1.fastq.gz> \
---fastq2 <sample.input.R2.fastq.gz>
+--fastq_1 <sample.input.R1.fastq.gz> \
+--fastq_2 <sample.input.R2.fastq.gz>
 ```
 
 * Users need to specify `<index.prefix>`, `<sample.output.prefix>`, `<sample.input.R1.fastq.gz>`, `<sample.input.R2.fastq.gz>`. 
@@ -170,8 +222,8 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
     --index <index.prefix> \
     --output <sample.output.prefix> \
-    --fastq1 <sample.input.R1.fastq.gz> \
-    --fastq2 <sample.input.R2.fastq.gz> \
+    --fastq_1 <sample.input.R1.fastq.gz> \
+    --fastq_2 <sample.input.R2.fastq.gz> \
     --candidateVCF /path/to/hapmap_3.3.b37.vcf.gz.shuffled.vcf \
     [--RefVCFList /path/to/ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.list]
     ```
@@ -192,8 +244,8 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     --callableRegion /path/to/20141020.strict_mask.whole_genome.bed \
     --index <index.prefix> \
     --output <sample.output.prefix> \
-    --fastq1 <sample.input.R1.fastq.gz> \
-    --fastq2 <sample.input.R2.fastq.gz> \
+    --fastq_1 <sample.input.R1.fastq.gz> \
+    --fastq_2 <sample.input.R2.fastq.gz> \
     --candidateVCF /path/to/hapmap_3.3.b37.vcf.gz.shuffled.vcf \
     --targetRegion <targetRegion.bed> 
     ```
@@ -255,50 +307,6 @@ You also will find a similar [FinalReport.html](https://www.dropbox.com/s/7fbtpq
     Yes, you can run FASTQuick on GRCh38. 
     However, FASTQuick does not reply on any standard/version of reference genome, because the alignment(coordinate system) will be used only for internal purpose and will provide very similar final report regardless of which version of reference will be used.
     We plan to provide GRCh38 based resource files later on, please stay tuned. 
-
-### INSTALL
-To install FASTQuick, run the following series of commands.
-
-```
-git clone https://github.com/Griffan/FASTQuick.git   
-mkdir build
-cd build
-cmake ..
-make   
-make test
-```
-
-Installation is complete if all tests finish successfully.
-
-In case any required libraries is missing, you may specify customized installing path by replacing "cmake .." with:
-```
-
-For libhts:
-  - cmake -DHTS_INCLUDE_DIRS=/hts_absolute_path/include/  -DHTS_LIBRARIES=/hts_absolute_path/lib/libhts.a ..
-
-For bzip2:
-  - cmake -DBZIP2_INCLUDE_DIRS=/bzip2_absolute_path/include/ -DBZIP2_LIBRARIES=/bzip2_absolute_path/lib/libbz2.a ..
-
-For lzma:
-  - cmake -DLZMA_INCLUDE_DIRS=/lzma_absolute_path/include/ -DLZMA_LIBRARIES=/lzma_absolute_path/lib/liblzma.a ..
-```
-
-A full list of required libraries and packages that are required to run the pipeline:
-```
-binary libraries:
-zlib
-libbzip2
-libcurl
-libssl
-
-R libraries:
-ggplot2
-scales
-knitr
-rmarkdown
-```
-
-**Note** that if you use docker to deploy, the minimal memory requirement is 4GB.
   
 ### WIKI PAGE
 

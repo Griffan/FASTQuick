@@ -1,6 +1,6 @@
 #include "SVDcalculator.h"
 #include "Eigen/Dense"
-#include "libVcf/libVcfVcfFile.h"
+#include "libVcf/libVcfFile.h"
 #include <Error.h>
 #include <fstream>
 #include <unordered_map>

@@ -32,14 +32,6 @@ else()
     set(LZMA ${LZMA_LIBRARIES})
 endif()
 
-find_library(SSLLIB ssl HINTS /usr/lib/x86_64-linux-gnu/ /usr/lib/ /usr/lib64/)
-if(NOT SSLLIB)
-    message(FATAL_ERROR "libssl library not found")
-endif()
-find_library(CRYPTOLIB crypto HINTS /usr/lib/x86_64-linux-gnu/ /usr/lib/ /usr/lib64/)
-if(NOT CRYPTOLIB)
-    message(FATAL_ERROR "libcrypto library not found")
-endif()
 
 
 add_subdirectory(statgen)
@@ -56,7 +48,7 @@ include_directories(statgen ${HTS_INCLUDE_DIRS} samtools libVcf Eigen)
 
 add_library(VerifyBamID ${SOURCE_FILES})
 
-target_link_libraries(VerifyBamID statgen Vcf ${HTS_LIBRARIES} samtools ${ZLIB} ${BZIP2} ${LZMA} ${CURLLIB} ${SSLLIB} ${CRYPTOLIB})
+target_link_libraries(VerifyBamID statgen Vcf ${HTS_LIBRARIES} samtools ${ZLIB} ${BZIP2} ${LZMA} ${CURLLIB})
 
 #enable_testing()
 
