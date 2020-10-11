@@ -178,6 +178,7 @@ public:
 
   int ProcessCore(const std::string &statPrefix, const gap_opt_t *opt);
   int GetGenoLikelihood(const std::string &statPrefix);
+  int GetVCF(const std::string &outputPath);
   inline int IsPartialAlign(const bwa_seq_t *q);
   inline int IsPartialAlign(SamRecord &q);
 

@@ -42,7 +42,7 @@ add_subdirectory(samtools)
 
 add_subdirectory(libVcf)
 
-set(SOURCE_FILES vb2Main.cpp SVDcalculator.cpp ContaminationEstimator.cpp MathGenMin.cpp MathGold.cpp Random.cpp SimplePileupViewer.cpp params.cpp )#SVDcalculator.cpp SVDcalculator.h)
+set(SOURCE_FILES vb2Main.cpp SVDcalculator.cpp ContaminationEstimator.cpp MathGenMin.cpp MathGold.cpp Random.cpp SimplePileupViewer.cpp params.cpp)
 
 include_directories(statgen ${HTS_INCLUDE_DIRS} samtools libVcf Eigen)
 

@@ -36,4 +36,5 @@ cmake-build-debug
 runUnitTests
 bin/runUnitTests.dSYM/
 FinalReport.html
+.gitignore
 

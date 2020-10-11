@@ -7,9 +7,11 @@
 #include "../misc/bam/SamRecord.h"
 #include "../misc/bam/SamValidation.h"
 #include "../misc/vcf/VcfFileReader.h"
+#include "../misc/vcf/VcfRecord.h"
 
 #include "InsertSizeEstimator.h"
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 
 using namespace std;
@@ -2022,7 +2024,9 @@ int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
   GetSexChromInfo(statPrefix);
   GetPileup(statPrefix, opt);
   SummaryOutput(statPrefix);
-  GetGenoLikelihood(statPrefix);
+//  GetGenoLikelihood(statPrefix);
+  GetVCF(statPrefix);
+
   return 0;
 }
 
@@ -2110,14 +2114,14 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
   return 0;
 }
 
-static vector<double> CalLikelihood(const string &seq, const string &qual,
-                                    const char &maj,
-                                    const char &min) // maj:ref, min:alt
+static vector<float> CalLikelihood(const string &seq, const string &qual,
+                                   const char &maj,
+                                   const char &min) // maj:ref, min:alt
 {
-  double GL0(0), GL1(0), GL2(0);
+  float GL0(0), GL1(0), GL2(0);
   {
     for (uint32_t i = 0; i != seq.size(); ++i) {
-      double seq_error = REV_PHRED(qual[i]);
+      float seq_error = REV_PHRED(qual[i]);
       // fprintf(stderr,"Debug (qual:%d\tseq_error:%f)",qual[i],seq_error);
       if (seq[i] == maj) {
         GL0 += log10(1 - seq_error);
@@ -2135,11 +2139,11 @@ static vector<double> CalLikelihood(const string &seq, const string &qual,
     }
     // fprintf(stderr, "\n");
   }
-  vector<double> tmp(3, 0);
-  tmp[0] = GL0 * (-10);
-  tmp[1] = GL1 * (-10);
-  tmp[2] = GL2 * (-10);
-  double minimal(tmp[0]);
+  vector<float> tmp(3, 0);
+  tmp[0] = floor(GL0 * (-10)+0.5);
+  tmp[1] = floor(GL1 * (-10)+0.5);
+  tmp[2] = floor(GL2 * (-10)+0.5);
+  float minimal(tmp[0]);
   if (tmp[1] < minimal) {
     minimal = tmp[1];
   }
@@ -2154,32 +2158,14 @@ static vector<double> CalLikelihood(const string &seq, const string &qual,
 
 int StatCollector::GetGenoLikelihood(const string &outputPath) {
   ofstream fout(outputPath + ".Likelihood");
-  size_t numAllele[4] = {0};
-  //    char majAllele, minAllele;
-  int maxIndex = 0;
-  // for (unsort_map::iterator i = PositionTable.begin();
-  //	i != PositionTable.end(); ++i) //each chr
-  //{
-  //	for (std::unordered_map<int, unsigned int>::iterator j =
-  //		i->second.begin(); j != i->second.end(); ++j) //each site
-  //	{
-  for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end(); ++i) {
-    for (map<int, unsigned int>::iterator j = i->second.begin();
-         j != i->second.end(); ++j) {
+
+  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
+    for (auto j = i->second.begin(); j != i->second.end(); ++j) {
       uint32_t markerIndex = j->second;
       VcfRecord *VcfLine = VcfRecVec[markerIndex];
       string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
-
-      CountAllele(numAllele, SeqVec[markerIndex]);
-      maxIndex = FindMaxAllele(numAllele, 4);
-      //            majAllele = "ACGT"[maxIndex];
-      numAllele[maxIndex] = 0;
-      maxIndex = FindMaxAllele(numAllele, 4);
-      //            minAllele = "ACGT"[maxIndex];
-      vector<double> tmpGL =
-          CalLikelihood(SeqVec[markerIndex],
-                        QualVec[markerIndex], // majAllele, minAllele);
-                        RefStr[0], AltStr[0]);
+      vector<float> tmpGL = CalLikelihood(
+          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0]);
       fout << i->first << "\t" << j->first << "\t" << tmpGL[0] << "\t"
            << tmpGL[1] << "\t" << tmpGL[2];
       fout << endl;
@@ -2187,6 +2173,73 @@ int StatCollector::GetGenoLikelihood(const string &outputPath) {
   }
   fout.close();
   return 0;
+}
+
+static std::string CurrentDate() {
+  std::time_t now =
+      std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+  char buf[100] = {0};
+  std::strftime(buf, sizeof(buf), "%Y%m%d", std::localtime(&now));
+  return buf;
+}
+
+int StatCollector::GetVCF(const string &outputPath) {
+  string vcfPath = outputPath + ".vcf";
+  std::ofstream fout(vcfPath);
+  if (!fout.is_open())
+    std::cerr << "Open " << vcfPath << " to write failed!" << std::endl;
+  // add proper header information
+  fout << "##fileformat=VCFv4.2\n";
+  fout << (string("##fileDate=") + CurrentDate()).c_str() << "\n";
+  fout << "##source=VerifyBamID2\n";
+  fout << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in "
+          "genotypes, for each ALT allele, in the same order as listed\">\n";
+  fout << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, "
+          "for each ALT allele, in the same order as listed\">\n";
+  fout << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of "
+          "alleles in called genotypes\">\n";
+  fout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+  fout << "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, "
+          "Phred-scaled likelihoods for genotypes as defined in the VCF "
+          "specification\">\n";
+  fout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tIntendedSamp"
+          "le\n";
+  VcfRecord *VcfLine;
+  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
+    for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+      uint32_t markerIndex = j->second;
+      VcfLine = VcfRecVec[markerIndex];
+
+      fout << VcfLine->getChromStr() << "\t";
+      fout << VcfLine->get1BasedPosition() << "\t";
+      fout << VcfLine->getIDStr() << "\t";
+      fout << VcfLine->getRefStr() << "\t";
+      fout << VcfLine->getAltStr() << "\t";
+      fout << VcfLine->getQualStr() << "\t";
+      fout << VcfLine->getFilter().getString() << "\t";
+      fout << "AC=" << *(VcfLine->getInfo().getString("AC"))
+           << ";AF=" << (*VcfLine->getInfo().getString("AF"))
+           << ";AN=" << *(VcfLine->getInfo().getString("AF")) << "\t";
+      fout << "GT:PL\t";
+
+      string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
+      vector<float> tmpGL = CalLikelihood(
+          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0]);
+
+      if (tmpGL[0] < tmpGL[1]) {
+        if (tmpGL[0] < tmpGL[2])
+          fout << "0/0:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+        else
+          fout << "1/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+      } else if (tmpGL[1] < tmpGL[2]) {
+        fout << "0/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+      } else {
+        fout << "1/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+      }
+    }
+  }
+  fout.close();
 }
 
 int StatCollector::AddFSC(FileStatCollector a) {
