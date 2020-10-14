@@ -379,6 +379,7 @@ int runAlign(int argc, char **argv) {
   if (TmpStr == "REFERENCE_PATH") {
     ss >> RefPath;
     Indexer.RefPath = RefPath;
+    notice("Read in reference genome from %s", RefPath.c_str());
   } else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
@@ -390,8 +391,10 @@ int runAlign(int argc, char **argv) {
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "TARGET_REGION_PATH")
+  if (TmpStr == "TARGET_REGION_PATH") {
     ss >> TargetRegionPath;
+    notice("Read in target region from %s", TargetRegionPath.c_str());
+  }
   else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
@@ -403,9 +406,10 @@ int runAlign(int argc, char **argv) {
   ss.clear();
   ss << ParaStr;
   ss >> TmpStr;
-  if (TmpStr == "DBSNP_VCF_PATH")
+  if (TmpStr == "DBSNP_VCF_PATH") {
     ss >> DBsnpPath;
-  else {
+    notice("Read in dbSNP from %s", DBsnpPath.c_str());
+  }else {
     std::cerr << NewRef + ".param"
               << " corrupted!" << endl;
     exit(EXIT_FAILURE);

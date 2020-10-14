@@ -1,15 +1,13 @@
 #include "StatCollector.h"
 
 #include "../libbwa/bwase.h"
-#include "../libbwa/bwtaln.h"
 
 #include "../misc/bam/SamFile.h"
-#include "../misc/bam/SamRecord.h"
 #include "../misc/bam/SamValidation.h"
 #include "../misc/vcf/VcfFileReader.h"
-#include "../misc/vcf/VcfRecord.h"
 
 #include "InsertSizeEstimator.h"
+
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -1759,7 +1757,7 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
   }
   string GCpath = RefPath + ".gc";
   ifstream FGC(GCpath, ios_base::binary);
-  // int num_so_far(0);
+  int chopped_read_len = std::floor(opt->read_len * FLANK_EDGE + 0.5);
   while (!reader.isEOF()) {
     VcfRecord *VcfLine = new VcfRecord;
 
@@ -1784,25 +1782,22 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
     // num_so_far++;
     if (chr == "X" or chr == "Y") {
       NumXorYMarker++;
-      flankRegion.AddRegion(chr,
-                            pos - opt->flank_len + opt->read_len * FLANK_EDGE,
-                            pos + opt->flank_len - opt->read_len * FLANK_EDGE);
+      flankRegion.AddRegion(chr, pos - opt->flank_len + chopped_read_len,
+                            pos + opt->flank_len - chopped_read_len);
       //      flankRegion.AddRegion(chr,
       //                            pos - opt->flank_len,
       //                            pos + opt->flank_len);
     } else if (std::string(VcfLine->getIDStr()).back() == 'L') {
       NumLongMarker++;
-      flankRegion.AddRegion(
-          chr, pos - opt->flank_long_len + opt->read_len * FLANK_EDGE,
-          pos + opt->flank_long_len - opt->read_len * FLANK_EDGE);
+      flankRegion.AddRegion(chr, pos - opt->flank_long_len + chopped_read_len,
+                            pos + opt->flank_long_len - chopped_read_len);
       //      flankRegion.AddRegion(
       //          chr, pos - opt->flank_long_len,
       //          pos + opt->flank_long_len );
     } else {
       NumShortMarker++;
-      flankRegion.AddRegion(chr,
-                            pos - opt->flank_len + opt->read_len * FLANK_EDGE,
-                            pos + opt->flank_len - opt->read_len * FLANK_EDGE);
+      flankRegion.AddRegion(chr, pos - opt->flank_len + chopped_read_len,
+                            pos + opt->flank_len - chopped_read_len);
       //      flankRegion.AddRegion(chr,
       //                            pos - opt->flank_len,
       //                            pos + opt->flank_len);
@@ -1815,6 +1810,14 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
     StrandVec.emplace_back(0);
   }
   reader.close();
+
+  flankRegion.Collapse();
+  notice("Input %d markers with short flank region with length %d",
+         NumShortMarker, opt->flank_len * 2 - chopped_read_len * 2 + 1);
+  notice("Input %d markers with long flank region with length %d",
+         NumLongMarker, opt->flank_long_len * 2 - chopped_read_len * 2 + 1);
+  notice("Input %d markers with XorY flank region with length %d",
+         NumXorYMarker, opt->flank_len * 2 - chopped_read_len * 2 + 1);
 
   std::string dbSNPFile = RefPath + ".dbSNP.subset.vcf";
 
@@ -1896,12 +1899,11 @@ int StatCollector::GetDepthDist(const string &outputPath,
   }
 
   if (targetRegion.IsEmpty()) {
+    int chopped_read_len = std::floor(opt->read_len * FLANK_EDGE + 0.5);
     total_region_size =
-        ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) *
-            NumShortMarker +
-        ((opt->flank_long_len - opt->read_len * FLANK_EDGE) * 2 + 1) *
-            NumLongMarker +
-        ((opt->flank_len - opt->read_len * FLANK_EDGE) * 2 + 1) *
+        ((opt->flank_len - chopped_read_len) * 2 + 1) * NumShortMarker +
+        ((opt->flank_long_len - chopped_read_len) * 2 + 1) * NumLongMarker +
+        ((opt->flank_len - chopped_read_len) * 2 + 1) *
             NumXorYMarker; // X and Y each
   } else {
     total_region_size = flankRegion.Size();
@@ -2024,7 +2026,7 @@ int StatCollector::ProcessCore(const string &statPrefix, const gap_opt_t *opt) {
   GetSexChromInfo(statPrefix);
   GetPileup(statPrefix, opt);
   SummaryOutput(statPrefix);
-//  GetGenoLikelihood(statPrefix);
+  //  GetGenoLikelihood(statPrefix);
   GetVCF(statPrefix);
 
   return 0;
@@ -2140,9 +2142,9 @@ static vector<float> CalLikelihood(const string &seq, const string &qual,
     // fprintf(stderr, "\n");
   }
   vector<float> tmp(3, 0);
-  tmp[0] = floor(GL0 * (-10)+0.5);
-  tmp[1] = floor(GL1 * (-10)+0.5);
-  tmp[2] = floor(GL2 * (-10)+0.5);
+  tmp[0] = floor(GL0 * (-10) + 0.5);
+  tmp[1] = floor(GL1 * (-10) + 0.5);
+  tmp[2] = floor(GL2 * (-10) + 0.5);
   float minimal(tmp[0]);
   if (tmp[1] < minimal) {
     minimal = tmp[1];
@@ -2193,19 +2195,15 @@ int StatCollector::GetVCF(const string &outputPath) {
   fout << "##fileformat=VCFv4.2\n";
   fout << (string("##fileDate=") + CurrentDate()).c_str() << "\n";
   fout << "##source=VerifyBamID2\n";
-  fout << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in "
-          "genotypes, for each ALT allele, in the same order as listed\">\n";
   fout << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, "
           "for each ALT allele, in the same order as listed\">\n";
-  fout << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of "
-          "alleles in called genotypes\">\n";
   fout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
   fout << "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, "
           "Phred-scaled likelihoods for genotypes as defined in the VCF "
           "specification\">\n";
   fout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tIntendedSamp"
           "le\n";
-  VcfRecord *VcfLine;
+  VcfRecord *VcfLine = nullptr;
   for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
     for (auto j = i->second.begin(); j != i->second.end(); ++j) {
       uint32_t markerIndex = j->second;
@@ -2218,9 +2216,13 @@ int StatCollector::GetVCF(const string &outputPath) {
       fout << VcfLine->getAltStr() << "\t";
       fout << VcfLine->getQualStr() << "\t";
       fout << VcfLine->getFilter().getString() << "\t";
-      fout << "AC=" << *(VcfLine->getInfo().getString("AC"))
-           << ";AF=" << (*VcfLine->getInfo().getString("AF"))
-           << ";AN=" << *(VcfLine->getInfo().getString("AF")) << "\t";
+      if(VcfLine->getInfo().getString("AF"))
+        fout << "AF=" << (*VcfLine->getInfo().getString("AF")) << "\t";
+      else {
+        warning("%s:%d has no AF field!", VcfLine->getChromStr(), VcfLine->get1BasedPosition());
+        fout << "AF=0"
+             << "\t";
+      }
       fout << "GT:PL\t";
 
       string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
@@ -2229,17 +2231,22 @@ int StatCollector::GetVCF(const string &outputPath) {
 
       if (tmpGL[0] < tmpGL[1]) {
         if (tmpGL[0] < tmpGL[2])
-          fout << "0/0:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+          fout << "0/0:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+               << "\n";
         else
-          fout << "1/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+          fout << "1/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+               << "\n";
       } else if (tmpGL[1] < tmpGL[2]) {
-        fout << "0/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+        fout << "0/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+             << "\n";
       } else {
-        fout << "1/1:" << tmpGL[0]<<","<<tmpGL[1]<<","<<tmpGL[2]<< "\n";
+        fout << "1/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+             << "\n";
       }
     }
   }
   fout.close();
+  return 0;
 }
 
 int StatCollector::AddFSC(FileStatCollector a) {
@@ -2393,8 +2400,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
                ? 0
                : NumBaseMapped / (double)total_region_size)
        << "[" << NumBaseMapped << "/" << total_region_size << "]\n";
-  fout << "Estimated Percentage of Accessible Genome Covered : "
-       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
+//  fout << "Estimated Percentage of Accessible Genome Covered : "
+//       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure
   /*auto Q20BaseFraction = [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp
@@ -2403,7 +2410,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   {	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp
   += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) /
   NumBaseMapped; };*/
-  fout << "Total Accessible Genome Size : " << total_region_size << endl;
+  fout << "Total Reduced Genome Size : " << total_region_size << endl;
   double DP1fraction = NumPositionCovered / (double)total_region_size;
   double DP2fraction = NumPositionCovered2 / (double)total_region_size;
   double DP5fraction = NumPositionCovered5 / (double)total_region_size;

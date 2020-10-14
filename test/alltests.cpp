@@ -108,7 +108,7 @@ TEST(test2,c2){
 
 
   a.Join(b,false);
-  a.PrintRegion();
+  a.PrintRegion("test");
 
   EXPECT_TRUE(a==e);
   EXPECT_TRUE(a.Size() == 241);

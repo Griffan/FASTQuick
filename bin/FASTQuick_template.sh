@@ -321,7 +321,7 @@ fi
 
 ###analysis start
 if [[ $do_index == true ]] ; then
-    if [[ $SVDPrefix != "" ]] ; then
+    if [[ $SVDPrefix != "" ]] && [[ "$targetRegion" == "" ]]; then
     echo "$(date)	Start indexing on whole genome with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
@@ -329,6 +329,17 @@ if [[ $do_index == true ]] ; then
 			--dbsnpVCF $dbSNP \
 			--ref $reference  \
 			--callableRegion $callableRegion \
+			--out_prefix $indexPrefix \
+		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
+		elif [[ $SVDPrefix != "" ]] && [[ "$targetRegion" != "" ]] ; then
+		echo "$(date)	Start indexing on whole genome with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
+		{ /usr/bin/time \
+			$FASTQuick_PROGRAM index \
+			--predefinedVCF $candidateVCF \
+			--dbsnpVCF $dbSNP \
+			--ref $reference  \
+			--callableRegion $callableRegion \
+			--regionList $targetRegion \
 			--out_prefix $indexPrefix \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 	  elif [[ "$targetRegion" == "" ]] ; then
@@ -522,6 +533,6 @@ echo "$(date)	Visualize QC statistics..." | tee -a "$timinglogfile"
 { /usr/bin/time \
 	Rscript -e "rmarkdown::render('${FASTQuick_BIN_DIR}/FinalReport.rmd', params=list(input = '${outputPrefix}', SVDPrefix = '${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz', FASTQuickInstallDir = '${FASTQuick_SRC_DIR}'), output_dir = '$outputDir')"
 	1>&2 2>> "$logfile";} 1>&2 2>>"$timinglogfile"
-	mv $outputDir/FinalReport.html $outputDir/${outputPrefix}.FinalReport.html
+	mv $outputDir/FinalReport.html ${outputPrefix}.FinalReport.html
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors." | tee -a "$timinglogfile"

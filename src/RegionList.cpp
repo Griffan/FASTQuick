@@ -29,7 +29,7 @@ int RegionList::ReadRegionList(const std::string &regionListPath) {
     }
     if (regionList.find(chr) != regionList.end()) {
       if (regionList[chr].find(start) != regionList[chr].end()) {
-        if (regionList[chr][start] < end)
+        if (regionList[chr][start] < end)//update
           regionList[chr][start] = end;
       } else {
         regionList[chr][start] = end;
@@ -52,10 +52,10 @@ bool RegionList::IsOverlapped(const std::string & Chrom, int start) {
     auto lower_iter = regionList[Chrom].lower_bound(start);
     if (lower_iter != regionList[Chrom].begin())
       lower_iter--;
-    if (lower_iter->first <= start and lower_iter->second > start)
+    if (lower_iter->first <= start and lower_iter->second >= start)
       return true;
     lower_iter++;
-    if (lower_iter->first <= start and lower_iter->second > start)
+    if (lower_iter->first <= start and lower_iter->second >= start)
       return true;
   }
   return false;

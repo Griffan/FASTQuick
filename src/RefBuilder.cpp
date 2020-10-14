@@ -629,4 +629,5 @@ int RefBuilder::PrepareRefSeq() {
   fai_destroy(seq);
   return 0;
 }
+
 RefBuilder::~RefBuilder() {}
