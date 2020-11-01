@@ -307,7 +307,7 @@ timinglogfile=$workingDir/FASTQuick.timing.$timestamp.$HOSTNAME.$$.log
 #unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 echo "Max file handles: $(ulimit -n)" 1>&2
 
-echo "$(date)	Running FASTQuick. The full log is in $logfile"
+echo -e "\n$(date)	Running FASTQuick. The full log is in $logfile\n"
 
 FASTQuick_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 FASTQuick_BIN_DIR="${FASTQuick_SRC_DIR}/bin/"
@@ -321,8 +321,11 @@ fi
 
 ###analysis start
 if [[ $do_index == true ]] ; then
+    if [[ -f ${indexPrefix}.FASTQuick.fa ]] ; then
+        echo "$(date) Index files starting with prefix ${indexPrefix} exist, FASTQuick will skip indexing step..."| tee -a "$timinglogfile"
+    fi
     if [[ $SVDPrefix != "" ]] && [[ "$targetRegion" == "" ]]; then
-    echo "$(date)	Start indexing on whole genome with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
+    echo "$(date)	Start indexing on target region with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--predefinedVCF $candidateVCF \
@@ -332,7 +335,7 @@ if [[ $do_index == true ]] ; then
 			--out_prefix $indexPrefix \
 		1>&2 2>> "$logfile"; } 1>&2 2>>"$timinglogfile"
 		elif [[ $SVDPrefix != "" ]] && [[ "$targetRegion" != "" ]] ; then
-		echo "$(date)	Start indexing on whole genome with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
+		 echo "$(date)	Start indexing on target region with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
 		{ /usr/bin/time \
 			$FASTQuick_PROGRAM index \
 			--predefinedVCF $candidateVCF \
@@ -372,6 +375,10 @@ if [[ $do_index == true ]] ; then
 
 		if [[ $SVDPrefix != "" ]] ; then
 		  echo "$(date)	Copy eigen resource files from ${SVDPrefix} files..."| tee -a "$timinglogfile"
+		  if [[ -f ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu ]] ; then
+        echo "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu exists, please manually remove existing files before restart..."
+        exit 15
+      fi
       cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
       cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
       cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V

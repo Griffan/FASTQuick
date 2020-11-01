@@ -326,6 +326,8 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   VcfHeader header;
   VcfFileReader reader;
   reader.open(VcfPath.c_str(), header);
+  int numTargetMarkers = 0;
+  int numNonTargetMarkers = 0;
   // begin select variants in target regions
   if (RegionPath != "Empty") {
     notice("Start to select markers from target regions...");
@@ -372,8 +374,8 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
       VcfTable[Chrom][Position] =
           nShortMarker + nLongMarker + nXMarker + nYMarker;
       VcfVec.push_back(VcfLine);
-
       IncreaseNumMarker(chrFlag);
+      numTargetMarkers++;
     }
     reader.close();
     reader.open(VcfPath.c_str(), header);
@@ -408,10 +410,12 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
     VcfTable[Chrom][Position] =
         nShortMarker + nLongMarker + nXMarker + nYMarker;
     VcfVec.push_back(VcfLine);
-
     IncreaseNumMarker(chrFlag);
+    numNonTargetMarkers++;
   }
   reader.close();
+
+  notice("Selected %d markers from target region, %d markers from non-target region.",numTargetMarkers, numNonTargetMarkers);
 
   if (nShortMarker + nLongMarker <
       num_variant_long + num_variant_short) // not enough essential markers

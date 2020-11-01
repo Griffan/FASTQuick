@@ -2118,7 +2118,8 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
 
 static vector<float> CalLikelihood(const string &seq, const string &qual,
                                    const char &maj,
-                                   const char &min) // maj:ref, min:alt
+                                   const char &min,
+                                   int * HQ) // maj:ref, min:alt
 {
   float GL0(0), GL1(0), GL2(0);
   {
@@ -2129,10 +2130,12 @@ static vector<float> CalLikelihood(const string &seq, const string &qual,
         GL0 += log10(1 - seq_error);
         GL1 += log10(0.5 - seq_error / 3);
         GL2 += log10(seq_error / 3);
+        HQ[0]++;
       } else if (seq[i] == min) {
         GL0 += log10(seq_error / 3);
         GL1 += log10(0.5 - seq_error / 3);
         GL2 += log10(1 - seq_error);
+        HQ[1]++;
       } else {
         GL0 += log10(2 * seq_error / 3);
         GL1 += log10(2 * seq_error / 3);
@@ -2145,37 +2148,37 @@ static vector<float> CalLikelihood(const string &seq, const string &qual,
   tmp[0] = floor(GL0 * (-10) + 0.5);
   tmp[1] = floor(GL1 * (-10) + 0.5);
   tmp[2] = floor(GL2 * (-10) + 0.5);
-  float minimal(tmp[0]);
-  if (tmp[1] < minimal) {
-    minimal = tmp[1];
-  }
-  if (tmp[2] < minimal) {
-    minimal = tmp[2];
-  }
-  tmp[0] -= minimal;
-  tmp[1] -= minimal;
-  tmp[2] -= minimal;
+//  float minimal(tmp[0]);
+//  if (tmp[1] < minimal) {
+//    minimal = tmp[1];
+//  }
+//  if (tmp[2] < minimal) {
+//    minimal = tmp[2];
+//  }
+//  tmp[0] -= minimal;
+//  tmp[1] -= minimal;
+//  tmp[2] -= minimal;
   return tmp;
 }
 
-int StatCollector::GetGenoLikelihood(const string &outputPath) {
-  ofstream fout(outputPath + ".Likelihood");
-
-  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
-    for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-      uint32_t markerIndex = j->second;
-      VcfRecord *VcfLine = VcfRecVec[markerIndex];
-      string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
-      vector<float> tmpGL = CalLikelihood(
-          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0]);
-      fout << i->first << "\t" << j->first << "\t" << tmpGL[0] << "\t"
-           << tmpGL[1] << "\t" << tmpGL[2];
-      fout << endl;
-    }
-  }
-  fout.close();
-  return 0;
-}
+//int StatCollector::GetGenoLikelihood(const string &outputPath) {
+//  ofstream fout(outputPath + ".Likelihood");
+//
+//  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
+//    for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+//      uint32_t markerIndex = j->second;
+//      VcfRecord *VcfLine = VcfRecVec[markerIndex];
+//      string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
+//      vector<float> tmpGL = CalLikelihood(
+//          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0]);
+//      fout << i->first << "\t" << j->first << "\t" << tmpGL[0] << "\t"
+//           << tmpGL[1] << "\t" << tmpGL[2];
+//      fout << endl;
+//    }
+//  }
+//  fout.close();
+//  return 0;
+//}
 
 static std::string CurrentDate() {
   std::time_t now =
@@ -2198,16 +2201,29 @@ int StatCollector::GetVCF(const string &outputPath) {
   fout << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, "
           "for each ALT allele, in the same order as listed\">\n";
   fout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+  fout << "##FORMAT=<ID=HQ,Number=1,Type=String,Description=\"Genotype\">\n";
+  fout << "##FORMAT=<ID=GP,Number=1,Type=String,Description=\"Genotype\">\n";
   fout << "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, "
           "Phred-scaled likelihoods for genotypes as defined in the VCF "
           "specification\">\n";
   fout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tIntendedSamp"
           "le\n";
+
   VcfRecord *VcfLine = nullptr;
+  float alleleFrq = 0.;
   for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
     for (auto j = i->second.begin(); j != i->second.end(); ++j) {
       uint32_t markerIndex = j->second;
       VcfLine = VcfRecVec[markerIndex];
+      string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
+
+      if(VcfLine->getInfo().getString("AF")) {
+        alleleFrq = atof(VcfLine->getInfo().getString("AF")->c_str());      }
+      else {
+        warning("%s:%d has no AF field, skipped!", VcfLine->getChromStr(), VcfLine->get1BasedPosition());
+        continue;
+      }
+      if(SeqVec[markerIndex].empty()) continue;
 
       fout << VcfLine->getChromStr() << "\t";
       fout << VcfLine->get1BasedPosition() << "\t";
@@ -2216,31 +2232,41 @@ int StatCollector::GetVCF(const string &outputPath) {
       fout << VcfLine->getAltStr() << "\t";
       fout << VcfLine->getQualStr() << "\t";
       fout << VcfLine->getFilter().getString() << "\t";
-      if(VcfLine->getInfo().getString("AF"))
-        fout << "AF=" << (*VcfLine->getInfo().getString("AF")) << "\t";
-      else {
-        warning("%s:%d has no AF field!", VcfLine->getChromStr(), VcfLine->get1BasedPosition());
-        fout << "AF=0"
-             << "\t";
-      }
-      fout << "GT:PL\t";
+      fout << "AF=" << (*VcfLine->getInfo().getString("AF")) << ";AC="<<SeqVec[markerIndex].size()<<"\t";
+      fout << "GT:PL:GP:HQ\t";
 
-      string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
-      vector<float> tmpGL = CalLikelihood(
-          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0]);
+      int HQ[2] = {0,0};
+      vector<float> tmpPL = CalLikelihood(
+          SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0], HQ);
 
-      if (tmpGL[0] < tmpGL[1]) {
-        if (tmpGL[0] < tmpGL[2])
-          fout << "0/0:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+      float prior[3], post[3], sum;
+      prior[0] = PHRED((1 - alleleFrq)* (1 - alleleFrq));
+      prior[1] = PHRED(2 * alleleFrq * (1 - alleleFrq));
+      prior[2] = PHRED(alleleFrq * alleleFrq);
+
+      post[0] = prior[0] + tmpPL[0];
+      post[1] = prior[1] + tmpPL[1];
+      post[2] = prior[2] + tmpPL[2];
+
+      sum = PHRED(REV_PHRED(post[0]) + REV_PHRED(post[1]) + REV_PHRED(post[2]));
+
+      post[0] = std::floor(post[0] - sum + 0.5);
+      post[1] = std::floor(post[1] - sum + 0.5);
+      post[2] = std::floor(post[2] - sum + 0.5);
+
+
+      if (post[0] < post[1]) {
+        if (post[0] < post[2])
+          fout << "0/0:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
                << "\n";
         else
-          fout << "1/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+          fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
                << "\n";
-      } else if (tmpGL[1] < tmpGL[2]) {
-        fout << "0/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+      } else if (post[1] < post[2]) {
+        fout << "0/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
              << "\n";
       } else {
-        fout << "1/1:" << tmpGL[0] << "," << tmpGL[1] << "," << tmpGL[2]
+        fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
              << "\n";
       }
     }
