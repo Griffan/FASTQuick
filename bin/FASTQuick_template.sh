@@ -322,7 +322,7 @@ fi
 ###analysis start
 if [[ $do_index == true ]] ; then
     if [[ -f ${indexPrefix}.FASTQuick.fa ]] ; then
-        echo "$(date) Index files starting with prefix ${indexPrefix} exist, FASTQuick will skip indexing step..."| tee -a "$timinglogfile"
+        echo "$(date)	Index files starting with prefix ${indexPrefix} exist, FASTQuick will skip indexing step..."| tee -a "$timinglogfile"
     fi
     if [[ $SVDPrefix != "" ]] && [[ "$targetRegion" == "" ]]; then
     echo "$(date)	Start indexing on target region with predfined marker set in $candidateVCF..."| tee -a "$timinglogfile"
@@ -374,15 +374,15 @@ if [[ $do_index == true ]] ; then
 		echo "$(date)	Finished selecting markers..."| tee -a "$timinglogfile"
 
 		if [[ $SVDPrefix != "" ]] ; then
-		  echo "$(date)	Copy eigen resource files from ${SVDPrefix} files..."| tee -a "$timinglogfile"
 		  if [[ -f ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu ]] ; then
-        echo "${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu exists, please manually remove existing files before restart..."
-        exit 15
+        echo "$(date)	${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.* existed, skip copying..."
+      else
+        echo "$(date)	Copy eigen resource files from ${SVDPrefix} files..."| tee -a "$timinglogfile"
+        cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
+        cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
+        cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
+        cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
       fi
-      cp "${SVDPrefix}.mu" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.mu
-      cp "${SVDPrefix}.UD" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.UD
-      cp "${SVDPrefix}.V" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.V
-      cp "${SVDPrefix}.bed" ${indexPrefix}.FASTQuick.fa.bed.phase3.vcf.gz.bed
     else
       if [[ $RefVCFList != "" ]] ; then
         echo "$(date)	Extract reference genotype matrix from vcf list RefVCFList..."| tee -a "$timinglogfile"
@@ -465,7 +465,7 @@ fi
 if [[ $do_align == true ]] ; then
   ###check overwrite
   if [[ -f "${outputPrefix}.Summary" ]] ; then
-    echo "${outputPrefix}.Summary exists, please manually remove existing files before restart..."
+    echo "$(date)	Files ${outputPrefix}.* existed, please manually remove existing files before restart..."
     exit 17
   fi
 	echo "$(date)	Start analyzing fastq files..." | tee -a "$timinglogfile"

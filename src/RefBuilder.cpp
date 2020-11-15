@@ -332,7 +332,7 @@ int RefBuilder::SelectMarker(const std::string &RegionPath) {
   if (RegionPath != "Empty") {
     notice("Start to select markers from target regions...");
     RegionList targetRegion;
-    targetRegion.ReadRegionList(RegionPath);
+    targetRegion.ReadRegionList(RegionPath, true);
     while (!reader.isEOF()) {
       chrFlag = -1 /*0:short;1:long;2:Y;3:X*/;
       isForcedShort = false;

@@ -21,6 +21,7 @@ SOFTWARE.
 
 #include "../libbwa/bntseq.h"
 #include "../libbwa/bwtaln.h"
+#include <unordered_set>
 
 #include "RegionList.h"
 #include "Utility.h"
@@ -71,6 +72,7 @@ private:
   uint64_t NumShortMarker;
   uint64_t NumLongMarker;
   uint64_t NumPCRDup;
+  uint64_t NumLongReads;
   uint64_t NumBaseMapped;
   uint64_t NumPositionCovered; // position with depth larger than 0
   // uint64_t NumPositionCovered1;
@@ -110,7 +112,7 @@ private:
 
   bool_table VariantProxyTable;
 
-  std::unordered_map<std::string, bool> duplicateTable;
+  std::unordered_set<std::string> duplicateTable;
 
   std::unordered_map<std::string, ContigStatus> contigStatusTable;
 
@@ -150,15 +152,15 @@ public:
                    const gap_opt_t *opt, std::ofstream &fout,
                    long long &total_add_failed);
 
-  enum AlignStatus { First, Both, Second, Neither };
+  enum AlignStatus { FirstOnly, Both, SecondOnly, Neither };
 
-  int IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
+  int ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p, const bwa_seq_t *q,
                    AlignStatus type, std::ofstream &fout);
   // overload functions for direct bam reading
   int AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
                    const gap_opt_t *opt, std::ofstream &fout,
                    long long &total_add);
-  int IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
+  int ProcessPairStatus(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
                    const gap_opt_t *opt, AlignStatus type, std::ofstream &fout);
 
   int ReadAlignmentFromBam(
@@ -222,6 +224,7 @@ private:
   //    std::vector<std::vector<int> > DebugCycleVec;
   //    std::vector<std::vector<unsigned char> > DebugMaqVec;
   //    std::vector<std::vector<bool> >DebugStrandVec;
+  void LableReadBridgeTwoContigs(const bntseq_t *bns, bwa_seq_t *p) const;
 };
 
 #endif /* STATCOLLECTOR_H_ */

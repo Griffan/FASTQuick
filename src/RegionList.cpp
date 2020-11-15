@@ -9,10 +9,11 @@
 #include <sstream>
 
 RegionList::RegionList(const std::string &regionListPath) {
-  ReadRegionList(regionListPath);
+  ReadRegionList(regionListPath, true);
 }
 
-int RegionList::ReadRegionList(const std::string &regionListPath) {
+int RegionList::ReadRegionList(const std::string &regionListPath,
+                               bool autoCollapse) {
   notice("Read target region list...");
   std::ifstream fin(regionListPath);
   if (!fin.is_open())
@@ -39,6 +40,7 @@ int RegionList::ReadRegionList(const std::string &regionListPath) {
     }
   }
   fin.close();
+  if(autoCollapse) Collapse();
   return 0;
 }
 
@@ -113,7 +115,7 @@ bool RegionList::Collapse()//union of internal regions
   return true;
 }
 
-bool RegionList::Join(RegionList & b, bool isUnion = false)
+bool RegionList::Join(const RegionList &b, bool isUnion = false)
 {
   if(isUnion) {
     for (auto &kv : b.regionList) {
@@ -125,7 +127,6 @@ bool RegionList::Join(RegionList & b, bool isUnion = false)
   else//isIntersection
   {
     Collapse();
-    b.Collapse();
 
     RegionList tmpList;
     for (auto &kv : b.regionList) {

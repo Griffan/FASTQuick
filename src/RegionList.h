@@ -13,14 +13,15 @@ class RegionList {
 public:
   RegionList() = default;
   explicit RegionList(const std::string &bedFile);
-  int ReadRegionList(const std::string &regionListPath);
+  int ReadRegionList(const std::string &regionListPath, bool autoCollapse = true);
   bool IsOverlapped(const std::string& Chrom, int start);
-  bool Join(RegionList & b, bool isUnion);
-  inline bool InnerJoin(RegionList & b)
+  //caller ensure b is collapsed before pass in
+  bool Join(const RegionList &b, bool isUnion);
+  inline bool InnerJoin(const RegionList & b)
   {
     return Join(b, false);
   }
-  inline bool OuterJoin(RegionList & b)
+  inline bool OuterJoin(const RegionList & b)
   {
     return Join(b, true);
   }

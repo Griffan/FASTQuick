@@ -255,6 +255,7 @@ StatCollector::StatCollector() {
   NumShortMarker = 0;
   NumLongMarker = 0;
   NumPCRDup = 0;
+  NumLongReads = 0;
   NumBaseMapped = 0;
   NumPositionCovered = 0;              // position with depth larger than 0
   NumPositionCovered2 = 0;             // larger than 1
@@ -286,6 +287,7 @@ StatCollector::StatCollector(const std::string &OutFile) {
   NumShortMarker = 0;
   NumLongMarker = 0;
   NumPCRDup = 0;
+  NumLongReads = 0;
   NumBaseMapped = 0;
   NumPositionCovered = 0;              // position with depth larger than 0
   NumPositionCovered2 = 0;             // larger than 1
@@ -323,6 +325,7 @@ void StatCollector::AddBaseInfoToNewCoord(const std::string &chrom, int i,
   DepthVec.push_back(0);
   Q20DepthVec.push_back(0);
   Q30DepthVec.push_back(0);
+
   DepthVec[index]++;
   if (baseQual >= 20) {
     Q20DepthVec[index]++;
@@ -635,9 +638,9 @@ bool StatCollector::AddSingleAlignment(const bntseq_t *bns, bwa_seq_t *p,
   return true;
 }
 // in this setting p is fastq1 and q is fastq2
-int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
-                                const bwa_seq_t *q, AlignStatus type,
-                                ofstream &fout) {
+int StatCollector::ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p,
+                                     const bwa_seq_t *q, AlignStatus type,
+                                     ofstream &fout) {
 
   int maxInsert(-1), maxInsert2(-1);
   int readLength(0), seqid_p(-1), seqid_q(-1);
@@ -668,7 +671,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
       flag2 |= SAM_FSR;
   }
 
-  if (type == AlignStatus::Second) // q is aligned only, read2
+  if (type == AlignStatus::SecondOnly) // q is aligned only, read2
   {
     // length of read including cigar for bns tracking, length of
     // the reference in the alignment
@@ -734,7 +737,7 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
            << "LowQual" << endl;
       return 2; // low quality
     }
-  } else if (type == AlignStatus::First) // p is aligned only, read1
+  } else if (type == AlignStatus::FirstOnly) // p is aligned only, read1
   {
     readLength = static_cast<int>(
         pos_end(p) -
@@ -886,8 +889,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
     maxInsert2 = INSERT_SIZE_LIMIT - 1;
 
   if (seqid_p != seqid_q && seqid_p != -1 && seqid_q != -1) {
-    // int ActualInsert(-1);
-    //	ActualInsert=0;
     InsertSizeDist[0]++;
     // cerr<<"Duplicate function exit from diff chrom"<<endl;
     fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t" << -1
@@ -902,7 +903,6 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
   }
 
   if (p->mapQ > threshQual && q->mapQ > threshQual) {
-
     int ActualInsert(-1), start(0), end(0); //[start, end)
     status = "PartialPair";
     if (!(p->strand) && q->strand && p->pos < q->pos) // FR
@@ -930,15 +930,17 @@ int StatCollector::IsDuplicated(const bntseq_t *bns, const bwa_seq_t *p,
          << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len) << "\t"
          << status << endl;
 
-    char start_end[256];
-    sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
-    pair<unordered_map<string, bool>::iterator, bool> iter =
-        duplicateTable.insert(make_pair(string(start_end), true));
-    if (!iter.second) // insert failed, duplicated
-    {
-      NumPCRDup += 2;
-      // since we don't mark PCR duplicate
-      //      return 1;
+    if (std::string(bns->anns[seqid_p].name).back() == 'L' and status == "PropPair") {
+      char start_end[1024] = {};
+      sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
+
+      if (duplicateTable.find(string(start_end)) == duplicateTable.end()) {
+        duplicateTable.insert(string(start_end));
+      } else // insert failed, duplicated
+      {
+        NumPCRDup += 2;
+      }
+      NumLongReads += 2;
     }
   } else {
     // cerr<<"exit from LowQualf"<<endl;
@@ -978,9 +980,9 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     }
   }
   /*done checking if reads bridges two reference contigs*/
+  string qname(bns->anns[seqid2].name);
   if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
     if (q != 0 && AddSingleAlignment(bns, q, opt)) {
-      string qname(bns->anns[seqid2].name);
       if (string(qname).find("Y") != string::npos ||
           string(qname).find("X") != string::npos) {
         if (!IsPartialAlign(q)) {
@@ -989,9 +991,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
         } else
           contigStatusTable[qname].addNumOverlappedReads();
       }
-      // TO-DO: adding IsDup function here to generate single end MAX insersize
-      // info
-      IsDuplicated(bns, p, q, AlignStatus::Second, fout); // only q
+      ProcessPairStatus(bns, p, q, AlignStatus::SecondOnly, fout); // only q
       total_add_failed += 1;
       return 1;
     }
@@ -1011,9 +1011,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
         } else
           contigStatusTable[pname].addNumOverlappedReads();
       }
-      // TO-DO:adding IsDup function here to generate single end MAX insersize
-      // info
-      IsDuplicated(bns, p, q, AlignStatus::First, fout); // only p
+      ProcessPairStatus(bns, p, q, AlignStatus::FirstOnly, fout); // only p
       total_add_failed += 1;
       return 1;
     }
@@ -1021,13 +1019,13 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
     return 0;
   }
 
-  string qname(bns->anns[seqid2].name);
   // until now both reads are aligned
   if (IsPartialAlign(p)) // p is partially aligned
   {
     if (string(qname).find("Y") != string::npos ||
         string(qname).find("X") != string::npos) {
-      if (IsPartialAlign(q)) {
+      if (IsPartialAlign(q)) // q is partially aligned
+      {
         contigStatusTable[qname].addNumOverlappedReads();
       } else // q is perfectly aligned
       {
@@ -1040,8 +1038,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
       contigStatusTable[pname].addNumOverlappedReads();
     }
 
-    if (IsDuplicated(bns, p, q, AlignStatus::Both, fout) != 1 ||
-        opt->cal_dup) // test IsDuplicated first to get insert size info
+    if (ProcessPairStatus(bns, p, q, AlignStatus::Both, fout) != 1 ||
+        opt->cal_dup) // test ProcessPairStatus first to get insert size info
     {
       if (AddSingleAlignment(bns, p, opt)) {
         if (AddSingleAlignment(bns, q, opt)) {
@@ -1085,7 +1083,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
       contigStatusTable[pname].addNumOverlappedReads();
       contigStatusTable[pname].addNumFullyIncludedReads();
     }
-    if (IsDuplicated(bns, p, q, AlignStatus::Both, fout) != 1 || opt->cal_dup) {
+    if (ProcessPairStatus(bns, p, q, AlignStatus::Both, fout) != 1 ||
+        opt->cal_dup) {
       if (AddSingleAlignment(bns, p, opt)) {
         if (AddSingleAlignment(bns, q, opt)) {
           return 2;
@@ -1315,12 +1314,12 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) {
   return true;
 }
 
-int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
-                                const gap_opt_t *opt, AlignStatus type,
-                                ofstream &fout) {
+int StatCollector::ProcessPairStatus(SamFileHeader &SFH, SamRecord &p,
+                                     SamRecord &q, const gap_opt_t *opt,
+                                     AlignStatus type, ofstream &fout) {
   int MaxInsert(-1), MaxInsert2(-1);
 
-  if (type == AlignStatus::Second) // q is aligned only
+  if (type == AlignStatus::SecondOnly) // q is aligned only
   {
     if (q.getFlag() & SAM_FR1) // if it's read one
       MaxInsert2 = atoi(SFH.getSQTagValue("LN", q.getReferenceName())) -
@@ -1356,7 +1355,7 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
          << "\t" << q.getFlag() << "\t" << q.getReadLength() << "\t"
          << q.getCigar() << "\tRevOnly" << endl;
     return 0;
-  } else if (type == AlignStatus::First) // p is aligned only
+  } else if (type == AlignStatus::FirstOnly) // p is aligned only
   {
     if (p.getFlag() & SAM_FR1) // if it's read one
       MaxInsert = atoi(SFH.getSQTagValue("LN", p.getReferenceName())) -
@@ -1447,17 +1446,12 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
 
       string cigar1 = p.getCigar();
       string cigar2 = q.getCigar();
+      string status;
       if (cigar1.find('S') == cigar1.npos &&
           cigar2.find('S') == cigar1.npos) // no softclip
       {
+        status = "PropPair";
         InsertSizeDist[ActualInsert]++;
-        fout << p.getReadName() << "\t" << MaxInsert << "\t" << MaxInsert2
-             << "\t" << ActualInsert << "\t" << p.getReferenceName() << "\t"
-             << p.get1BasedPosition() << "\t" << p.getFlag() << "\t"
-             << p.getReadLength() << "\t" << p.getCigar() << "\t"
-             << q.getReferenceName() << "\t" << q.get1BasedPosition() << "\t"
-             << q.getFlag() << "\t" << q.getReadLength() << "\t" << q.getCigar()
-             << "\tPropPair" << endl;
       } else {
         int cl1, cl2;
         cl1 = atoi(p.getCigar());
@@ -1478,24 +1472,28 @@ int StatCollector::IsDuplicated(SamFileHeader &SFH, SamRecord &p, SamRecord &q,
           MaxInsert = MaxInsert - cl1;
           MaxInsert2 = MaxInsert2 + cl2;
         }
+        status = "PartialPair";
         InsertSizeDist[ActualInsert]++;
-        fout << p.getReadName() << "\t" << MaxInsert << "\t" << MaxInsert2
-             << "\t" << ActualInsert << "\t" << p.getReferenceName() << "\t"
-             << p.get1BasedPosition() << "\t" << p.getFlag() << "\t"
-             << p.getReadLength() << "\t" << p.getCigar() << "\t"
-             << q.getReferenceName() << "\t" << q.get1BasedPosition() << "\t"
-             << q.getFlag() << "\t" << q.getReadLength() << "\t" << q.getCigar()
-             << "\tPartialPair" << endl;
       }
-      char start_end[256];
-      sprintf(start_end, "%d:%d", start, end);
-      pair<unordered_map<string, bool>::iterator, bool> iter =
-          duplicateTable.insert(make_pair(string(start_end), true));
-      if (!iter.second) // insert failed, duplicated
-      {
-        //	cerr<<"Duplicate function exit from duplicate"<<endl;
-        NumPCRDup++;
-        return 1;
+      fout << p.getReadName() << "\t" << MaxInsert << "\t" << MaxInsert2 << "\t"
+           << ActualInsert << "\t" << p.getReferenceName() << "\t"
+           << p.get1BasedPosition() << "\t" << p.getFlag() << "\t"
+           << p.getReadLength() << "\t" << p.getCigar() << "\t"
+           << q.getReferenceName() << "\t" << q.get1BasedPosition() << "\t"
+           << q.getFlag() << "\t" << q.getReadLength() << "\t" << q.getCigar()
+           << "\t" << status << endl;
+
+      if (std::string(p.getReferenceName()).back() == 'L' and
+          status == "PropPair") {
+        char start_end[256] = {};
+        sprintf(start_end, "%s:%d:%d", p.getReferenceName(), start, end);
+        if (duplicateTable.find(string(start_end)) == duplicateTable.end()) {
+          duplicateTable.insert(string(start_end));
+        } else // insert failed, duplicated
+        {
+          NumPCRDup += 2;
+        }
+        NumLongReads += 2;
       }
     } else {
       // cerr<<"exit from Inf"<<endl;
@@ -1552,7 +1550,8 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
       if (AddSingleAlignment(*q, opt)) {
         // TO-DO:adding IsDup function here to generate single end MAX insersize
         // info
-        IsDuplicated(SFH, *p, *q, opt, AlignStatus::Second, fout); // 1 is q
+        ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::SecondOnly,
+                          fout); // 1 is q
         return 1;
       }
       return 0;
@@ -1567,7 +1566,8 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
       if (AddSingleAlignment(*q, opt)) {
         // TO-DO:adding IsDup function here to generate single end MAX insersize
         // info
-        IsDuplicated(SFH, *p, *q, opt, AlignStatus::Second, fout); // 1 is q
+        ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::SecondOnly,
+                          fout); // 1 is q
         return 1;
       } else
         return 0;
@@ -1583,7 +1583,8 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
       }
       if (AddSingleAlignment(*p, opt)) {
 
-        IsDuplicated(SFH, *p, *q, opt, AlignStatus::First, fout); // 3 is p
+        ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::FirstOnly,
+                          fout); // 3 is p
         return 1;
       }
       return 0;
@@ -1605,7 +1606,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[pname].addNumOverlappedReads();
       }
 
-      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
+      if (ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
           opt->cal_dup) {
         if (AddSingleAlignment(*p, opt)) {
           if (AddSingleAlignment(*q, opt)) {
@@ -1635,7 +1636,8 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
       }
       if (AddSingleAlignment(*p, opt)) {
 
-        IsDuplicated(SFH, *p, *q, opt, AlignStatus::First, fout); // 3 is p
+        ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::FirstOnly,
+                          fout); // 3 is p
         return 1;
       } else
         return 0;
@@ -1663,7 +1665,7 @@ int StatCollector::AddAlignment(SamFileHeader &SFH, SamRecord *p, SamRecord *q,
         contigStatusTable[pname].addNumFullyIncludedReads();
       }
 
-      if (IsDuplicated(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
+      if (ProcessPairStatus(SFH, *p, *q, opt, AlignStatus::Both, fout) != 1 ||
           opt->cal_dup) {
         if (AddSingleAlignment(*p, opt)) {
           if (AddSingleAlignment(*q, opt)) {
@@ -1862,20 +1864,21 @@ int StatCollector::ReleaseVcfSites() {
 
 int StatCollector::GetDepthDist(const string &outputPath,
                                 const gap_opt_t *opt) {
-
+  int depth = 0;
   for (auto i = PositionTable.begin(); i != PositionTable.end();
        ++i) // each chr
   {
     for (auto j = i->second.begin(); j != i->second.end(); ++j) // each site
     {
       /************DepthDist**************************************************************/
-      assert(DepthVec[j->second] != 0);
-      NumBaseMapped += DepthVec[j->second];
-      if (DepthVec[j->second] > 1023)
+      depth = DepthVec[j->second];
+      assert(depth != 0);
+      NumBaseMapped += depth;
+      if (depth > 1023)
         DepthDist[1023]++;
       else
-        DepthDist[DepthVec[j->second]]++;
-      GCDist[GC[i->first][j->first]] += DepthVec[j->second];
+        DepthDist[depth]++;
+      GCDist[GC[i->first][j->first]] += depth;
       PosNum[GC[i->first][j->first]]++;
     }
   }
@@ -2117,9 +2120,8 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
 }
 
 static vector<float> CalLikelihood(const string &seq, const string &qual,
-                                   const char &maj,
-                                   const char &min,
-                                   int * HQ) // maj:ref, min:alt
+                                   const char &maj, const char &min,
+                                   int *HQ) // maj:ref, min:alt
 {
   float GL0(0), GL1(0), GL2(0);
   {
@@ -2148,20 +2150,20 @@ static vector<float> CalLikelihood(const string &seq, const string &qual,
   tmp[0] = floor(GL0 * (-10) + 0.5);
   tmp[1] = floor(GL1 * (-10) + 0.5);
   tmp[2] = floor(GL2 * (-10) + 0.5);
-//  float minimal(tmp[0]);
-//  if (tmp[1] < minimal) {
-//    minimal = tmp[1];
-//  }
-//  if (tmp[2] < minimal) {
-//    minimal = tmp[2];
-//  }
-//  tmp[0] -= minimal;
-//  tmp[1] -= minimal;
-//  tmp[2] -= minimal;
+  //  float minimal(tmp[0]);
+  //  if (tmp[1] < minimal) {
+  //    minimal = tmp[1];
+  //  }
+  //  if (tmp[2] < minimal) {
+  //    minimal = tmp[2];
+  //  }
+  //  tmp[0] -= minimal;
+  //  tmp[1] -= minimal;
+  //  tmp[2] -= minimal;
   return tmp;
 }
 
-//int StatCollector::GetGenoLikelihood(const string &outputPath) {
+// int StatCollector::GetGenoLikelihood(const string &outputPath) {
 //  ofstream fout(outputPath + ".Likelihood");
 //
 //  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) {
@@ -2201,7 +2203,7 @@ int StatCollector::GetVCF(const string &outputPath) {
   fout << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, "
           "for each ALT allele, in the same order as listed\">\n";
   fout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
-  fout << "##FORMAT=<ID=HQ,Number=1,Type=String,Description=\"Genotype\">\n";
+  //fout << "##FORMAT=<ID=HQ,Number=1,Type=String,Description=\"Genotype\">\n";
   fout << "##FORMAT=<ID=GP,Number=1,Type=String,Description=\"Genotype\">\n";
   fout << "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, "
           "Phred-scaled likelihoods for genotypes as defined in the VCF "
@@ -2217,13 +2219,15 @@ int StatCollector::GetVCF(const string &outputPath) {
       VcfLine = VcfRecVec[markerIndex];
       string RefStr(VcfLine->getRefStr()), AltStr(VcfLine->getAltStr());
 
-      if(VcfLine->getInfo().getString("AF")) {
-        alleleFrq = atof(VcfLine->getInfo().getString("AF")->c_str());      }
-      else {
-        warning("%s:%d has no AF field, skipped!", VcfLine->getChromStr(), VcfLine->get1BasedPosition());
+      if (VcfLine->getInfo().getString("AF")) {
+        alleleFrq = atof(VcfLine->getInfo().getString("AF")->c_str());
+      } else {
+        warning("%s:%d has no AF field, skipped!", VcfLine->getChromStr(),
+                VcfLine->get1BasedPosition());
         continue;
       }
-      if(SeqVec[markerIndex].empty()) continue;
+      if (SeqVec[markerIndex].empty())
+        continue;
 
       fout << VcfLine->getChromStr() << "\t";
       fout << VcfLine->get1BasedPosition() << "\t";
@@ -2232,15 +2236,16 @@ int StatCollector::GetVCF(const string &outputPath) {
       fout << VcfLine->getAltStr() << "\t";
       fout << VcfLine->getQualStr() << "\t";
       fout << VcfLine->getFilter().getString() << "\t";
-      fout << "AF=" << (*VcfLine->getInfo().getString("AF")) << ";AC="<<SeqVec[markerIndex].size()<<"\t";
-      fout << "GT:PL:GP:HQ\t";
+      fout << "AF=" << (*VcfLine->getInfo().getString("AF"))
+           << ";AC=" << SeqVec[markerIndex].size() << "\t";
+      fout << "GT:PL:GP\t";
 
-      int HQ[2] = {0,0};
+      int HQ[2] = {0, 0};
       vector<float> tmpPL = CalLikelihood(
           SeqVec[markerIndex], QualVec[markerIndex], RefStr[0], AltStr[0], HQ);
 
       float prior[3], post[3], sum;
-      prior[0] = PHRED((1 - alleleFrq)* (1 - alleleFrq));
+      prior[0] = PHRED((1 - alleleFrq) * (1 - alleleFrq));
       prior[1] = PHRED(2 * alleleFrq * (1 - alleleFrq));
       prior[2] = PHRED(alleleFrq * alleleFrq);
 
@@ -2254,20 +2259,19 @@ int StatCollector::GetVCF(const string &outputPath) {
       post[1] = std::floor(post[1] - sum + 0.5);
       post[2] = std::floor(post[2] - sum + 0.5);
 
-
       if (post[0] < post[1]) {
         if (post[0] < post[2])
-          fout << "0/0:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
-               << "\n";
+          fout << "0/0:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]
+               << ":" << post[0] << "," << post[1] << "," << post[2] << "\n";
         else
-          fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
-               << "\n";
+          fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]
+               << ":" << post[0] << "," << post[1] << "," << post[2] << "\n";
       } else if (post[1] < post[2]) {
-        fout << "0/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
-             << "\n";
+        fout << "0/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2] << ":"
+             << post[0] << "," << post[1] << "," << post[2] << "\n";
       } else {
-        fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2]<<":"<<post[0]<<","<<post[1]<<","<<post[2]<<":"<<HQ[0]<<","<<HQ[1]
-             << "\n";
+        fout << "1/1:" << tmpPL[0] << "," << tmpPL[1] << "," << tmpPL[2] << ":"
+             << post[0] << "," << post[1] << "," << post[2] << "\n";
       }
     }
   }
@@ -2287,7 +2291,7 @@ int StatCollector::SetGenomeSize(long total_size, long total_N_size) {
 }
 
 int StatCollector::SetTargetRegion(const std::string &targetRegionPath) {
-  targetRegion.ReadRegionList(targetRegionPath);
+  targetRegion.ReadRegionList(targetRegionPath, true);
   flankRegion.InnerJoin(targetRegion);
   return 0;
 }
@@ -2402,15 +2406,14 @@ int StatCollector::SummaryOutput(const string &outputPath) {
                                 : targetRegion.Size();
 
   /*Estimate total number of mapped reads from report_genome_size region only*/
-  double total_mapped_reads = (double)NumBaseMapped / avgReadLen *
-                              (report_genome_size / total_region_size);
-  fout << "Estimated Read Mapping Rate : " << total_mapped_reads / total_reads
-       << "\n";
+  double estimated_total_mapped_reads = (double)NumBaseMapped / avgReadLen *
+                                        report_genome_size / total_region_size;
+  fout << "Estimated Read Mapping Rate : "
+       << estimated_total_mapped_reads / total_reads << "\n";
   //       << "[" << total_mapped_reads << "/" << total_reads << "]\n";
   fout << "Estimated Read PCR Duplication Rate : "
-       << NumPCRDup / ((double)NumBaseMapped / avgReadLen) << "\n";
-  //       << "[" << NumPCRDup << "/" << (double)NumBaseMapped / avgReadLen <<
-  //       "]\n";
+       << NumPCRDup / ((double)NumLongReads) << "[" << NumPCRDup << "/"
+       << (double)NumLongReads << "]\n";
 
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
@@ -2426,8 +2429,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
                ? 0
                : NumBaseMapped / (double)total_region_size)
        << "[" << NumBaseMapped << "/" << total_region_size << "]\n";
-//  fout << "Estimated Percentage of Accessible Genome Covered : "
-//       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
+  //  fout << "Estimated Percentage of Accessible Genome Covered : "
+  //       << (1. - (double)DepthDist[0] / total_region_size) * 100 << "%\n";
   // output for fraction figure
   /*auto Q20BaseFraction = [&]()->double
   {	long long tmp(0); for (size_t i = 0; i != Q20DepthVec.size(); ++i) tmp
@@ -2436,7 +2439,7 @@ int StatCollector::SummaryOutput(const string &outputPath) {
   {	long long tmp(0); for (size_t i = 0; i != Q30DepthVec.size(); ++i) tmp
   += Q30DepthVec[i]; return NumBaseMapped == 0 ? 0 : double(tmp) /
   NumBaseMapped; };*/
-  fout << "Total Reduced Genome Size : " << total_region_size << endl;
+  fout << "Reduced Genome Size : " << total_region_size << endl;
   double DP1fraction = NumPositionCovered / (double)total_region_size;
   double DP2fraction = NumPositionCovered2 / (double)total_region_size;
   double DP5fraction = NumPositionCovered5 / (double)total_region_size;
