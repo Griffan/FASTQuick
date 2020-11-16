@@ -1905,6 +1905,7 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       } else
         ReadIsGood = 0;
     }
+
     int cnt_chg;
     isize_info_t ii;
 
@@ -2084,6 +2085,13 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       }
 
     FSC.NumRead += (n_seqs[0] + n_seqs[1]);
+    if (FSC.NumRead % READ_BUFFER_SIZE == 0) {
+      if (std::strncmp(seqs[0]->name, seqs[1]->name, opt->read_len) != 0)
+        error("Abort, please make sure input pair of fastq files are in the "
+              "same order!");
+      fprintf(stderr, "NOTICE - %lld sequences are processed.\n", FSC.NumRead);
+    }
+
     for (int j = 0; j < 2; ++j) {
       // bwa_free_read_seq(n_seqs, seqs[j]);
       // delete[] seqs[j];
@@ -2094,8 +2102,6 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
       seqs_buff[j] = tmp;
       bwa_clean_read_seq(n_seqs_buff[j], seqs_buff[j]);
     }
-    if (FSC.NumRead % 5000000 == 0)
-      fprintf(stderr, "NOTICE - %lld sequences are processed.\n", FSC.NumRead);
 
     last_ii = ii;
   } // end while

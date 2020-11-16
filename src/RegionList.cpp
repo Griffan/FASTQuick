@@ -30,7 +30,7 @@ int RegionList::ReadRegionList(const std::string &regionListPath,
     }
     if (regionList.find(chr) != regionList.end()) {
       if (regionList[chr].find(start) != regionList[chr].end()) {
-        if (regionList[chr][start] < end)//update
+        if (regionList[chr][start] < end) // update
           regionList[chr][start] = end;
       } else {
         regionList[chr][start] = end;
@@ -40,11 +40,12 @@ int RegionList::ReadRegionList(const std::string &regionListPath,
     }
   }
   fin.close();
-  if(autoCollapse) Collapse();
+  if (autoCollapse)
+    Collapse();
   return 0;
 }
 
-bool RegionList::IsOverlapped(const std::string & Chrom, int start) {
+bool RegionList::IsOverlapped(const std::string &Chrom, int start) {
 
   if (regionList.empty())
     return false;
@@ -52,19 +53,19 @@ bool RegionList::IsOverlapped(const std::string & Chrom, int start) {
     return false;
   else {
     auto lower_iter = regionList[Chrom].lower_bound(start);
-    if (lower_iter != regionList[Chrom].begin())
+    if (lower_iter != regionList[Chrom].end() and lower_iter->first <= start and
+        lower_iter->second >= start)
+      return true;
+    if (lower_iter != regionList[Chrom].begin()) {
       lower_iter--;
-    if (lower_iter->first <= start and lower_iter->second >= start)
-      return true;
-    lower_iter++;
-    if (lower_iter->first <= start and lower_iter->second >= start)
-      return true;
+      if (lower_iter->first <= start and lower_iter->second >= start)
+        return true;
+    }
   }
   return false;
 }
 
-bool RegionList::AddRegion(const std::string& Chrom, int start, int end)
-{
+bool RegionList::AddRegion(const std::string &Chrom, int start, int end) {
   std::string chr(Chrom);
   std::transform(chr.begin(), chr.end(), chr.begin(), ::toupper);
   if (chr.find("CHR") != std::string::npos) {
@@ -74,97 +75,91 @@ bool RegionList::AddRegion(const std::string& Chrom, int start, int end)
   return true;
 }
 
-bool RegionList::Collapse()//union of internal regions
+bool RegionList::Collapse() // union of internal regions
 {
-  std::map<std::string, std::map<int, int> > tmpList;
+  std::map<std::string, std::map<int, int>> tmpList;
 
-  for(auto kv : regionList)
+  for (auto kv : regionList) // each chr
   {
-    int beg1,end1,beg2,end2;
+    int beg1, end1, beg2, end2;
     auto holder = kv.second.begin();
-    for(auto iter = kv.second.begin(); iter != kv.second.end(); ++iter)
-    {
+    for (auto iter = kv.second.begin(); iter != kv.second.end(); ++iter) {
       beg1 = holder->first;
       end1 = holder->second;
       beg2 = iter->first;
       end2 = iter->second;
-      if(end1 >= end2)//holder includes iter
+      if (end1 >= end2) // holder includes iter
         continue;
-      else if(end1 < beg2) {//holder and iter do not overlap
+      else if (end1 < beg2) { // holder and iter do not overlap
         tmpList[kv.first][beg1] = end1;
         holder = iter;
-      }
-      else// partial overlap
+      } else // partial overlap
       {
         tmpList[kv.first][beg1] = end2;
         holder->second = end2;
       }
     }
-    tmpList[kv.first][holder->first] = holder->second;//last holder, regardless if dup or not
+    tmpList[kv.first][holder->first] =
+        holder->second; // last holder, regardless if dup or not
   }
 
   regionList = tmpList;
   uint64_t len = 0;
-  for (const auto & kv : regionList) {
-    for (const auto & kv2 : kv.second) {
-      if(kv2.second < kv2.first) error("abnormal region %s:%d-%d",kv.first.c_str(), kv2.first, kv2.second);
-      len += (kv2.second - kv2.first)+1;
+  for (const auto &kv : regionList) {
+    for (const auto &kv2 : kv.second) {
+      if (kv2.second < kv2.first)
+        error("abnormal region %s:%d-%d", kv.first.c_str(), kv2.first,
+              kv2.second);
+      len += (kv2.second - kv2.first) + 1;
     }
   }
   length = len;
   return true;
 }
 
-bool RegionList::Join(const RegionList &b, bool isUnion = false)
-{
-  if(isUnion) {
+bool RegionList::Join(const RegionList &b, bool isUnion = false) {
+  if (isUnion) {
     for (auto &kv : b.regionList) {
-        for (auto kv2 : kv.second) {
-          AddRegion(kv.first, kv2.first, kv2.second);
-        }
+      for (auto kv2 : kv.second) {
+        AddRegion(kv.first, kv2.first, kv2.second);
+      }
     }
-  }
-  else//isIntersection
+  } else // isIntersection
   {
     Collapse();
 
     RegionList tmpList;
     for (auto &kv : b.regionList) {
-      if(regionList.find(kv.first) != regionList.end()) {//chr shown in List A
+      if (regionList.find(kv.first) != regionList.end()) { // chr shown in List
+                                                           // A
         auto thisIter = regionList[kv.first].begin();
         auto iter = kv.second.begin();
-        int beg1,end1,beg2,end2;
-        while(thisIter != regionList[kv.first].end() && iter!=kv.second.end())
-        {
+        int beg1, end1, beg2, end2;
+        while (thisIter != regionList[kv.first].end() &&
+               iter != kv.second.end()) {
           beg1 = thisIter->first;
           end1 = thisIter->second;
           beg2 = iter->first;
           end2 = iter->second;
-          if(beg1 <= beg2)
-          {
-            if(end1 > end2) {// [1,4] and [2,3]
+          if (beg1 <= beg2) {
+            if (end1 > end2) { // [1,4] and [2,3]
               tmpList.AddRegion(kv.first, beg2, end2);
               iter++;
-            }
-            else if (end1 > beg2) {//[1,3] and [2,4]
+            } else if (end1 > beg2) { //[1,3] and [2,4]
               tmpList.AddRegion(kv.first, beg2, end1);
               thisIter++;
-            }
-            else{ //[1,2] and [3,4]
+            } else { //[1,2] and [3,4]
               thisIter++;
             }
-          }
-          else//beg1 >beg2
+          } else // beg1 >beg2
           {
-            if(end1 <= end2) {//  [2,3] and [1,4]
+            if (end1 <= end2) { //  [2,3] and [1,4]
               tmpList.AddRegion(kv.first, beg1, end1);
               thisIter++;
-            }
-            else if (end1 > beg2 and beg1 < end2) {//[2,4] and [1,3]
+            } else if (end1 > beg2 and beg1 < end2) { //[2,4] and [1,3]
               tmpList.AddRegion(kv.first, beg1, end2);
               iter++;
-            }
-            else{ //[3,4] and [1,2]
+            } else { //[3,4] and [1,2]
               iter++;
             }
           }
@@ -173,7 +168,6 @@ bool RegionList::Join(const RegionList &b, bool isUnion = false)
     }
     regionList = tmpList.regionList;
   }
-  //collapse
+  // collapse
   return Collapse();
 }
-

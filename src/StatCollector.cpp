@@ -25,6 +25,8 @@ const uint16_t __cigar_table[16] = {
     2 /*D*/, 0, 0, 0, 0, 1 /*I*/, 0, 0, 0, 0 /*M*/, 0, 0, 0, 0, 0, 3 /*S*/
 };
 
+#define FLANK_EDGE 0.65f
+
 const char sign[2] = {1, -1};
 
 inline int StatCollector::IsPartialAlign(const bwa_seq_t *q) {
@@ -380,7 +382,6 @@ int StatCollector::AddMatchBaseInfo(const string &seq, const string &qual,
                                     strand, matchLen, tmpCycle,
                                     relativeCoordOnRead, relativeCoordOnRef);
 }
-#define FLANK_EDGE 0.65f
 
 int StatCollector::UpdateInfoVecAtRegularSite(
     const string &seq, const string &qual, const string &refSeq,
@@ -390,48 +391,29 @@ int StatCollector::UpdateInfoVecAtRegularSite(
   char readBase = 0;
   char baseQual = 0;
   int total_effective_len = 0;
-  if (PositionTable.find(chr) != PositionTable.end()) // chrom exists
-    for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
-             tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
-             ++relativeCoordOnRef) {
+  for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
+           tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
+           ++relativeCoordOnRef) {
+    if (not flankRegion.IsOverlapped(chr, i))
+      continue;
 
-      if (not flankRegion.IsOverlapped(chr, i))
-        continue;
+    refBase = refSeq[relativeCoordOnRef];
+    readBase = seq[relativeCoordOnRead];
+    baseQual = qual[relativeCoordOnRead];
 
-      refBase = refSeq[relativeCoordOnRef];
-      readBase = seq[relativeCoordOnRead];
-      baseQual = qual[relativeCoordOnRead];
-
-      if (PositionTable[chr].find(i) !=
-          PositionTable[chr].end()) { // site already exists
-        int tmpIndex = PositionTable[chr][i];
-        DepthVec[tmpIndex]++;
-        if (baseQual >= 20) {
-          Q20DepthVec[tmpIndex]++;
-          if (baseQual >= 30) {
-            Q30DepthVec[tmpIndex]++;
-          }
+    if (PositionTable[chr].find(i) !=
+        PositionTable[chr].end()) { // site already exists
+      int tmpIndex = PositionTable[chr][i];
+      DepthVec[tmpIndex]++;
+      if (baseQual >= 20) {
+        Q20DepthVec[tmpIndex]++;
+        if (baseQual >= 30) {
+          Q30DepthVec[tmpIndex]++;
         }
-        total_effective_len++;
-        StatVecDistUpdate(chr, i, tmpCycle, readBase, baseQual, refBase);
-      } else // coord not exists
-      {
-        total_effective_len++;
-        AddBaseInfoToNewCoord(chr, i, tmpCycle, readBase, baseQual, refBase);
       }
-    }
-  else // chrom not exists
-  {
-    for (int i = readRealStart; i != readRealStart + matchLen - 1 + 1; ++i,
-             tmpCycle += 1 * sign[strand], ++relativeCoordOnRead,
-             ++relativeCoordOnRef) {
-
-      if (not flankRegion.IsOverlapped(chr, i))
-        continue;
-
-      refBase = refSeq[relativeCoordOnRef];
-      readBase = seq[relativeCoordOnRead];
-      baseQual = qual[relativeCoordOnRead];
+      total_effective_len++;
+      StatVecDistUpdate(chr, i, tmpCycle, readBase, baseQual, refBase);
+    } else {
       total_effective_len++;
       AddBaseInfoToNewCoord(chr, i, tmpCycle, readBase, baseQual, refBase);
     }
@@ -981,8 +963,8 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
   }
   /*done checking if reads bridges two reference contigs*/
   string qname(bns->anns[seqid2].name);
-  if (p == 0 || p->type == BWA_TYPE_NO_MATCH) {
-    if (q != 0 && AddSingleAlignment(bns, q, opt)) {
+  if (p == nullptr || p->type == BWA_TYPE_NO_MATCH) {
+    if (q != nullptr && AddSingleAlignment(bns, q, opt)) {
       if (string(qname).find("Y") != string::npos ||
           string(qname).find("X") != string::npos) {
         if (!IsPartialAlign(q)) {
@@ -1001,7 +983,7 @@ int StatCollector::AddAlignment(const bntseq_t *bns, bwa_seq_t *p, bwa_seq_t *q,
 
   // until now p is aligned
   string pname(bns->anns[seqid].name);
-  if (q == 0 || q->type == BWA_TYPE_NO_MATCH) {
+  if (q == nullptr || q->type == BWA_TYPE_NO_MATCH) {
     if (AddSingleAlignment(bns, p, opt)) {
       if (string(pname).find('Y') != string::npos ||
           string(pname).find('X') != string::npos) {
@@ -1814,12 +1796,14 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
   reader.close();
 
   flankRegion.Collapse();
+
   notice("Input %d markers with short flank region with length %d",
          NumShortMarker, opt->flank_len * 2 - chopped_read_len * 2 + 1);
   notice("Input %d markers with long flank region with length %d",
          NumLongMarker, opt->flank_long_len * 2 - chopped_read_len * 2 + 1);
   notice("Input %d markers with XorY flank region with length %d",
          NumXorYMarker, opt->flank_len * 2 - chopped_read_len * 2 + 1);
+  notice("Total flank region size:%d", flankRegion.Size());
 
   std::string dbSNPFile = RefPath + ".dbSNP.subset.vcf";
 
@@ -2005,9 +1989,8 @@ int StatCollector::GetInsertSizeDist(const std::string &outputPath) {
 
 int StatCollector::GetSexChromInfo(const string &outputPath) {
   ofstream fout(outputPath + ".SexChromInfo");
-  for (unordered_map<string, ContigStatus>::iterator iter =
-           contigStatusTable.begin();
-       iter != contigStatusTable.end(); ++iter) {
+  for (auto iter = contigStatusTable.begin(); iter != contigStatusTable.end();
+       ++iter) {
     fout << iter->first << "\t" << iter->second.getNumOverlappedReads() << "\t"
          << iter->second.getNumFullyIncludedReads() << "\t"
          << iter->second.getNumPairOverlappedReads() << "\t"
@@ -2040,8 +2023,7 @@ int StatCollector::GetPileup(const string &outputPath, const gap_opt_t *opt) {
   int qualoffset = 33;
   if (opt->mode & BWA_MODE_IL13)
     qualoffset = 64;
-  for (sort_map::iterator i = VcfTable.begin(); i != VcfTable.end();
-       ++i) // each chr
+  for (auto i = VcfTable.begin(); i != VcfTable.end(); ++i) // each chr
   {
     for (auto j = i->second.begin(); j != i->second.end(); ++j) // each site
     {
