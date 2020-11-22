@@ -72,7 +72,7 @@ private:
   uint64_t NumShortMarker;
   uint64_t NumLongMarker;
   uint64_t NumPCRDup;
-  uint64_t NumLongReads;
+  uint64_t NumPairReads;
   uint64_t NumBaseMapped;
   uint64_t NumPositionCovered; // position with depth larger than 0
   // uint64_t NumPositionCovered1;

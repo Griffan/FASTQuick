@@ -257,7 +257,7 @@ StatCollector::StatCollector() {
   NumShortMarker = 0;
   NumLongMarker = 0;
   NumPCRDup = 0;
-  NumLongReads = 0;
+  NumPairReads = 0;
   NumBaseMapped = 0;
   NumPositionCovered = 0;              // position with depth larger than 0
   NumPositionCovered2 = 0;             // larger than 1
@@ -289,7 +289,7 @@ StatCollector::StatCollector(const std::string &OutFile) {
   NumShortMarker = 0;
   NumLongMarker = 0;
   NumPCRDup = 0;
-  NumLongReads = 0;
+  NumPairReads = 0;
   NumBaseMapped = 0;
   NumPositionCovered = 0;              // position with depth larger than 0
   NumPositionCovered2 = 0;             // larger than 1
@@ -885,6 +885,8 @@ int StatCollector::ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p,
   }
 
   if (p->mapQ > threshQual && q->mapQ > threshQual) {
+    bool noClip = false;
+    bool propPair = false;
     int ActualInsert(-1), start(0), end(0); //[start, end)
     status = "PartialPair";
     if (!(p->strand) && q->strand && p->pos < q->pos) // FR
@@ -892,15 +894,21 @@ int StatCollector::ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p,
       start = p->pos - cl1;
       end = q->pos - cl3 + q->len;
       ActualInsert = end - start;
+      if (cl1 == 0 and cl4 == 0)
+        noClip = true;
     } else if (!(q->strand) && p->strand && q->pos < p->pos) // FR but rotated
     {
       start = q->pos - cl3;
       end = p->pos - cl1 + p->len;
       ActualInsert = end - start;
+      if (cl3 == 0 and cl2 == 0)
+        noClip = true;
     }
 
-    if (maxInsert != -1 and maxInsert2 != -1)
+    if (maxInsert != -1 and maxInsert2 != -1) {
       status = "PropPair";
+      propPair = true;
+    }
 
     InsertSizeDist[ActualInsert]++;
     fout << p->name << "\t" << maxInsert << "\t" << maxInsert2 << "\t"
@@ -912,7 +920,7 @@ int StatCollector::ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p,
          << q->len << "\t" << Cigar2String(q->n_cigar, q->cigar, q->len) << "\t"
          << status << endl;
 
-    if (std::string(bns->anns[seqid_p].name).back() == 'L' and status == "PropPair") {
+    if (propPair and noClip) {
       char start_end[1024] = {};
       sprintf(start_end, "%d:%d:%d", seqid_p, start, end);
 
@@ -922,7 +930,7 @@ int StatCollector::ProcessPairStatus(const bntseq_t *bns, const bwa_seq_t *p,
       {
         NumPCRDup += 2;
       }
-      NumLongReads += 2;
+      NumPairReads += 2;
     }
   } else {
     // cerr<<"exit from LowQualf"<<endl;
@@ -1428,11 +1436,10 @@ int StatCollector::ProcessPairStatus(SamFileHeader &SFH, SamRecord &p,
 
       string cigar1 = p.getCigar();
       string cigar2 = q.getCigar();
-      string status;
+      string status = "PartialPair";
       if (cigar1.find('S') == cigar1.npos &&
           cigar2.find('S') == cigar1.npos) // no softclip
       {
-        status = "PropPair";
         InsertSizeDist[ActualInsert]++;
       } else {
         int cl1, cl2;
@@ -1454,9 +1461,11 @@ int StatCollector::ProcessPairStatus(SamFileHeader &SFH, SamRecord &p,
           MaxInsert = MaxInsert - cl1;
           MaxInsert2 = MaxInsert2 + cl2;
         }
-        status = "PartialPair";
         InsertSizeDist[ActualInsert]++;
       }
+      if (MaxInsert != -1 and MaxInsert2 != -1)
+        status = "PropPair";
+
       fout << p.getReadName() << "\t" << MaxInsert << "\t" << MaxInsert2 << "\t"
            << ActualInsert << "\t" << p.getReferenceName() << "\t"
            << p.get1BasedPosition() << "\t" << p.getFlag() << "\t"
@@ -1475,7 +1484,7 @@ int StatCollector::ProcessPairStatus(SamFileHeader &SFH, SamRecord &p,
         {
           NumPCRDup += 2;
         }
-        NumLongReads += 2;
+        NumPairReads += 2;
       }
     } else {
       // cerr<<"exit from Inf"<<endl;
@@ -2394,8 +2403,8 @@ int StatCollector::SummaryOutput(const string &outputPath) {
        << estimated_total_mapped_reads / total_reads << "\n";
   //       << "[" << total_mapped_reads << "/" << total_reads << "]\n";
   fout << "Estimated Read PCR Duplication Rate : "
-       << NumPCRDup / ((double)NumLongReads) << "[" << NumPCRDup << "/"
-       << (double)NumLongReads << "]\n";
+       << NumPCRDup / ((double)NumPairReads) << "[" << NumPCRDup << "/"
+       << (double)NumPairReads << "]\n";
 
   fout << "Whole Genome Coverage : " << (double)total_base / ref_genome_size
        << "[" << total_base << "/" << ref_genome_size << "]\n";
