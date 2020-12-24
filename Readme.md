@@ -17,13 +17,15 @@
 To install FASTQuick, run the following series of commands.
 
 ```
-git clone https://github.com/Griffan/FASTQuick.git   
+git clone https://github.com/Griffan/FASTQuick.git
+cd FASTQuick
 mkdir build
 cd build
 cmake ..
 make   
 make test
 ```
+If any test failed, refer to Testing/Temporary/LastTest.log for detailed error message(e.g. bcftools or samtools is missing).
 
 Installation is complete if all tests finish successfully.
 

@@ -966,7 +966,7 @@ bool BwtMapper::SetSamFileHeader(SamFileHeader &SFH,
     std::cerr << "WARNING:@RG is empty" << endl;
   }
 
-  for (int i = 0; i < BwtIndex.contigSize.size(); ++i) {
+  for (size_t i = 0; i < BwtIndex.contigSize.size(); ++i) {
     std::string chrom = BwtIndex.contigSize[i].first;
     int len = BwtIndex.contigSize[i].second;
     SFH.setSQTag("LN", std::to_string(len).c_str(), chrom.c_str());
@@ -1837,8 +1837,8 @@ bool BwtMapper::PairEndMapper(BwtIndexer &BwtIndex, const pe_opt_t *popt,
   uint32_t round = 0;
   int ret(-1);
   // round thread number up
-  unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-  unsigned n_align_thread =
+  int concurentThreadsSupported = std::thread::hardware_concurrency();
+  int n_align_thread =
       (opt->n_threads <= concurentThreadsSupported ? opt->n_threads
                                                    : concurentThreadsSupported);
   if (n_align_thread < 4)
