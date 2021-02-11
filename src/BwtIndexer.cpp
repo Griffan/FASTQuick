@@ -1103,7 +1103,7 @@ bool BwtIndexer::LoadIndexFromWholeGenome(string &NewRef) {
 bool BwtIndexer::Fa2PacFromWholeGenome() {
 
   char name[1024];
-  uint32_t m_seqs, m_holes;
+  int32_t m_seqs, m_holes;
   bntamb1_t *q;
   FILE *fp;
 
@@ -1180,13 +1180,14 @@ bool BwtIndexer::Fa2PacFromWholeGenome() {
   return 0;
 }
 
-void BwtIndexer::ConvertSeq2Pac(uint32_t &m_seqs, uint32_t &m_holes,
+void BwtIndexer::ConvertSeq2Pac(int32_t &m_seqs, int32_t &m_holes,
                                 bntamb1_t *q, uint64_t &size_pac_buf,
                                 const string &CurrentSeqName,
                                 const string &CurrentSeqNameAnno,
                                 const string &CurrentSeq) {
   bntann1_t *p; // tmp ann object
-  int i, lasts;
+  size_t i = 0;
+  char lasts = 0;
   if (bns->n_seqs == m_seqs) {
     m_seqs <<= 1; // double the space to store number of sequences
     bns->anns = (bntann1_t *)realloc(bns->anns, m_seqs * sizeof(bntann1_t));

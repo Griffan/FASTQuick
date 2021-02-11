@@ -37,7 +37,7 @@ public:
 	{
 		len=length;
 		GC= new unsigned char [len];
-                for (int i = 0; i < len; ++i) {
+                for (unsigned int i = 0; i < len; ++i) {
                   GC[i] = 0;
                 }
         }

@@ -223,9 +223,9 @@ public:
 #endif
 	virtual ~BwtIndexer();
 
-	void ConvertSeq2Pac(uint32_t& m_seqs, uint32_t& m_holes, bntamb1_t *q, uint64_t& size_pac_buf,
-									const std::string &CurrentSeqName, const std::string &CurrentSeqNameAnno,
-									const std::string &CurrentSeq);
+	void ConvertSeq2Pac(int32_t &m_seqs, int32_t &m_holes, bntamb1_t *q, uint64_t& size_pac_buf,
+                        const std::string &CurrentSeqName, const std::string &CurrentSeqNameAnno,
+                        const std::string &CurrentSeq);
 };
 static double QualQuickTable[46] =
 { 1, 0.7943, 0.6310, 0.5012, 0.3981, 0.3162, 0.2512, 0.1995, 0.1585, 0.1259,

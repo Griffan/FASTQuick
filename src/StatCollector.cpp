@@ -104,7 +104,7 @@ std::string StatCollector::RecoverRefseqByMDandCigar(const std::string &readSeq,
                                                      int n_cigar) {
   std::transform(MD.begin(), MD.end(), MD.begin(), ::toupper);
   if (MD.find_first_of("ATCGN") == std::string::npos &&
-      atoi(MD.c_str()) == readSeq.size()) // means perfect match
+      atol(MD.c_str()) == static_cast<long>(readSeq.size())) // means perfect match
     return readSeq;
 
   // only collect M pieces
@@ -1258,7 +1258,7 @@ bool StatCollector::AddSingleAlignment(SamRecord &p, const gap_opt_t *opt) {
     //        return true;
     //        if("MIDS"[__cigar_op(cigar[0])]=='S' /*or
     //        "MIDS"[__cigar_op(cigar[cigar.size()-1])]=='S'*/) return true;
-    for (int i = 0; i < cigar.size(); ++i) {
+    for (size_t i = 0; i < cigar.size(); ++i) {
       int cl = __cigar_len(cigar[i]);
       char cop = "MIDS"[__cigar_op(cigar[i])];
       switch (cop) {
@@ -1840,7 +1840,7 @@ int StatCollector::RestoreVcfSites(const std::string &RefPath,
 
 int StatCollector::ReleaseVcfSites() {
 
-  for (int j = 0; j < VcfRecVec.size(); ++j) {
+  for (size_t j = 0; j < VcfRecVec.size(); ++j) {
     delete VcfRecVec[j];
   }
   VcfRecVec.clear();
@@ -1982,7 +1982,7 @@ int StatCollector::GetInsertSizeDist(const std::string &outputPath) {
   f2 = Estimator.UpdateWeight();
 
   ofstream foutAdjust(OutFileName);
-  for (int i = 0; i < f1.size(); ++i) {
+  for (size_t i = 0; i < f1.size(); ++i) {
     f1[i] = (f1[i] + f2[i]);
     foutAdjust << i << "\t" << f1[i] << endl;
   }
