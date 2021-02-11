@@ -2,8 +2,16 @@
 [![GitHub Downloads](https://img.shields.io/github/downloads/Griffan/FASTQuick/total.svg?style=flat)](https://github.com/Griffan/FASTQuick/releases)
 
 ### OVERVIEW
-   FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC statistics, including **ancestry** and **contamination estimation**, at ~50x faster turnaround time than alignment-based QC tools.
-   
+
+FASTQuick is an **ultra-fast** QC tool for NGS sequencing fastq files. It generates a comprehensive list of QC
+statistics, including **ancestry** and **contamination estimation**, at ~50x faster turnaround time than alignment-based
+QC tools.
+
+### CITATION
+
+Fan Zhang, Hyun Min Kang, FASTQuick: rapid and comprehensive quality assessment of raw sequence reads, GigaScience,
+Volume 10, Issue 2, February 2021, giab004, https://doi.org/10.1093/gigascience/giab004
+
 ### CONTENTS
 
 - [INSTALL](#install)
