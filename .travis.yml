@@ -8,5 +8,5 @@ script:
 before_install:
   - sudo apt-get install cmake
 install:
-  - git clone https://github.com/samtools/htslib.git
+  - git clone --recurse-submodules https://github.com/samtools/htslib.git
   - pushd htslib && autoheader && autoconf && ./configure --prefix=/usr && make && sudo make install && popd
