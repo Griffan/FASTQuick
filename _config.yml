@@ -1,0 +1,8 @@
+title: FASTQuick
+description: 
+google_analytics: UA-56053249-1
+show_downloads: true
+theme: jekyll-theme-dinky
+
+gems:
+  - jekyll-mentions
