@@ -128,7 +128,7 @@ The pipeline can be generalized as "index ---> align ---> summarize ---> contami
 * contamination && ancestry: Jointly estimate sample contamination level and genetic ancestry status
 * visualization: Visualize the statistics collected above
 
-Hence you may choose any start point of the pipeline (All | AllButIndex | Index | Align | Contamination | Ancestry | Visualize) for **--steps** in the command line.
+Hence you may choose any start point of the pipeline among "All, AllButIndex, Index, Align, Contamination, Ancestry, Visualize" for **--steps** in the command line.
 
 ```
 ${FASTQUICK_HOME}/bin/FASTQuick.sh \
